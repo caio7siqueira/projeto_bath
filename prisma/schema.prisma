@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  locations Location[]
+  users     User[]
+  customers Customer[]
+}
+
+model Location {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  email     String   @unique
+  name      String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  GROOMER
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  pets      Pet[]
+}
+
+model Pet {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  name       String
+  species    Species
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+}
+
+enum Species {
+  DOG
+  CAT
+}
+
+model Service {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  prices    ServicePrice[]
+}
+
+model ServicePrice {
+  id        String   @id @default(uuid())
+  tenantId  String
+  serviceId String
+  price     Decimal  @db.Decimal(10,2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  service   Service  @relation(fields: [serviceId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Resource {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Appointment {
+  id         String   @id @default(uuid())
+  tenantId   String
+  locationId String
+  customerId String
+  petId      String
+  serviceId  String
+  startAt    DateTime
+  endAt      DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  location   Location  @relation(fields: [locationId], references: [id])
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  pet        Pet       @relation(fields: [petId], references: [id])
+  service    Service   @relation(fields: [serviceId], references: [id])
+  resources  AppointmentResource[]
+}
+
+model AppointmentResource {
+  id            String      @id @default(uuid())
+  appointmentId String
+  resourceId    String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  resource      Resource    @relation(fields: [resourceId], references: [id])
+}
+
+model RecurrenceSeries {
+  id        String   @id @default(uuid())
+  tenantId  String
+  rule      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model OmieConnection {
+  id        String   @id @default(uuid())
+  tenantId  String
+  appKey    String
+  appSecret String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model OmieCustomerLink {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  omieId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+}
+
+model OmieSalesEvent {
+  id        String   @id @default(uuid())
+  tenantId  String
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model MessageCreditsWallet {
+  id        String   @id @default(uuid())
+  tenantId  String
+  balance   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model MessageCreditTransaction {
+  id        String   @id @default(uuid())
+  walletId  String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+  wallet    MessageCreditsWallet @relation(fields: [walletId], references: [id])
+}
+
+model NotificationJob {
+  id        String   @id @default(uuid())
+  tenantId  String
+  payload   Json
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  actorId   String?
+  action    String
+  payload   Json?
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model BillingSubscription {
+  id        String   @id @default(uuid())
+  tenantId  String
+  plan      String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}

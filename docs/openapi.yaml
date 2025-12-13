@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Efizion Bath API
+  version: 0.1.0
+paths:
+  /v1/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
