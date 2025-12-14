@@ -12,9 +12,9 @@ async function bootstrap() {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
   const connection = new IORedis(redisUrl);
 
-  const omieQueue = new Queue('omie', { connection });
-  const notificationsQueue = new Queue('notifications', { connection });
-  const recurrenceQueue = new Queue('recurrence', { connection });
+  new Queue('omie', { connection });
+  new Queue('notifications', { connection });
+  new Queue('recurrence', { connection });
 
   new Worker(
     'omie',
