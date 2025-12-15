@@ -40,7 +40,7 @@ export class CustomerAuthService {
 
     const now = new Date();
 
-    const lastCode = await this.prisma.oTpCode.findFirst({
+    const lastCode = await this.prisma.otpCode.findFirst({
       where: { phone: dto.phone },
       orderBy: { createdAt: 'desc' },
     });
@@ -59,7 +59,7 @@ export class CustomerAuthService {
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(now.getTime() + this.OTP_TTL_MIN * 60 * 1000);
 
-    await this.prisma.oTpCode.create({
+    await this.prisma.otpCode.create({
       data: {
         customerId: customer.id,
         phone: dto.phone,
@@ -84,7 +84,7 @@ export class CustomerAuthService {
 
     const now = new Date();
 
-    const otp = await this.prisma.oTpCode.findFirst({
+    const otp = await this.prisma.otpCode.findFirst({
       where: { phone: dto.phone },
       orderBy: { createdAt: 'desc' },
     });
@@ -103,7 +103,7 @@ export class CustomerAuthService {
       if (attempts >= this.OTP_MAX_ATTEMPTS) {
         data.lockedUntil = new Date(now.getTime() + this.LOCKOUT_MIN * 60 * 1000);
       }
-      await this.prisma.oTpCode.update({ where: { id: otp.id }, data });
+      await this.prisma.otpCode.update({ where: { id: otp.id }, data });
       await this.prisma.loginLog.create({
         data: {
           actorType: 'CUSTOMER',
@@ -116,7 +116,7 @@ export class CustomerAuthService {
       throw new BadRequestException('Invalid code');
     }
 
-    await this.prisma.oTpCode.update({
+    await this.prisma.otpCode.update({
       where: { id: otp.id },
       data: { consumedAt: now },
     });
