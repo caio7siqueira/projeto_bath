@@ -49,7 +49,8 @@ pnpm dev
 ## Scripts úteis
 
 - `pnpm -w build` / `pnpm -w typecheck` / `pnpm -w lint`
-- `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:deploy` / `pnpm db:studio` / `pnpm db:seed`
+- `pnpm db:generate` / `pnpm db:deploy` / `pnpm db:seed` / `pnpm db:studio`
+- `pnpm db:migrate` (dev local com histórico interativo)
 
 ## Autenticação
 
@@ -72,14 +73,16 @@ pnpm dev
 ```bash
 # Codespaces / Linux
 pnpm install
-pnpm db:migrate
+pnpm db:deploy
+pnpm db:seed
 pnpm -w test:e2e
 ```
 
 ```powershell
 # Windows PowerShell (Docker Desktop ligado)
 pnpm install
-pnpm db:migrate
+pnpm db:deploy
+pnpm db:seed
 pnpm -w test:e2e
 ```
 

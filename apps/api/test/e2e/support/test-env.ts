@@ -1,11 +1,24 @@
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
 import { execFileSync } from "child_process";
 import path from "path";
+import { existsSync } from "fs";
 
 export interface TestEnv {
   pg: StartedTestContainer;
   redis: StartedTestContainer;
   stop: () => Promise<void>;
+}
+
+function findRepoRoot(startDir: string): string {
+  let currentDir = startDir;
+  while (currentDir !== path.dirname(currentDir)) {
+    const schemaPath = path.join(currentDir, "prisma", "schema.prisma");
+    if (existsSync(schemaPath)) {
+      return currentDir;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+  throw new Error("Could not find repo root by locating prisma/schema.prisma");
 }
 
 export async function startEnv(): Promise<TestEnv> {
@@ -31,7 +44,7 @@ export async function startEnv(): Promise<TestEnv> {
   process.env.REDIS_URL = redisUrl;
 
   // migrate
-  const repoRoot = path.resolve(__dirname, "../../../..");
+  const repoRoot = findRepoRoot(__dirname);
   const schemaPath = path.join(repoRoot, "prisma", "schema.prisma");
   execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', [
     "exec",
