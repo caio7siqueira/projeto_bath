@@ -16,8 +16,14 @@ describe('Appointments (E2E)', () => {
   beforeAll(async () => {
     const env = await startEnv();
     stopEnv = env.stop;
-    app = (await bootstrapApp()).app;
-    prisma = new PrismaClient();
+    const boot = await bootstrapApp({
+      databaseUrl: env.databaseUrl,
+      redisUrl: env.redisUrl,
+    });
+    app = boot.app;
+    prisma = new PrismaClient({
+      datasources: { db: { url: env.databaseUrl } },
+    });
 
     // Setup inicial: cria tenant, location, customer
     const registerRes = await request(app.getHttpServer())
