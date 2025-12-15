@@ -1,6 +1,6 @@
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
-import { execFileSync } from "node:child_process";
-import path from "node:path";
+import { execFileSync } from "child_process";
+import path from "path";
 
 export interface TestEnv {
   pg: StartedTestContainer;
@@ -31,12 +31,16 @@ export async function startEnv(): Promise<TestEnv> {
   process.env.REDIS_URL = redisUrl;
 
   // migrate
-  const cwd = path.resolve(__dirname, "../../../..");
-  execFileSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', [
+  const repoRoot = path.resolve(__dirname, "../../../..");
+  const schemaPath = path.join(repoRoot, "prisma", "schema.prisma");
+  execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', [
+    "exec",
     "prisma",
     "migrate",
-    "deploy"
-  ], { stdio: "inherit", cwd });
+    "deploy",
+    "--schema",
+    schemaPath,
+  ], { stdio: "inherit", cwd: repoRoot });
 
   return {
     pg,

@@ -14,8 +14,8 @@ describe('Internal Auth E2E', () => {
   });
 
   afterAll(async () => {
-    await app.close();
-    await stopEnv();
+    if (app) await app.close();
+    if (stopEnv) await stopEnv().catch(() => undefined);
   });
 
   it('register → login → refresh → logout', async () => {

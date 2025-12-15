@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, $Enums } from '@prisma/client';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { TwilioProvider } from '../../integrations/twilio.provider';
@@ -106,7 +106,7 @@ export class CustomerAuthService {
       await this.prisma.otpCode.update({ where: { id: otp.id }, data });
       await this.prisma.loginLog.create({
         data: {
-          actorType: 'CUSTOMER',
+          actorType: $Enums.ActorType.CUSTOMER,
           customerId: customer.id,
           phone: dto.phone,
           success: false,
@@ -125,7 +125,7 @@ export class CustomerAuthService {
 
     await this.prisma.loginLog.create({
       data: {
-        actorType: 'CUSTOMER',
+        actorType: $Enums.ActorType.CUSTOMER,
         customerId: customer.id,
         phone: dto.phone,
         success: true,

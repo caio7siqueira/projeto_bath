@@ -18,8 +18,8 @@ describe('Multi-tenant guard', () => {
   });
 
   afterAll(async () => {
-    await app.close();
-    await stopEnv();
+    if (app) await app.close();
+    if (stopEnv) await stopEnv().catch(() => undefined);
   });
 
   it('denies cross-tenant access', async () => {
