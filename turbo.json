@@ -6,6 +6,7 @@
     },
     "lint": {},
     "test": {},
+    "test:e2e": {},
     "typecheck": {},
     "dev": {
       "cache": false

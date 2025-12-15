@@ -8,7 +8,8 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"(no tests yet)\""
+    "test": "echo \"(no tests yet)\"",
+    "test:e2e": "echo \"(no E2E tests yet)\""
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

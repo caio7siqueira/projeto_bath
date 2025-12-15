@@ -8,7 +8,8 @@
     "start": "next start -p 3001",
     "lint": "echo 'lint: OK (skipped for web)'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"(no tests yet)\""
+    "test": "echo \"(no tests yet)\"",
+    "test:e2e": "echo \"(no E2E tests yet)\""
   },
   "dependencies": {
     "next": "^14.2.6",
