@@ -29,3 +29,20 @@ jobs:
         run: pnpm -w typecheck
       - name: Build
         run: pnpm -w build
+  e2e:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Enable Corepack
+        run: corepack enable; corepack prepare pnpm@9.12.0 --activate
+      - name: Install deps
+        run: pnpm install
+      - name: Run e2e (Docker required)
+        env:
+          TWILIO_DISABLED: 'true'
+        run: pnpm -w test:e2e
