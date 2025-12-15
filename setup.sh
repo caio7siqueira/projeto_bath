@@ -25,11 +25,7 @@ done
 echo "📦 Installing dependencies..."
 pnpm install
 
-# Generate Prisma client
-echo "🔧 Generating Prisma client..."
-pnpm db:generate
-
-# Run migrations
+# Run migrations (includes generate)
 echo "🗄️  Running database migrations..."
 pnpm db:migrate
 
