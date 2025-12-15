@@ -189,6 +189,71 @@ curl -X POST http://localhost:3000/v1/customer-auth/verify-otp \
   }'
 ```
 
+### Appointments (Agendamentos - admin/staff per tenant)
+```bash
+# Create appointment
+curl -X POST http://localhost:3000/v1/appointments \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId":"uuid-do-cliente",
+    "locationId":"uuid-da-location",
+    "startsAt":"2024-12-20T10:00:00Z",
+    "endsAt":"2024-12-20T11:00:00Z",
+    "notes":"Cliente preferiu horário da manhã"
+  }'
+
+# List appointments (no pagination - backward compatible)
+curl http://localhost:3000/v1/appointments \
+  -H "Authorization: Bearer $TOKEN"
+
+# List appointments (with pagination)
+curl "http://localhost:3000/v1/appointments?page=1&pageSize=10" \
+  -H "Authorization: Bearer $TOKEN"
+
+# List appointments by location
+curl "http://localhost:3000/v1/appointments?locationId=uuid-da-location" \
+  -H "Authorization: Bearer $TOKEN"
+
+# List appointments by customer
+curl "http://localhost:3000/v1/appointments?customerId=uuid-do-cliente" \
+  -H "Authorization: Bearer $TOKEN"
+
+# List appointments by period
+curl "http://localhost:3000/v1/appointments?from=2024-12-20T00:00:00Z&to=2024-12-21T00:00:00Z" \
+  -H "Authorization: Bearer $TOKEN"
+
+# List appointments by status
+curl "http://localhost:3000/v1/appointments?status=SCHEDULED" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get appointment by ID
+curl http://localhost:3000/v1/appointments/{id} \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update appointment
+curl -X PATCH http://localhost:3000/v1/appointments/{id} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "startsAt":"2024-12-20T11:00:00Z",
+    "endsAt":"2024-12-20T12:00:00Z",
+    "notes":"Reagendado a pedido do cliente"
+  }'
+
+# Cancel appointment (idempotent)
+curl -X POST http://localhost:3000/v1/appointments/{id}/cancel \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Regras de negócio:**
+- Duração mínima: 5 minutos
+- Validação: `startsAt < endsAt`
+- Overlap detection: retorna 409 Conflict se já existe agendamento SCHEDULED na mesma location com overlap
+- Multi-tenant: validação de `customerId` e `locationId` pertencentes ao mesmo tenant
+- Cancelamento: idempotente, seta `status = CANCELLED` e `cancelledAt = now()`
+```
+
 ## Scripts úteis
 
 - `pnpm -w build` / `pnpm -w typecheck` / `pnpm -w lint`
