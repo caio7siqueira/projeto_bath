@@ -13,10 +13,13 @@ describe('Tenants & Locations E2E', () => {
   beforeAll(async () => {
     const env = await startEnv();
     stopEnv = env.stop;
-    prisma = new PrismaClient();
     
-    const boot = await bootstrapApp();
+    const boot = await bootstrapApp({
+      databaseUrl: env.databaseUrl,
+      redisUrl: env.redisUrl,
+    });
     app = boot.app;
+    prisma = new PrismaClient({ datasources: { db: { url: env.databaseUrl } } });
 
     // Create admin user
     const adminEmail = 'admin@example.com';
