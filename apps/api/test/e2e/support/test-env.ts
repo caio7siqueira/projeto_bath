@@ -1,24 +1,11 @@
 import { GenericContainer, StartedTestContainer, Wait } from "testcontainers";
-import { execFileSync } from "child_process";
-import path from "path";
-import { existsSync } from "fs";
 
 export interface TestEnv {
   pg: StartedTestContainer;
   redis: StartedTestContainer;
+  databaseUrl: string;
+  redisUrl: string;
   stop: () => Promise<void>;
-}
-
-function findRepoRoot(startDir: string): string {
-  let currentDir = startDir;
-  while (currentDir !== path.dirname(currentDir)) {
-    const schemaPath = path.join(currentDir, "prisma", "schema.prisma");
-    if (existsSync(schemaPath)) {
-      return currentDir;
-    }
-    currentDir = path.dirname(currentDir);
-  }
-  throw new Error("Could not find repo root by locating prisma/schema.prisma");
 }
 
 export async function startEnv(): Promise<TestEnv> {
@@ -37,30 +24,23 @@ export async function startEnv(): Promise<TestEnv> {
     .withWaitStrategy(Wait.forLogMessage("Ready to accept connections"))
     .start();
 
-  const databaseUrl = `postgresql://bath:bath@${pg.getHost()}:${pg.getMappedPort(5432)}/bath?schema=public`;
-  const redisUrl = `redis://${redis.getHost()}:${redis.getMappedPort(6379)}`;
+  try {
+    const databaseUrl = `postgresql://bath:bath@${pg.getHost()}:${pg.getMappedPort(5432)}/bath?schema=public`;
+    const redisUrl = `redis://${redis.getHost()}:${redis.getMappedPort(6379)}`;
 
-  process.env.DATABASE_URL = databaseUrl;
-  process.env.REDIS_URL = redisUrl;
-
-  // migrate
-  const repoRoot = findRepoRoot(__dirname);
-  const schemaPath = path.join(repoRoot, "prisma", "schema.prisma");
-  execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', [
-    "exec",
-    "prisma",
-    "migrate",
-    "deploy",
-    "--schema",
-    schemaPath,
-  ], { stdio: "inherit", cwd: repoRoot });
-
-  return {
-    pg,
-    redis,
-    stop: async () => {
-      await redis.stop();
-      await pg.stop();
-    }
-  };
+    return {
+      pg,
+      redis,
+      databaseUrl,
+      redisUrl,
+      stop: async () => {
+        await redis.stop();
+        await pg.stop();
+      }
+    };
+  } catch (error) {
+    await redis.stop();
+    await pg.stop();
+    throw error;
+  }
 }

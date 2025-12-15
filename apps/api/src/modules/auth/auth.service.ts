@@ -116,37 +116,20 @@ export class AuthService {
   }
 
   async refresh(dto: RefreshDto) {
-    const storedToken = await this.prisma.refreshToken.findUnique({
-      where: { token: dto.refreshToken },
-      include: { user: true },
-    });
-
-    if (!storedToken || !storedToken.user) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    if (new Date() > storedToken.expiresAt) {
-      await this.prisma.refreshToken.delete({
-        where: { id: storedToken.id },
-      });
-      throw new UnauthorizedException('Refresh token expired');
-    }
-
     try {
       const payload = this.jwtService.verify(dto.refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
       });
 
-      const tokens = await this.generateTokens(
-        storedToken.user.id,
-        storedToken.user.email,
-        storedToken.user.role,
-      );
+      const user = await this.prisma.user.findUnique({ where: { id: payload.sub as string } });
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
 
-      // Remove old refresh token
-      await this.prisma.refreshToken.delete({
-        where: { id: storedToken.id },
-      });
+      // Revoga tokens antigos e gera novos
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+      await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 
       return tokens;
     } catch (err) {
@@ -170,7 +153,7 @@ export class AuthService {
 
   private async generateTokens(userId: string, email: string, role: string) {
     const accessPayload = { sub: userId, email, role };
-    const refreshPayload = { sub: userId };
+    const refreshPayload = { sub: userId, jti: randomBytes(8).toString('hex') };
 
     const accessToken = this.jwtService.sign(accessPayload, {
       secret: this.configService.get('JWT_SECRET'),
@@ -185,6 +168,7 @@ export class AuthService {
     const refreshExpiresAt = new Date();
     refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
 
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
     await this.prisma.refreshToken.create({
       data: {
         token: refreshToken,

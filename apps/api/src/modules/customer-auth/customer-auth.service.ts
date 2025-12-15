@@ -6,6 +6,7 @@ import { TwilioProvider } from '../../integrations/twilio.provider';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class CustomerAuthService {
@@ -141,7 +142,7 @@ export class CustomerAuthService {
     );
 
     const refreshToken = this.jwt.sign(
-      { sub: customer.id },
+      { sub: customer.id, jti: randomBytes(8).toString('hex') },
       {
         secret: this.config.get('JWT_REFRESH_SECRET'),
         expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN') || '7d',
@@ -150,6 +151,7 @@ export class CustomerAuthService {
 
     const refreshExpiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+    await this.prisma.refreshToken.deleteMany({ where: { customerId: customer.id } });
     await this.prisma.refreshToken.create({
       data: {
         token: refreshToken,

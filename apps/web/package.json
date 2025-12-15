@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "node -e \"process.env.PORT = process.env.PORT || '3001'; require('next/dist/bin/next')('dev')\"",
     "build": "next build --no-lint",
-    "start": "next start -p 3001",
+    "start": "node -e \"process.env.PORT = process.env.PORT || '3001'; require('next/dist/bin/next')('start')\"",
     "lint": "echo 'lint: OK (skipped for web)'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"(no tests yet)\"",

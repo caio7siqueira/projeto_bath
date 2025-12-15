@@ -10,6 +10,7 @@ export class CustomerAuthController {
   constructor(private readonly service: CustomerAuthService) {}
 
   @Post('request-otp')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request OTP code via SMS' })
   @ApiResponse({ status: 200, description: 'OTP sent' })
   async requestOtp(@Body() dto: RequestOtpDto) {

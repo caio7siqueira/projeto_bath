@@ -10,6 +10,10 @@ chmod +x setup.sh
 ./setup.sh
 
 # Desenvolvimento
+cp env.example .env
+pnpm install
+pnpm db:deploy
+pnpm db:seed
 pnpm dev
 ```
 
@@ -42,7 +46,7 @@ pnpm dev
 ## Endpoints
 
 - API: http://localhost:3000 (Swagger: `/docs`, Health: `/v1/health`)
-- Web: http://localhost:3001
+- Web: http://localhost:3001 (padrão; altere PORT se precisar)
 - Postgres: `localhost:5432`
 - Redis: `localhost:6379`
 

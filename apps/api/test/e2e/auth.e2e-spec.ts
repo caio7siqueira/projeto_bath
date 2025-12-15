@@ -9,7 +9,7 @@ describe('Internal Auth E2E', () => {
   beforeAll(async () => {
     const env = await startEnv();
     stopEnv = env.stop;
-    const boot = await bootstrapApp();
+    const boot = await bootstrapApp({ databaseUrl: env.databaseUrl, redisUrl: env.redisUrl });
     app = boot.app;
   });
 

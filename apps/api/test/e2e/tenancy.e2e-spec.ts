@@ -1,24 +1,24 @@
 import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
-
 import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 describe('Multi-tenant guard', () => {
   let stopEnv: () => Promise<void>;
   let app: any;
+  let prisma: PrismaClient;
 
   beforeAll(async () => {
     const env = await startEnv();
     stopEnv = env.stop;
-    const boot = await bootstrapApp();
+    const boot = await bootstrapApp({ databaseUrl: env.databaseUrl, redisUrl: env.redisUrl });
     app = boot.app;
+    prisma = new PrismaClient({ datasources: { db: { url: env.databaseUrl } } });
   });
 
   afterAll(async () => {
     if (app) await app.close();
+    if (prisma) await prisma.$disconnect();
     if (stopEnv) await stopEnv().catch(() => undefined);
   });
 

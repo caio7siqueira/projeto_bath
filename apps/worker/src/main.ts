@@ -3,13 +3,39 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
+import * as path from 'path';
 
-@Module({ imports: [ConfigModule.forRoot({ isGlobal: true })] })
+const envFilePath = Array.from(
+  new Set([
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '..', '.env'),
+    path.resolve(process.cwd(), '..', '..', '.env'),
+  ])
+);
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      envFilePath,
+      validate: (config: Record<string, unknown>) => {
+        if (!config.REDIS_URL) {
+          throw new Error('Missing environment variable: REDIS_URL');
+        }
+        return config;
+      },
+    }),
+  ],
+})
 class WorkerModule {}
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerModule);
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    throw new Error('Missing environment variable: REDIS_URL');
+  }
   const connection = new IORedis(redisUrl, {
     maxRetriesPerRequest: null,
   });
