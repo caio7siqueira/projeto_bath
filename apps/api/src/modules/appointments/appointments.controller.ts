@@ -10,9 +10,9 @@ import {
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RequireRole } from '../auth/decorators/require-role.decorator';
-import { TenantUser } from '../auth/decorators/tenant-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('appointments')

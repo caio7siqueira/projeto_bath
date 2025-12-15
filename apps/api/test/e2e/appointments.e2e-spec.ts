@@ -1,11 +1,12 @@
-import * as request from 'supertest';
+import request from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { startEnv } from './support/start-env';
+import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
 
 describe('Appointments (E2E)', () => {
-  let app: INestApplication;
+  let stopEnv: () => Promise<void>;
+  let app: any;
   let prisma: PrismaClient;
   let accessToken: string;
   let tenantId: string;
@@ -13,8 +14,9 @@ describe('Appointments (E2E)', () => {
   let locationId: string;
 
   beforeAll(async () => {
-    await startEnv();
-    app = await bootstrapApp();
+    const env = await startEnv();
+    stopEnv = env.stop;
+    app = (await bootstrapApp()).app;
     prisma = new PrismaClient();
 
     // Setup inicial: cria tenant, location, customer
@@ -62,6 +64,7 @@ describe('Appointments (E2E)', () => {
   afterAll(async () => {
     if (prisma) await prisma.$disconnect();
     if (app) await app.close();
+    if (stopEnv) await stopEnv();
   });
 
   describe('POST /appointments', () => {
