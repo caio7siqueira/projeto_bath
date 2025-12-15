@@ -1,5 +1,7 @@
 # Efizion Bath Monorepo
 
+[![E2E CI](https://github.com/caio7siqueira/projeto_bath/actions/workflows/e2e.yml/badge.svg)](https://github.com/caio7siqueira/projeto_bath/actions/workflows/e2e.yml)
+
 SaaS multi-tenant para petshops (PWA + NestJS + Worker + Prisma + BullMQ)
 
 ## Setup rápido (Codespaces)
