@@ -7,6 +7,7 @@ import { CustomerAuthModule } from './modules/customer-auth/customer-auth.module
 import { ProtectedModule } from './modules/protected/protected.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { CustomersModule } from './modules/customers/customers.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -36,6 +37,7 @@ const envFilePath = Array.from(
     ProtectedModule,
     TenantsModule,
     LocationsModule,
+    CustomersModule,
   ],
   controllers: [HealthController],
 })
