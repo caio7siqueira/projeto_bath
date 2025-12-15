@@ -19,17 +19,28 @@ describe('Tenants & Locations E2E', () => {
     app = boot.app;
 
     // Create admin user
+    const adminEmail = 'admin@example.com';
+    const adminPassword = 'StrongPass123!';
     const registerRes = await request(app.getHttpServer())
       .post('/v1/auth/register')
       .send({
-        email: 'admin@example.com',
-        password: 'StrongPass123!',
+        email: adminEmail,
+        password: adminPassword,
         name: 'Admin User',
         role: 'ADMIN',
         tenantSlug: 'efizion-bath-demo',
       });
 
-    adminToken = registerRes.body.accessToken;
+    if (registerRes.status !== 201 || !registerRes.body?.accessToken) {
+      // If already exists, perform login to obtain token
+      const loginRes = await request(app.getHttpServer())
+        .post('/v1/auth/login')
+        .send({ email: adminEmail, password: adminPassword, tenantSlug: 'efizion-bath-demo' })
+        .expect(200);
+      adminToken = loginRes.body.accessToken;
+    } else {
+      adminToken = registerRes.body.accessToken;
+    }
   });
 
   afterAll(async () => {
