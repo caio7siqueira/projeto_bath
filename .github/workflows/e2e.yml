@@ -1,0 +1,62 @@
+name: E2E CI
+
+on:
+  pull_request:
+    branches:
+      - '**'
+  push:
+    branches:
+      - main
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Secrets/required envs
+      JWT_SECRET: dummy-jwt-secret
+      JWT_REFRESH_SECRET: dummy-jwt-refresh-secret
+      # Optional envs (can be blank)
+      TWILIO_DISABLED: 'true'
+      PORT: '3000'
+      # NOTE: Our E2E uses Testcontainers to provision Postgres/Redis.
+      # Do NOT override DATABASE_URL/REDIS_URL here; let Testcontainers manage them.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Set up PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies (root workspace)
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Docker availability (for Testcontainers)
+        run: |
+          docker --version
+          docker info | sed -n '1,20p'
+
+      - name: Run E2E tests
+        working-directory: apps/api
+        run: |
+          pnpm -w test:e2e
+
+      - name: Upload Jest E2E logs on failure (optional)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs
+          path: |
+            apps/api/.jest/*
+            apps/api/test-results/*
+          if-no-files-found: ignore

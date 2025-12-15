@@ -17,6 +17,17 @@ pnpm db:seed
 pnpm dev
 ```
 
+## CI
+
+- A CI roda E2E em pull requests e na branch `main` usando GitHub Actions (Testcontainers com Docker disponível no runner).
+- Workflow: `E2E CI` (`.github/workflows/e2e.yml`).
+- Para validar localmente os mesmos passos:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm -w test:e2e
+```
+
 ## Setup local (sem Docker)
 
 Preferir Codespaces/devcontainer. Se não houver Postgres acessível via `DATABASE_URL`, pule migrations localmente e use apenas build/typecheck/lint. Rode migrations no Codespaces/CI.
