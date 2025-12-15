@@ -1,9 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 
-@Controller('health')
+@Controller()
 export class HealthController {
   @Get()
-  ping() {
-    return { ok: true };
+  root() {
+    return { message: 'Efizion Bath API', version: '0.1.0' };
+  }
+
+  @Get('health')
+  health() {
+    return { ok: true, timestamp: new Date().toISOString() };
   }
 }
