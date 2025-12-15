@@ -8,22 +8,36 @@ datasource db {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  locations Location[]
-  users     User[]
-  customers Customer[]
+  id                     String                  @id @default(uuid())
+  name                   String
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  locations              Location[]
+  users                  User[]
+  customers              Customer[]
+  pets                   Pet[]
+  services               Service[]
+  servicePrices          ServicePrice[]
+  resources              Resource[]
+  appointments           Appointment[]
+  recurrenceSeries       RecurrenceSeries[]
+  omieConnections        OmieConnection[]
+  omieCustomerLinks      OmieCustomerLink[]
+  omieSalesEvents        OmieSalesEvent[]
+  messageCreditsWallets  MessageCreditsWallet[]
+  notificationJobs       NotificationJob[]
+  auditLogs              AuditLog[]
+  billingSubscriptions   BillingSubscription[]
 }
 
 model Location {
-  id        String   @id @default(uuid())
-  tenantId  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id           String        @id @default(uuid())
+  tenantId     String
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
 }
 
 model User {
@@ -44,27 +58,30 @@ enum UserRole {
 }
 
 model Customer {
-  id        String   @id @default(uuid())
-  tenantId  String
-  name      String
-  phone     String?
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  pets      Pet[]
+  id           String             @id @default(uuid())
+  tenantId     String
+  name         String
+  phone        String?
+  email        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  pets         Pet[]
+  appointments Appointment[]
+  omieLinks    OmieCustomerLink[]
 }
 
 model Pet {
-  id         String   @id @default(uuid())
-  tenantId   String
-  customerId String
-  name       String
-  species    Species
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  customer   Customer @relation(fields: [customerId], references: [id])
+  id           String        @id @default(uuid())
+  tenantId     String
+  customerId   String
+  name         String
+  species      Species
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  appointments Appointment[]
 }
 
 enum Species {
@@ -73,13 +90,14 @@ enum Species {
 }
 
 model Service {
-  id        String   @id @default(uuid())
-  tenantId  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  prices    ServicePrice[]
+  id           String         @id @default(uuid())
+  tenantId     String
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  prices       ServicePrice[]
+  appointments Appointment[]
 }
 
 model ServicePrice {
@@ -94,12 +112,13 @@ model ServicePrice {
 }
 
 model Resource {
-  id        String   @id @default(uuid())
-  tenantId  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id                   String                @id @default(uuid())
+  tenantId             String
+  name                 String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  tenant               Tenant                @relation(fields: [tenantId], references: [id])
+  appointmentResources AppointmentResource[]
 }
 
 model Appointment {
@@ -169,12 +188,13 @@ model OmieSalesEvent {
 }
 
 model MessageCreditsWallet {
-  id        String   @id @default(uuid())
-  tenantId  String
-  balance   Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id           String                     @id @default(uuid())
+  tenantId     String
+  balance      Int                        @default(0)
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+  tenant       Tenant                     @relation(fields: [tenantId], references: [id])
+  transactions MessageCreditTransaction[]
 }
 
 model MessageCreditTransaction {
