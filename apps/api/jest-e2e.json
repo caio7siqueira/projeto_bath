@@ -3,6 +3,7 @@
   "testEnvironment": "node",
   "rootDir": ".",
   "testMatch": ["<rootDir>/test/e2e/**/*.e2e-spec.ts"],
+  "setupFiles": ["<rootDir>/test/e2e/jest.setup.ts"],
   "moduleFileExtensions": ["js", "json", "ts"],
   "transform": {
     "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "tsconfig.json" }]

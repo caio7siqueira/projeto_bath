@@ -11,15 +11,16 @@ import {
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('appointments')
 @ApiBearerAuth()
 @Controller('appointments')
-@UseGuards(JwtAuthGuard)
-@RequireRole('ADMIN', 'STAFF')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'STAFF')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
