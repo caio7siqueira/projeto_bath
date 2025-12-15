@@ -6,6 +6,8 @@ import { InMemorySmsProvider } from './in-memory-sms';
 import { PrismaClient } from '@prisma/client';
 import { execFileSync } from 'child_process';
 import * as path from 'path';
+import { PrismaExceptionFilter } from '../../../src/common/filters/prisma-exception.filter';
+import { RequestLoggingInterceptor } from '../../../src/common/interceptors/request-logging.interceptor';
 
 type BootstrapOverrides = {
   sms?: InMemorySmsProvider;
@@ -45,6 +47,8 @@ export async function bootstrapApp(overrides?: BootstrapOverrides) {
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix('v1', { exclude: ['/'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new PrismaExceptionFilter());
+  app.useGlobalInterceptors(new RequestLoggingInterceptor());
   // Garante que Tenant base existe para testes
   await prisma.tenant.upsert({
     where: { slug: 'efizion-bath-demo' },
