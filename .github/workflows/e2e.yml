@@ -2,41 +2,39 @@ name: E2E CI
 
 on:
   pull_request:
-    branches:
-      - '**'
   push:
     branches:
       - main
 
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
-      # Secrets/required envs
-      JWT_SECRET: dummy-jwt-secret
-      JWT_REFRESH_SECRET: dummy-jwt-refresh-secret
-      # Optional envs (can be blank)
+      NODE_ENV: test
+      JWT_SECRET: ci_jwt_secret
+      JWT_REFRESH_SECRET: ci_jwt_refresh_secret
       TWILIO_DISABLED: 'true'
-      PORT: '3000'
-      # NOTE: Our E2E uses Testcontainers to provision Postgres/Redis.
-      # Do NOT override DATABASE_URL/REDIS_URL here; let Testcontainers manage them.
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
 
       - name: Set up PNPM
         uses: pnpm/action-setup@v4
         with:
           version: 9
           run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
 
       - name: Install dependencies (root workspace)
         run: pnpm install --frozen-lockfile
@@ -47,9 +45,7 @@ jobs:
           docker info | sed -n '1,20p'
 
       - name: Run E2E tests
-        working-directory: apps/api
-        run: |
-          pnpm -w test:e2e
+        run: pnpm -w test:e2e
 
       - name: Upload Jest E2E logs on failure (optional)
         if: failure()
