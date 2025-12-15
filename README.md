@@ -69,15 +69,17 @@ pnpm dev
 
 ### Rodar e2e (requer Docker)
 
-```powershell
-# Windows PowerShell (Docker Desktop ligado)
-pnpm install
-pnpm -w test:e2e
-```
-
 ```bash
 # Codespaces / Linux
 pnpm install
+pnpm db:migrate
+pnpm -w test:e2e
+```
+
+```powershell
+# Windows PowerShell (Docker Desktop ligado)
+pnpm install
+pnpm db:migrate
 pnpm -w test:e2e
 ```
 
