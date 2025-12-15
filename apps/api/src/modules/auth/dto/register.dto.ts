@@ -1,12 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
-
-export enum UserRole {
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
-  STAFF = 'STAFF',
-  GROOMER = 'GROOMER',
-}
+import { $Enums } from '@prisma/client';
 
 export class RegisterDto {
   @ApiProperty({ example: 'admin@example.com' })
@@ -22,9 +16,9 @@ export class RegisterDto {
   @IsString()
   name!: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.ADMIN })
-  @IsEnum(UserRole)
-  role!: UserRole;
+  @ApiProperty({ enum: $Enums.UserRole, example: $Enums.UserRole.ADMIN })
+  @IsEnum($Enums.UserRole)
+  role!: $Enums.UserRole;
 
   @ApiProperty({ example: 'efizion-bath-demo' })
   @IsString()

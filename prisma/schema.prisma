@@ -82,6 +82,7 @@ model Customer {
   omieLinks    OmieCustomerLink[]
   otpCodes     OtpCode[]
   refreshTokens RefreshToken[]
+  loginLogs    LoginLog[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, cpf])

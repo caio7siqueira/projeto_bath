@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, $Enums } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { RegisterDto, LoginDto, RefreshDto } from './dto';
@@ -206,6 +206,7 @@ export class AuthService {
         userId,
         success,
         reason,
+        actorType: $Enums.ActorType.USER,
       },
     });
   }

@@ -10,9 +10,11 @@ export interface TestEnv {
 
 export async function startEnv(): Promise<TestEnv> {
   const pg = await new GenericContainer("postgres:15-alpine")
-    .withEnv("POSTGRES_DB", "bath")
-    .withEnv("POSTGRES_USER", "bath")
-    .withEnv("POSTGRES_PASSWORD", "bath")
+    .withEnvironment({
+      POSTGRES_DB: "bath",
+      POSTGRES_USER: "bath",
+      POSTGRES_PASSWORD: "bath",
+    })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage("database system is ready to accept connections"))
     .start();
