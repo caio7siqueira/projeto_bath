@@ -3,15 +3,14 @@ import { Type } from 'class-transformer';
 import { IsOptional, IsInt, Min, Max, IsString } from 'class-validator';
 
 export class PaginationQueryDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1, description: 'Page number' })
+  @ApiPropertyOptional({ minimum: 1, description: 'Page number' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({
-    default: 20,
     minimum: 1,
     maximum: 100,
     description: 'Items per page',
@@ -21,7 +20,7 @@ export class PaginationQueryDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  pageSize?: number = 20;
+  pageSize?: number;
 
   @ApiPropertyOptional({
     description: 'Sort field and direction, e.g., "createdAt:desc"',
@@ -36,8 +35,10 @@ export class PaginationQueryDto {
    * @returns { skip, take, orderBy }
    */
   toPrisma() {
-    const skip = ((this.page || 1) - 1) * (this.pageSize || 20);
-    const take = this.pageSize || 20;
+    const page = this.page || 1;
+    const pageSize = this.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
 
     let orderBy: any = undefined;
     if (this.sort) {
@@ -47,7 +48,7 @@ export class PaginationQueryDto {
       }
     }
 
-    return { skip, take, orderBy };
+    return { skip, take, orderBy, page, pageSize };
   }
 }
 
