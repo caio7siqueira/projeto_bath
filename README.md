@@ -66,3 +66,21 @@ pnpm dev
 
 - Local sem DB: pule migrations e avance com build/typecheck/lint.
 - Codespaces/CI: rode migrations e e2e. Para e2e, usamos Testcontainers (Docker necessário). Sem Docker, os testes e2e são pulados.
+
+### Rodar e2e (requer Docker)
+
+```powershell
+# Windows PowerShell (Docker Desktop ligado)
+pnpm install
+pnpm -w test:e2e
+```
+
+```bash
+# Codespaces / Linux
+pnpm install
+pnpm -w test:e2e
+```
+
+Variáveis de ambiente em e2e:
+- `TWILIO_DISABLED=true` (mock de SMS)
+- `DATABASE_URL` e `REDIS_URL` são injetados dinamicamente pelos testes via Testcontainers

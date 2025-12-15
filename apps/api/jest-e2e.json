@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/jest",
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "rootDir": ".",
+  "testMatch": ["<rootDir>/test/e2e/**/*.e2e-spec.ts"],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "transform": {
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "tsconfig.json" }]
+  },
+  "verbose": true,
+  "testTimeout": 60000
+}
