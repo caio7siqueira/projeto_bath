@@ -45,10 +45,51 @@ pnpm dev
 
 ## Endpoints
 
-- API: http://localhost:3000 (Swagger: `/docs`, Health: `/v1/health`)
-- Web: http://localhost:3001 (padrão; altere PORT se precisar)
-- Postgres: `localhost:5432`
-- Redis: `localhost:6379`
+A ### Tenants (admin-only)
+A ```bash
+A # Criar tenant
+A curl -X POST http://localhost:3000/v1/tenants \
+A   -H "Authorization: Bearer $TOKEN" \
+A   -H "Content-Type: application/json" \
+A   -d '{"name":"Petshop Central","slug":"petshop-central"}'
+A
+A # Listar tenants
+A curl http://localhost:3000/v1/tenants \
+A   -H "Authorization: Bearer $TOKEN"
+A
+A # Obter tenant
+A curl http://localhost:3000/v1/tenants/{id} \
+A   -H "Authorization: Bearer $TOKEN"
+A
+A # Atualizar tenant
+A curl -X PATCH http://localhost:3000/v1/tenants/{id} \
+A   -H "Authorization: Bearer $TOKEN" \
+A   -H "Content-Type: application/json" \
+A   -d '{"name":"New Name","isActive":true}'
+A ```
+A
+A ### Locations (admin/staff per tenant)
+A ```bash
+A # Criar location
+A curl -X POST http://localhost:3000/v1/locations \
+A   -H "Authorization: Bearer $TOKEN" \
+A   -H "Content-Type: application/json" \
+A   -d '{"name":"Sala de Banho A"}'
+A
+A # Listar locations do tenant
+A curl http://localhost:3000/v1/locations \
+A   -H "Authorization: Bearer $TOKEN"
+A
+A # Obter location
+A curl http://localhost:3000/v1/locations/{id} \
+A   -H "Authorization: Bearer $TOKEN"
+A
+A # Atualizar location
+A curl -X PATCH http://localhost:3000/v1/locations/{id} \
+A   -H "Authorization: Bearer $TOKEN" \
+A   -H "Content-Type: application/json" \
+A   -d '{"name":"Sala de Secagem"}'
+A ```
 
 ## Scripts úteis
 
