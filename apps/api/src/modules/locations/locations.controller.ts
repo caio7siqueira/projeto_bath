@@ -23,7 +23,7 @@ interface JwtPayload {
 @ApiTags('Locations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/locations')
+@Controller('locations')
 export class LocationsController {
   constructor(private readonly service: LocationsService) {}
 

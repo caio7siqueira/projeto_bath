@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-const TENANT_SLUG = process.env.SEED_TENANT_SLUG || 'demo';
+const TENANT_SLUG = process.env.SEED_TENANT_SLUG || 'efizion-bath-demo';
 const TENANT_NAME = process.env.SEED_TENANT_NAME || 'Efizion Bath Demo';
 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@demo.com';
