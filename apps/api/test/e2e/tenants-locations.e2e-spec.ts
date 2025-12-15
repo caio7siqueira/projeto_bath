@@ -70,7 +70,7 @@ describe('Tenants & Locations E2E', () => {
     });
 
     it('deve rejeitar slug duplicado', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/v1/tenants')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
@@ -78,6 +78,9 @@ describe('Tenants & Locations E2E', () => {
           slug: 'petshop-central',
         })
         .expect(409);
+
+      expect(res.body).toHaveProperty('statusCode', 409);
+      expect(res.body).toHaveProperty('message');
     });
   });
 
