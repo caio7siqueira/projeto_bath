@@ -16,10 +16,17 @@ export class TenantsService {
   }
 
   async findAll(query?: PaginationQueryDto) {
-    if (!query || (!query.page && !query.pageSize && !query.sort)) {
-      // Compatibilidade: sem paginação, retorna todos
+    // Compatibilidade: sem query params de paginação, retorna array direto
+    const hasPaginationParams =
+      query &&
+      (query.page !== undefined ||
+        query.pageSize !== undefined ||
+        query.sort !== undefined);
+
+    if (!hasPaginationParams) {
       return this.repo.findAll();
     }
+
     const { skip, take, orderBy } = query.toPrisma();
     const [data, total] = await Promise.all([
       this.repo.findAllPaginated(skip, take, orderBy),
