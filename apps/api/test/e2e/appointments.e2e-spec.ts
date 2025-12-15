@@ -206,7 +206,14 @@ describe('Appointments (E2E)', () => {
 
   describe('Isolamento multi-tenant', () => {
     it('não deve permitir acessar appointment de outro tenant', async () => {
-      // Cria outro admin em outro tenant
+      // Cria outro tenant e um admin nesse tenant
+      const tenantSlug = `tenant-${Date.now()}`;
+      await request(app.getHttpServer())
+        .post('/v1/tenants')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'Tenant 2', slug: tenantSlug })
+        .expect(201);
+
       const otherEmail = `admin2_${Date.now()}@example.com`;
       const reg2 = await request(app.getHttpServer())
         .post('/v1/auth/register')
@@ -215,7 +222,7 @@ describe('Appointments (E2E)', () => {
           password: 'StrongPass123!',
           name: 'Admin 2',
           role: 'ADMIN',
-          tenantSlug: 'efizion-bath-demo',
+          tenantSlug,
         })
         .expect(201);
 

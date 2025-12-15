@@ -82,7 +82,16 @@ export class AppointmentsService {
       this.repository.count(tenantId, filters),
     ]);
 
-    return paginatedResponse(data, total, page, pageSize);
+    const paginated = paginatedResponse(data, total, page, pageSize);
+    // Retrocompatibilidade: expõe campos no topo além do meta
+    return {
+      data: paginated.data,
+      total: paginated.meta.total,
+      page: paginated.meta.page,
+      pageSize: paginated.meta.pageSize,
+      totalPages: paginated.meta.totalPages,
+      meta: paginated.meta,
+    };
   }
 
   async findOne(id: string, tenantId: string) {

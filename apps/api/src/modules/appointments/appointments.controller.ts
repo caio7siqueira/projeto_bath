@@ -7,6 +7,7 @@ import {
   Body,
   Query,
   UseGuards,
+  HttpCode,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
@@ -73,6 +74,7 @@ export class AppointmentsController {
   }
 
   @Post(':id/cancel')
+  @HttpCode(200)
   @ApiOperation({ summary: 'Cancelar agendamento (idempotente)' })
   @ApiResponse({ status: 200, description: 'Agendamento cancelado com sucesso' })
   @ApiResponse({ status: 404, description: 'Agendamento não encontrado' })
