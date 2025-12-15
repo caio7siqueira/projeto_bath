@@ -4,11 +4,11 @@ import { IsUUID, IsISO8601, IsOptional, IsString, IsEnum } from 'class-validator
 export class CreateAppointmentDto {
   @ApiProperty()
   @IsUUID()
-  customerId: string;
+  customerId!: string;
 
   @ApiProperty()
   @IsUUID()
-  locationId: string;
+  locationId!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -22,11 +22,11 @@ export class CreateAppointmentDto {
 
   @ApiProperty({ description: 'ISO 8601 timestamp', example: '2025-12-20T10:00:00Z' })
   @IsISO8601()
-  startsAt: string;
+  startsAt!: string;
 
   @ApiProperty({ description: 'ISO 8601 timestamp', example: '2025-12-20T11:00:00Z' })
   @IsISO8601()
-  endsAt: string;
+  endsAt!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
