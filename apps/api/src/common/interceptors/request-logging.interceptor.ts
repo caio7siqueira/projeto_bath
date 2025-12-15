@@ -6,7 +6,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -33,39 +32,23 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     const userId = user?.id || undefined;
     const tenantId = user?.tenantId || undefined;
 
-    return next.handle().pipe(
-      tap({
-        next: () => {
-          const { statusCode } = response;
-          const durationMs = Date.now() - startTime;
-          this.logRequest(
-            method,
-            url,
-            statusCode,
-            durationMs,
-            requestId,
-            userId,
-            tenantId,
-            userAgent,
-          );
-        },
-        error: (error) => {
-          const statusCode = error?.status || 500;
-          const durationMs = Date.now() - startTime;
-          this.logRequest(
-            method,
-            url,
-            statusCode,
-            durationMs,
-            requestId,
-            userId,
-            tenantId,
-            userAgent,
-            error,
-          );
-        },
-      }),
-    );
+    // Log apenas quando a resposta for finalizada, garantindo que o status refletido seja o final
+    response.once('finish', () => {
+      const { statusCode } = response;
+      const durationMs = Date.now() - startTime;
+      this.logRequest(
+        method,
+        url,
+        statusCode,
+        durationMs,
+        requestId,
+        userId,
+        tenantId,
+        userAgent,
+      );
+    });
+
+    return next.handle();
   }
 
   private logRequest(
@@ -77,7 +60,6 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     userId?: string,
     tenantId?: string,
     userAgent?: string,
-    error?: any,
   ) {
     const logData = {
       method,
@@ -92,9 +74,7 @@ export class RequestLoggingInterceptor implements NestInterceptor {
 
     const message = `${method} ${url} ${statusCode} - ${durationMs}ms [${requestId}]`;
 
-    if (error && process.env.NODE_ENV !== 'test') {
-      this.logger.error(message, error.stack, JSON.stringify(logData));
-    } else if (statusCode >= 500) {
+    if (statusCode >= 500) {
       this.logger.error(message, JSON.stringify(logData));
     } else if (statusCode >= 400) {
       this.logger.warn(message, JSON.stringify(logData));
