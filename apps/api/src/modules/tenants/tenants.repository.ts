@@ -34,6 +34,26 @@ export class TenantsRepository {
     });
   }
 
+  async findAllPaginated(skip: number, take: number, orderBy?: any) {
+    return this.prisma.tenant.findMany({
+      skip,
+      take,
+      orderBy: orderBy || { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async count() {
+    return this.prisma.tenant.count();
+  }
+
   async findById(id: string) {
     return this.prisma.tenant.findUnique({
       where: { id },

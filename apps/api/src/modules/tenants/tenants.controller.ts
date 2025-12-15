@@ -5,6 +5,7 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Tenants')
 @ApiBearerAuth()
@@ -31,8 +33,8 @@ export class TenantsController {
   @Get()
   @RequireRole('ADMIN')
   @ApiOperation({ summary: 'Listar todos os tenants (ADMIN)' })
-  async findAll() {
-    return this.service.findAll();
+  async findAll(@Query() query: PaginationQueryDto) {
+    return this.service.findAll(query);
   }
 
   @Get(':id')
