@@ -92,6 +92,42 @@ paths:
       responses:
         '200':
           description: OK
+  /v1/customer-auth/request-otp:
+    post:
+      summary: Request OTP code via SMS (customer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantSlug:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: OTP sent
+  /v1/customer-auth/verify-otp:
+    post:
+      summary: Verify OTP and issue JWT (customer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tenantSlug:
+                  type: string
+                phone:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: JWT issued
 
 components:
   securitySchemes:

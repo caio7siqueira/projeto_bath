@@ -265,21 +265,30 @@ model RefreshToken {
   @@index([token])
 }
 
-model OtpCode {
-  id         String   @id @default(uuid())
-  customerId String
-  code       String
-  phone      String
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime @default(now())
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+enum ActorType {
+  USER
+  CUSTOMER
+}
 
-  @@index([phone, code])
+model OtpCode {
+  id           String   @id @default(uuid())
+  customerId   String
+  phone        String
+  codeHash     String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int      @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime @default(now())
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+  @@index([customerId])
 }
 
 model LoginLog {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
+  actorType  ActorType
   userId     String?
   customerId String?
   email      String?
@@ -288,9 +297,11 @@ model LoginLog {
   userAgent  String?
   success    Boolean
   reason     String?
-  createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([customerId])
   @@index([createdAt])
 }
