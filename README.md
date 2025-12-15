@@ -310,3 +310,5 @@ pnpm -w test:e2e
 Variáveis de ambiente em e2e:
 - `TWILIO_DISABLED=true` (mock de SMS)
 - `DATABASE_URL` e `REDIS_URL` são injetados dinamicamente pelos testes via Testcontainers
+
+- CI validated
