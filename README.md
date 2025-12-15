@@ -45,51 +45,149 @@ pnpm dev
 
 ## Endpoints
 
-A ### Tenants (admin-only)
-A ```bash
-A # Criar tenant
-A curl -X POST http://localhost:3000/v1/tenants \
-A   -H "Authorization: Bearer $TOKEN" \
-A   -H "Content-Type: application/json" \
-A   -d '{"name":"Petshop Central","slug":"petshop-central"}'
-A
-A # Listar tenants
-A curl http://localhost:3000/v1/tenants \
-A   -H "Authorization: Bearer $TOKEN"
-A
-A # Obter tenant
-A curl http://localhost:3000/v1/tenants/{id} \
-A   -H "Authorization: Bearer $TOKEN"
-A
-A # Atualizar tenant
-A curl -X PATCH http://localhost:3000/v1/tenants/{id} \
-A   -H "Authorization: Bearer $TOKEN" \
-A   -H "Content-Type: application/json" \
-A   -d '{"name":"New Name","isActive":true}'
-A ```
-A
-A ### Locations (admin/staff per tenant)
-A ```bash
-A # Criar location
-A curl -X POST http://localhost:3000/v1/locations \
-A   -H "Authorization: Bearer $TOKEN" \
-A   -H "Content-Type: application/json" \
-A   -d '{"name":"Sala de Banho A"}'
-A
-A # Listar locations do tenant
-A curl http://localhost:3000/v1/locations \
-A   -H "Authorization: Bearer $TOKEN"
-A
-A # Obter location
-A curl http://localhost:3000/v1/locations/{id} \
-A   -H "Authorization: Bearer $TOKEN"
-A
-A # Atualizar location
-A curl -X PATCH http://localhost:3000/v1/locations/{id} \
-A   -H "Authorization: Bearer $TOKEN" \
-A   -H "Content-Type: application/json" \
-A   -d '{"name":"Sala de Secagem"}'
-A ```
+### Auth (Internal Users)
+```bash
+# Register
+curl -X POST http://localhost:3000/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"admin@example.com",
+    "password":"StrongPass123!",
+    "name":"Admin",
+    "role":"ADMIN",
+    "tenantSlug":"efizion-bath-demo"
+  }'
+
+# Login
+curl -X POST http://localhost:3000/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"admin@example.com",
+    "password":"StrongPass123!",
+    "tenantSlug":"efizion-bath-demo"
+  }'
+
+# Refresh token
+curl -X POST http://localhost:3000/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"..."}'
+
+# Logout
+curl -X POST http://localhost:3000/v1/auth/logout \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"..."}'
+```
+
+### Tenants (admin-only)
+```bash
+# Create tenant
+curl -X POST http://localhost:3000/v1/tenants \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Petshop Central","slug":"petshop-central"}'
+
+# List tenants
+curl http://localhost:3000/v1/tenants \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get tenant by ID
+curl http://localhost:3000/v1/tenants/{id} \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update tenant
+curl -X PATCH http://localhost:3000/v1/tenants/{id} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"New Name","isActive":true}'
+```
+
+### Locations (admin/staff per tenant)
+```bash
+# Create location
+curl -X POST http://localhost:3000/v1/locations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sala de Banho A"}'
+
+# List locations (tenant-scoped)
+curl http://localhost:3000/v1/locations \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get location by ID
+curl http://localhost:3000/v1/locations/{id} \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update location
+curl -X PATCH http://localhost:3000/v1/locations/{id} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sala de Secagem"}'
+```
+
+### Customers (admin/staff per tenant)
+```bash
+# Create customer
+curl -X POST http://localhost:3000/v1/customers \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"John Doe",
+    "phone":"+5511999999999",
+    "email":"john@example.com",
+    "cpf":"12345678900",
+    "optInGlobal":true
+  }'
+
+# List customers (no pagination - backward compatible)
+curl http://localhost:3000/v1/customers \
+  -H "Authorization: Bearer $TOKEN"
+
+# List customers (with pagination)
+curl "http://localhost:3000/v1/customers?page=1&pageSize=10" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Search customers
+curl "http://localhost:3000/v1/customers?q=john" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get customer by ID
+curl http://localhost:3000/v1/customers/{id} \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update customer
+curl -X PATCH http://localhost:3000/v1/customers/{id} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"John Updated",
+    "email":"john.updated@example.com"
+  }'
+
+# Delete customer (soft delete)
+curl -X DELETE http://localhost:3000/v1/customers/{id} \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Customer Auth (OTP via SMS)
+```bash
+# Request OTP
+curl -X POST http://localhost:3000/v1/customer-auth/request-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone":"+5511999999999",
+    "tenantSlug":"efizion-bath-demo"
+  }'
+
+# Verify OTP
+curl -X POST http://localhost:3000/v1/customer-auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phone":"+5511999999999",
+    "code":"000000",
+    "tenantSlug":"efizion-bath-demo"
+  }'
+```
 
 ## Scripts úteis
 
