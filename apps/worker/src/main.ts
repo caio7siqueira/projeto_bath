@@ -10,7 +10,9 @@ class WorkerModule {}
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerModule);
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  const connection = new IORedis(redisUrl);
+  const connection = new IORedis(redisUrl, {
+    maxRetriesPerRequest: null,
+  });
 
   new Queue('omie', { connection });
   new Queue('notifications', { connection });
