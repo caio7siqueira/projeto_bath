@@ -92,9 +92,17 @@ export class AuthService {
       throw new UnauthorizedException('User is inactive');
     }
 
+    // Para usuários não SUPER_ADMIN: se tenantSlug for fornecido, deve corresponder;
+    // se não for fornecido, permitimos login no próprio tenant do usuário.
     if (user.role !== $Enums.UserRole.SUPER_ADMIN) {
-      if (!dto.tenantSlug || !user.tenant || user.tenant?.slug !== dto.tenantSlug) {
-        throw new UnauthorizedException('Invalid tenant');
+      if (dto.tenantSlug) {
+        if (!user.tenant || user.tenant?.slug !== dto.tenantSlug) {
+          throw new UnauthorizedException('Invalid tenant');
+        }
+      } else {
+        if (!user.tenant) {
+          throw new UnauthorizedException('Invalid tenant');
+        }
       }
     } else if (dto.tenantSlug && user.tenant && user.tenant?.slug !== dto.tenantSlug) {
       // SUPER_ADMIN pode logar sem tenantSlug; se forneceu, deve corresponder
