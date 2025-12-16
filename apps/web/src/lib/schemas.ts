@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const customerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   phone: z.string().min(1, 'Phone is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  cpf: z.string().optional().or(z.literal('')),
+  email: z.string().email('Invalid email').or(z.literal('')).optional(),
+  cpf: z.string().optional(),
   optInGlobal: z.boolean().optional(),
 }).strict();
 
