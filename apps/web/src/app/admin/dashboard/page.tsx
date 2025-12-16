@@ -27,7 +27,14 @@ export default function DashboardPage() {
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
         const token = process.env.NEXT_PUBLIC_DEMO_TOKEN;
 
-        const response = await fetch(`${baseUrl}/dashboard/reports`, {
+        if (!baseUrl || !token) {
+          throw new Error('Missing API configuration');
+        }
+
+        const response = await fetch(`${baseUrl}/v1/dashboard/reports`, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'include',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -35,13 +42,15 @@ export default function DashboardPage() {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
         setStats(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar dashboard');
+        const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar dashboard';
+        console.error('Dashboard fetch error:', errorMsg);
+        setError(errorMsg);
       } finally {
         setLoading(false);
       }

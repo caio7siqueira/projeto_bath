@@ -11,6 +11,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PetsModule } from './modules/pets/pets.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -44,6 +45,7 @@ const envFilePath = Array.from(
     AppointmentsModule,
     ReportsModule,
     PetsModule,
+    DashboardModule,
   ],
   controllers: [HealthController],
 })
