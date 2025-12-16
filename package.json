@@ -16,6 +16,9 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "devDependencies": {
     "@types/node": "^20.10.6",
     "eslint": "^8.56.0",
