@@ -3,13 +3,15 @@
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  header?: string;
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export function Card({ children, className = '', header }: CardProps) {
   return (
     <div
       className={`rounded-lg border border-gray-200 bg-white p-6 shadow-sm ${className}`}
     >
+      {header && <h3 className="text-lg font-semibold mb-4 text-gray-900">{header}</h3>}
       {children}
     </div>
   );

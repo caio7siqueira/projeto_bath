@@ -3,15 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-interface SidebarProps {
-  children: React.ReactNode;
-}
-
-export function Sidebar({ children }: SidebarProps) {
+export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex h-screen">
+    <>
       {/* Mobile toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -56,18 +52,14 @@ export function Sidebar({ children }: SidebarProps) {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto md:ml-0">
-        {/* Close sidebar on mobile when clicking outside */}
-        {isOpen && (
-          <div
-            onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          />
-        )}
-        {children}
-      </main>
-    </div>
+      {/* Close sidebar on mobile when clicking outside */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+        />
+      )}
+    </>
   );
 }
 
