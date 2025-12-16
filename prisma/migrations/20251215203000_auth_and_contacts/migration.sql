@@ -7,7 +7,8 @@ BEGIN
     CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'STAFF', 'GROOMER', 'SUPER_ADMIN');
   ELSIF NOT EXISTS (
     SELECT 1 FROM pg_enum e
-    WHERE e.enumlabel = 'SUPER_ADMIN' AND e.enumtypid = 'UserRole'::regtype
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE e.enumlabel = 'SUPER_ADMIN' AND t.typname = 'UserRole'
   ) THEN
     ALTER TYPE "UserRole" ADD VALUE 'SUPER_ADMIN';
   END IF;
@@ -24,13 +25,25 @@ END$$;
 -- Extend AppointmentStatus enum
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'DONE' AND enumtypid = 'AppointmentStatus'::regtype) THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE e.enumlabel = 'DONE' AND t.typname = 'AppointmentStatus'
+  ) THEN
     ALTER TYPE "AppointmentStatus" ADD VALUE 'DONE';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'RESCHEDULED' AND enumtypid = 'AppointmentStatus'::regtype) THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE e.enumlabel = 'RESCHEDULED' AND t.typname = 'AppointmentStatus'
+  ) THEN
     ALTER TYPE "AppointmentStatus" ADD VALUE 'RESCHEDULED';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'NO_SHOW' AND enumtypid = 'AppointmentStatus'::regtype) THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    WHERE e.enumlabel = 'NO_SHOW' AND t.typname = 'AppointmentStatus'
+  ) THEN
     ALTER TYPE "AppointmentStatus" ADD VALUE 'NO_SHOW';
   END IF;
 END$$;
