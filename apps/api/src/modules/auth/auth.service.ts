@@ -3,12 +3,14 @@ import {
   UnauthorizedException,
   ConflictException,
   Logger,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient, $Enums } from '@prisma/client';
+import { PrismaClient, $Enums, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { RegisterDto, LoginDto, RefreshDto } from './dto';
 
 @Injectable()
@@ -22,12 +24,20 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug: dto.tenantSlug },
-    });
+    // SUPER_ADMIN não precisa de tenant; demais perfis requerem tenantSlug válido
+    let tenantId: string | null = null;
+    if (dto.role !== $Enums.UserRole.SUPER_ADMIN) {
+      if (!dto.tenantSlug) {
+        throw new BadRequestException('tenantSlug é obrigatório para usuários não SUPER_ADMIN');
+      }
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { slug: dto.tenantSlug },
+      });
 
-    if (!tenant) {
-      throw new UnauthorizedException('Invalid tenant');
+      if (!tenant) {
+        throw new UnauthorizedException('Invalid tenant');
+      }
+      tenantId = tenant.id;
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -46,7 +56,7 @@ export class AuthService {
         passwordHash,
         name: dto.name,
         role: dto.role,
-        tenantId: tenant.id,
+        tenantId: tenantId ?? undefined,
       },
       select: {
         id: true,
@@ -58,7 +68,7 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user);
 
     this.logger.log(`User registered: ${user.email} (${user.role})`);
 
@@ -82,7 +92,12 @@ export class AuthService {
       throw new UnauthorizedException('User is inactive');
     }
 
-    if (dto.tenantSlug && user.tenant.slug !== dto.tenantSlug) {
+    if (user.role !== $Enums.UserRole.SUPER_ADMIN) {
+      if (!dto.tenantSlug || user.tenant.slug !== dto.tenantSlug) {
+        throw new UnauthorizedException('Invalid tenant');
+      }
+    } else if (dto.tenantSlug && user.tenant && user.tenant.slug !== dto.tenantSlug) {
+      // SUPER_ADMIN pode logar sem tenantSlug; se forneceu, deve corresponder
       throw new UnauthorizedException('Invalid tenant');
     }
 
@@ -99,7 +114,7 @@ export class AuthService {
 
     await this.logLoginAttempt(user.id, true);
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user);
 
     this.logger.log(`User logged in: ${user.email}`);
 
@@ -119,18 +134,38 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(dto.refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
+      }) as { sub: string; jti: string };
+
+      const tokenRecord = await this.prisma.refreshToken.findFirst({
+        where: {
+          userId: payload.sub,
+          jti: payload.jti,
+          revokedAt: null,
+        },
       });
 
-      const user = await this.prisma.user.findUnique({ where: { id: payload.sub as string } });
+      if (!tokenRecord) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Verifica expiração
+      if (tokenRecord.expiresAt < new Date()) {
+        await this.revokeRefreshToken(tokenRecord.id);
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      const matches = await bcrypt.compare(dto.refreshToken, tokenRecord.tokenHash);
+      if (!matches) {
+        await this.revokeRefreshToken(tokenRecord.id);
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
       if (!user || !user.isActive) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Revoga tokens antigos e gera novos
-      const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-      await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-
+      const tokens = await this.generateTokens(user, tokenRecord.id);
       return tokens;
     } catch (err) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -139,45 +174,79 @@ export class AuthService {
 
   async logout(userId: string, refreshToken?: string) {
     if (refreshToken) {
-      await this.prisma.refreshToken.deleteMany({
-        where: { userId, token: refreshToken },
-      });
+      try {
+        const payload = this.jwtService.verify(refreshToken, {
+          secret: this.configService.get('JWT_REFRESH_SECRET'),
+        }) as { jti: string };
+
+        await this.prisma.refreshToken.updateMany({
+          where: { userId, jti: payload.jti },
+          data: { revokedAt: new Date() },
+        });
+      } catch (err) {
+        // Token inválido -> revoga todos para o usuário
+        await this.prisma.refreshToken.updateMany({
+          where: { userId },
+          data: { revokedAt: new Date() },
+        });
+      }
     } else {
-      await this.prisma.refreshToken.deleteMany({
+      await this.prisma.refreshToken.updateMany({
         where: { userId },
+        data: { revokedAt: new Date() },
       });
     }
 
     this.logger.log(`User logged out: ${userId}`);
   }
 
-  private async generateTokens(userId: string, email: string, role: string) {
-    const accessPayload = { sub: userId, email, role };
-    const refreshPayload = { sub: userId, jti: randomBytes(8).toString('hex') };
-
+  private async generateTokens(
+    user: { id: string; email: string; role: string; tenantId: string | null },
+    replacedTokenId?: string,
+  ) {
+    const accessPayload = { sub: user.id, email: user.email, role: user.role, tenantId: user.tenantId };
+    const refreshJti = randomUUID();
     const accessToken = this.jwtService.sign(accessPayload, {
       secret: this.configService.get('JWT_SECRET'),
       expiresIn: this.configService.get('JWT_EXPIRES_IN') || '15m',
     });
 
-    const refreshToken = this.jwtService.sign(refreshPayload, {
+    const refreshToken = this.jwtService.sign({ sub: user.id, jti: refreshJti }, {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN') || '7d',
     });
 
     const refreshExpiresAt = new Date();
-    refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
+    const refreshDays = Number(this.configService.get('JWT_REFRESH_EXPIRES_DAYS') || 7);
+    refreshExpiresAt.setDate(refreshExpiresAt.getDate() + refreshDays);
 
-    await this.prisma.refreshToken.deleteMany({ where: { userId } });
-    await this.prisma.refreshToken.create({
+    const tokenHash = await bcrypt.hash(refreshToken, 10);
+
+    const created = await this.prisma.refreshToken.create({
       data: {
-        token: refreshToken,
-        userId,
+        tokenHash,
+        jti: refreshJti,
+        userId: user.id,
         expiresAt: refreshExpiresAt,
       },
     });
 
-    return { accessToken, refreshToken };
+    // Revoga token anterior, se informado, e vincula o novo
+    if (replacedTokenId) {
+      await this.prisma.refreshToken.updateMany({
+        where: { id: replacedTokenId },
+        data: { revokedAt: new Date(), replacedByTokenId: created.id },
+      });
+    }
+
+    return { accessToken, refreshToken, refreshTokenId: created.id };
+  }
+
+  private async revokeRefreshToken(tokenId: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { id: tokenId },
+      data: { revokedAt: new Date() },
+    });
   }
 
   private async logLoginAttempt(

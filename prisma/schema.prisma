@@ -30,6 +30,7 @@ model Tenant {
   notificationJobs       NotificationJob[]
   auditLogs              AuditLog[]
   billingSubscriptions   BillingSubscription[]
+  contacts               CustomerContact[]
 }
 
 model Location {
@@ -44,7 +45,7 @@ model Location {
 
 model User {
   id             String         @id @default(uuid())
-  tenantId       String
+  tenantId       String?
   email          String         @unique
   passwordHash   String
   name           String
@@ -53,7 +54,7 @@ model User {
   lastLoginAt    DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  tenant         Tenant?        @relation(fields: [tenantId], references: [id])
   refreshTokens  RefreshToken[]
   loginLogs      LoginLog[]
 }
@@ -62,6 +63,7 @@ enum UserRole {
   ADMIN
   STAFF
   GROOMER
+  SUPER_ADMIN
 }
 
 model Customer {
@@ -83,6 +85,7 @@ model Customer {
   otpCodes     OtpCode[]
   refreshTokens RefreshToken[]
   loginLogs    LoginLog[]
+  contacts     CustomerContact[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, cpf])
@@ -94,11 +97,18 @@ model Pet {
   customerId   String
   name         String
   species      Species
+  lifeStatus   LifeStatus    @default(ALIVE)
+  allowNotifications Boolean @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   customer     Customer      @relation(fields: [customerId], references: [id])
   appointments Appointment[]
+}
+
+enum LifeStatus {
+  ALIVE
+  DECEASED
 }
 
 enum Species {
@@ -167,6 +177,9 @@ enum AppointmentStatus {
   SCHEDULED
   CANCELLED
   COMPLETED
+  DONE
+  RESCHEDULED
+  NO_SHOW
 }
 
 model AppointmentResource {
@@ -267,15 +280,19 @@ model BillingSubscription {
 
 model RefreshToken {
   id         String    @id @default(uuid())
-  token      String    @unique
+  tokenHash  String
+  jti        String
   userId     String?
   customerId String?
+  revokedAt  DateTime?
   expiresAt  DateTime
   createdAt  DateTime  @default(now())
+  replacedByTokenId String?
   user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  @@index([token])
+  @@index([tokenHash])
+  @@index([jti])
 }
 
 enum ActorType {
@@ -317,4 +334,21 @@ model LoginLog {
   @@index([userId])
   @@index([customerId])
   @@index([createdAt])
+}
+
+model CustomerContact {
+  id         String   @id @default(uuid())
+  tenantId   String
+  customerId String
+  name       String
+  email      String?
+  phone      String?
+  birthDate  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, phone])
 }

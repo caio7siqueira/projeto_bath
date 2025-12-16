@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateCustomerDto, UpdateCustomerDto, QueryCustomersDto } from './dto';
+import { CreateContactDto } from './dto/create-contact.dto';
+import { UpdateContactDto } from './dto/update-contact.dto';
 import { paginatedResponse } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -130,5 +132,65 @@ export class CustomersService {
     });
 
     return { message: 'Customer deleted successfully' };
+  }
+
+  // Contacts
+  async listContacts(tenantId: string, customerId: string) {
+    await this.findOne(tenantId, customerId);
+    return this.prisma.customerContact.findMany({
+      where: { tenantId, customerId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createContact(tenantId: string, customerId: string, dto: CreateContactDto) {
+    await this.findOne(tenantId, customerId);
+    return this.prisma.customerContact.create({
+      data: {
+        tenantId,
+        customerId,
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+        birthDate: dto.birthDate ? new Date(dto.birthDate) : null,
+      },
+    });
+  }
+
+  async updateContact(
+    tenantId: string,
+    customerId: string,
+    contactId: string,
+    dto: UpdateContactDto,
+  ) {
+    // Ensure contact belongs to tenant & customer
+    const contact = await this.prisma.customerContact.findFirst({
+      where: { id: contactId, tenantId, customerId },
+    });
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+
+    return this.prisma.customerContact.update({
+      where: { id: contactId },
+      data: {
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+        birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+      },
+    });
+  }
+
+  async deleteContact(tenantId: string, customerId: string, contactId: string) {
+    const contact = await this.prisma.customerContact.findFirst({
+      where: { id: contactId, tenantId, customerId },
+    });
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+
+    await this.prisma.customerContact.delete({ where: { id: contactId } });
+    return { message: 'Contact deleted successfully' };
   }
 }
