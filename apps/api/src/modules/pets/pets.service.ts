@@ -44,4 +44,17 @@ export class PetsService {
       },
     });
   }
+
+  async listByCustomer(tenantId: string, customerId: string) {
+    // Garantir que o customer pertence ao tenant
+    const customer = await this.prisma.customer.findFirst({ where: { id: customerId, tenantId, isActive: true } });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    return this.prisma.pet.findMany({
+      where: { tenantId, customerId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }

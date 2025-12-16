@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -15,6 +15,16 @@ import { UpdatePetDto } from './dto/update-pet.dto';
 @Roles('ADMIN', 'STAFF')
 export class PetsController {
   constructor(private readonly service: PetsService) {}
+
+  @Get('customers/:customerId/pets')
+  @ApiOperation({ summary: 'Listar pets de um customer' })
+  @ApiResponse({ status: 200, description: 'Lista de pets' })
+  async list(
+    @TenantUser('tenantId') tenantId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    return this.service.listByCustomer(tenantId, customerId);
+  }
 
   @Post('customers/:customerId/pets')
   @ApiOperation({ summary: 'Criar pet para um customer' })

@@ -1,30 +1,69 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { fetchReportsSummary, fetchReportsTimeseries, ReportsSummary, ReportsTimeseriesItem } from '@/lib/api/reports';
 
-const mockSummary = {
-  total: 42,
-  scheduled: 18,
-  completed: 20,
-  cancelled: 4,
-};
-
-const mockSeries = [
-  { period: '2024-12-10', scheduled: 3, completed: 1, cancelled: 0 },
-  { period: '2024-12-11', scheduled: 4, completed: 2, cancelled: 1 },
-  { period: '2024-12-12', scheduled: 5, completed: 5, cancelled: 0 },
-  { period: '2024-12-13', scheduled: 2, completed: 4, cancelled: 1 },
-  { period: '2024-12-14', scheduled: 6, completed: 5, cancelled: 1 },
-  { period: '2024-12-15', scheduled: 4, completed: 3, cancelled: 1 },
-];
+// Mock token (em produção, obter do contexto de auth ou cookie)
+const MOCK_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN || '';
 
 function formatPeriod(period: string) {
   return new Date(period).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
 export default function ReportsPage() {
-  const totals = useMemo(() => mockSummary, []);
-  const series = useMemo(() => mockSeries, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totals, setTotals] = useState<ReportsSummary>({ total: 0, scheduled: 0, completed: 0, cancelled: 0 });
+  const [series, setSeries] = useState<ReportsTimeseriesItem[]>([]);
+
+  useEffect(() => {
+    if (!MOCK_TOKEN) {
+      setError('Token não configurado. Configure NEXT_PUBLIC_DEMO_TOKEN no .env ou implemente autenticação.');
+      setLoading(false);
+      return;
+    }
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const from = sevenDaysAgo.toISOString();
+    const to = now.toISOString();
+
+    Promise.all([
+      fetchReportsSummary(MOCK_TOKEN, from, to),
+      fetchReportsTimeseries(MOCK_TOKEN, from, to, 'day'),
+    ])
+      .then(([summaryData, timeseriesData]) => {
+        setTotals(summaryData);
+        setSeries(timeseriesData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Erro ao buscar relatórios:', err);
+        setError(err.message || 'Falha ao buscar dados');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Relatórios</p>
+        <p className="text-slate-300">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Relatórios</p>
+        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300">
+          <p className="font-semibold">Erro ao carregar relatórios</p>
+          <p className="text-sm text-rose-200">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -36,14 +75,14 @@ export default function ReportsPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Total', value: totals.total },
-          { label: 'Agendados', value: totals.scheduled },
-          { label: 'Concluídos', value: totals.completed },
-          { label: 'Cancelados', value: totals.cancelled },
+          { label: 'Total', value: totals.total, color: 'text-slate-50' },
+          { label: 'Agendados', value: totals.scheduled, color: 'text-sky-300' },
+          { label: 'Concluídos', value: totals.completed, color: 'text-emerald-300' },
+          { label: 'Cancelados', value: totals.cancelled, color: 'text-rose-300' },
         ].map((item) => (
           <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-md shadow-black/30">
             <p className="text-sm text-slate-400">{item.label}</p>
-            <p className="text-3xl font-semibold text-white">{item.value}</p>
+            <p className={`text-3xl font-semibold ${item.color}`}>{item.value}</p>
           </div>
         ))}
       </section>
