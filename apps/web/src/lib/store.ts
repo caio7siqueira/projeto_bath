@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import type { Customer, Pet } from './api/customers';
+import type { Appointment } from './api/appointments';
 
 interface AppStore {
   customers: Customer[];
   pets: Pet[];
+  appointments: Appointment[];
   selectedCustomer: Customer | null;
   selectedPet: Pet | null;
   isLoading: boolean;
@@ -23,6 +25,12 @@ interface AppStore {
   updatePetInStore: (id: string, pet: Pet) => void;
   removePet: (id: string) => void;
 
+  // Appointment actions
+  setAppointments: (appointments: Appointment[]) => void;
+  addAppointment: (appointment: Appointment) => void;
+  updateAppointmentInStore: (id: string, appointment: Appointment) => void;
+  removeAppointment: (id: string) => void;
+
   // UI actions
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -31,6 +39,7 @@ interface AppStore {
 export const useAppStore = create<AppStore>((set) => ({
   customers: [],
   pets: [],
+  appointments: [],
   selectedCustomer: null,
   selectedPet: null,
   isLoading: false,
@@ -59,6 +68,20 @@ export const useAppStore = create<AppStore>((set) => ({
   removePet: (id) =>
     set((state) => ({
       pets: state.pets.filter((p) => p.id !== id),
+    })),
+
+  setAppointments: (appointments) => set({ appointments }),
+  addAppointment: (appointment) =>
+    set((state) => ({ appointments: [...state.appointments, appointment] })),
+  updateAppointmentInStore: (id, appointment) =>
+    set((state) => ({
+      appointments: state.appointments.some((a) => a.id === id)
+        ? state.appointments.map((a) => (a.id === id ? appointment : a))
+        : [...state.appointments, appointment],
+    })),
+  removeAppointment: (id) =>
+    set((state) => ({
+      appointments: state.appointments.filter((a) => a.id !== id),
     })),
 
   setLoading: (loading) => set({ isLoading: loading }),

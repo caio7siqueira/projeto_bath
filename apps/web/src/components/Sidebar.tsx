@@ -56,6 +56,16 @@ export function Sidebar() {
               onClick={() => setIsOpen(false)}
             />
             <NavLink
+              href="/admin/appointments"
+              label="Agendamentos"
+              onClick={() => setIsOpen(false)}
+            />
+            <NavLink
+              href="/admin/locations"
+              label="Locais"
+              onClick={() => setIsOpen(false)}
+            />
+            <NavLink
               href="/dashboard/reports"
               label="Relatórios"
               onClick={() => setIsOpen(false)}
