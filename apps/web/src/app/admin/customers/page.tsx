@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useCustomers } from '@/lib/hooks';
-import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import Link from 'next/link';
@@ -19,8 +18,7 @@ export default function CustomersPage() {
   if (!mounted) return null;
 
   return (
-    <Sidebar>
-      <div className="p-4 md:p-8 max-w-6xl mx-auto pt-16 md:pt-0">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
@@ -74,7 +72,6 @@ export default function CustomersPage() {
             ))}
           </div>
         )}
-      </div>
-    </Sidebar>
+    </div>
   );
 }

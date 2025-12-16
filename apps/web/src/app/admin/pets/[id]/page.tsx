@@ -5,7 +5,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { usePets, useCustomers } from '@/lib/hooks';
-import { Sidebar } from '@/components/Sidebar';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormField, SelectField } from '@/components/FormField';
@@ -89,8 +88,7 @@ export default function PetFormPage() {
   if (!mounted) return null;
 
   return (
-    <Sidebar>
-      <div className="p-4 md:p-8 max-w-2xl mx-auto pt-16 md:pt-0">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             {isEditing ? 'Editar Pet' : 'Novo Pet'}
@@ -176,7 +174,6 @@ export default function PetFormPage() {
             </div>
           </form>
         </Card>
-      </div>
-    </Sidebar>
+    </div>
   );
 }
