@@ -64,10 +64,18 @@ export default function PetFormPage() {
     setError(null);
 
     try {
+      // Filter out empty optional fields
+      const submitData: any = {
+        name: data.name,
+        species: data.species,
+      };
+      if (data.lifeStatus) submitData.lifeStatus = data.lifeStatus;
+      if (data.allowNotifications !== undefined) submitData.allowNotifications = data.allowNotifications;
+
       if (isEditing) {
-        await updateExistingPet(petId, data);
+        await updateExistingPet(petId, submitData);
       } else {
-        await createNewPet(selectedCustomer, data);
+        await createNewPet(selectedCustomer, submitData);
       }
       router.push('/admin/pets');
     } catch (err) {

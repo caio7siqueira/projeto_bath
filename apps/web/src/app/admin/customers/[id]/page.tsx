@@ -53,10 +53,19 @@ export default function CustomerFormPage() {
     setError(null);
 
     try {
+      // Filter out empty optional fields
+      const submitData: any = {
+        name: data.name,
+        phone: data.phone,
+      };
+      if (data.email) submitData.email = data.email;
+      if (data.cpf) submitData.cpf = data.cpf;
+      if (data.optInGlobal !== undefined) submitData.optInGlobal = data.optInGlobal;
+
       if (isEditing) {
-        await updateExistingCustomer(customerId, data);
+        await updateExistingCustomer(customerId, submitData);
       } else {
-        await createNewCustomer(data);
+        await createNewCustomer(submitData);
       }
       router.push('/admin/customers');
     } catch (err) {
