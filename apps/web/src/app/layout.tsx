@@ -1,3 +1,5 @@
+import './globals.css';
+
 export const metadata = {
   title: 'Efizion Bath',
   description: 'SaaS multi-tenant para petshops',
