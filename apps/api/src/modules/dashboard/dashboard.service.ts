@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly prisma = new PrismaClient();
 
   async getReports(tenantId: string) {
     const [totalCustomers, totalPets, totalAppointments, totalLocations] =
