@@ -9,13 +9,16 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS for Codespaces and localhost
+  // Enable CORS for local dev and any Codespaces domain
   app.enableCors({
     origin: [
+      'http://localhost:3000',
       'http://localhost:3001',
       'https://organic-guacamole-55p5gwg9974hvp5p-3001.app.github.dev',
       /\.app\.github\.dev$/, // Allow all Codespaces domains
     ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
     credentials: true,
   });
   
