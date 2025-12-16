@@ -10,6 +10,7 @@ import { LocationsModule } from './modules/locations/locations.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { PetsModule } from './modules/pets/pets.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -42,6 +43,7 @@ const envFilePath = Array.from(
     CustomersModule,
     AppointmentsModule,
     ReportsModule,
+    PetsModule,
   ],
   controllers: [HealthController],
 })
