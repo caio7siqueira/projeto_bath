@@ -93,10 +93,10 @@ export class AuthService {
     }
 
     if (user.role !== $Enums.UserRole.SUPER_ADMIN) {
-      if (!dto.tenantSlug || user.tenant.slug !== dto.tenantSlug) {
+      if (!dto.tenantSlug || !user.tenant || user.tenant?.slug !== dto.tenantSlug) {
         throw new UnauthorizedException('Invalid tenant');
       }
-    } else if (dto.tenantSlug && user.tenant && user.tenant.slug !== dto.tenantSlug) {
+    } else if (dto.tenantSlug && user.tenant && user.tenant?.slug !== dto.tenantSlug) {
       // SUPER_ADMIN pode logar sem tenantSlug; se forneceu, deve corresponder
       throw new UnauthorizedException('Invalid tenant');
     }

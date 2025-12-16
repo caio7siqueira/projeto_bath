@@ -141,8 +141,9 @@ export class CustomerAuthService {
       },
     );
 
+    const jti = randomBytes(8).toString('hex');
     const refreshToken = this.jwt.sign(
-      { sub: customer.id, jti: randomBytes(8).toString('hex') },
+      { sub: customer.id, jti },
       {
         secret: this.config.get('JWT_REFRESH_SECRET'),
         expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN') || '7d',
@@ -150,11 +151,13 @@ export class CustomerAuthService {
     );
 
     const refreshExpiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const tokenHash = await bcrypt.hash(refreshToken, 12);
 
     await this.prisma.refreshToken.deleteMany({ where: { customerId: customer.id } });
     await this.prisma.refreshToken.create({
       data: {
-        token: refreshToken,
+        tokenHash,
+        jti,
         customerId: customer.id,
         expiresAt: refreshExpiresAt,
       },
