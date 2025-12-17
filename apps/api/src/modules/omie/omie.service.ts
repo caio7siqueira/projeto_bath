@@ -117,7 +117,7 @@ export class OmieService {
       notes: appointment.notes,
     };
 
-    const event = await this.prisma.omieSalesEvent.create({
+    const event = await (this.prisma as any).omieSalesEvent.create({
       data: {
         tenantId: appointment.tenantId,
         appointmentId: appointment.id,
@@ -137,10 +137,10 @@ export class OmieService {
   }
 
   async processOmieSalesEvent(eventId: string): Promise<void> {
-    const event = await this.prisma.omieSalesEvent.findUnique({
+    const event = (await (this.prisma as any).omieSalesEvent.findUnique({
       where: { id: eventId },
       include: { appointment: { include: { customer: true, service: true } } },
-    });
+    })) as any;
 
     if (!event) {
       throw new Error(`OmieSalesEvent ${eventId} not found`);
@@ -185,7 +185,7 @@ export class OmieService {
 
       const orderResult = await this.createSalesOrder(event.tenantId, omieOrder);
 
-      await this.prisma.omieSalesEvent.update({
+      await (this.prisma as any).omieSalesEvent.update({
         where: { id: eventId },
         data: {
           status: 'SUCCESS',
@@ -196,7 +196,7 @@ export class OmieService {
       this.logger.log(`Successfully processed OmieSalesEvent ${eventId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await this.prisma.omieSalesEvent.update({
+      await (this.prisma as any).omieSalesEvent.update({
         where: { id: eventId },
         data: {
           status: 'ERROR',
@@ -210,7 +210,7 @@ export class OmieService {
   }
 
   async reprocessFailedEvent(eventId: string): Promise<void> {
-    await this.prisma.omieSalesEvent.update({
+    await (this.prisma as any).omieSalesEvent.update({
       where: { id: eventId },
       data: { status: 'PENDING' },
     });

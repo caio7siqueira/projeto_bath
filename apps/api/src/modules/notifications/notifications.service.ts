@@ -25,7 +25,7 @@ export class NotificationsService {
     }
 
     // Tenant config for reminder window
-    const cfg = await this.prisma.tenantConfig.findUnique({ where: { tenantId: appt.tenantId } });
+    const cfg = await (this.prisma as any).tenantConfig.findUnique({ where: { tenantId: appt.tenantId } });
     const hoursBefore = cfg?.reminderHoursBefore ?? 24;
     const enabled = cfg?.reminderEnabled ?? true;
     if (!enabled) {
@@ -39,7 +39,7 @@ export class NotificationsService {
     const message = `Lembrete: atendimento para ${appt.customer.name} em ${appt.startsAt.toLocaleString()}. Responda se precisar reagendar.`;
 
     // Idempotência: reusa job pendente se existir
-    const existing = await this.prisma.notificationJob.findFirst({
+    const existing = await (this.prisma as any).notificationJob.findFirst({
       where: { appointmentId: appt.id, status: 'SCHEDULED' },
     });
 
@@ -52,7 +52,7 @@ export class NotificationsService {
     }
 
     const notif = existing
-      ? await this.prisma.notificationJob.update({
+      ? await (this.prisma as any).notificationJob.update({
           where: { id: existing.id },
           data: {
             payload: { to: normalized, message },
@@ -61,7 +61,7 @@ export class NotificationsService {
             errorMessage: null,
           },
         })
-      : await this.prisma.notificationJob.create({
+      : await (this.prisma as any).notificationJob.create({
           data: {
             tenantId: appt.tenantId,
             appointmentId: appt.id,
@@ -83,7 +83,7 @@ export class NotificationsService {
       notificationJobId: notif.id,
     });
 
-    await this.prisma.notificationJob.update({
+    await (this.prisma as any).notificationJob.update({
       where: { id: notif.id },
       data: { queueJobId: String(jobId) },
     });
@@ -93,7 +93,7 @@ export class NotificationsService {
   }
 
   async cancelAppointmentReminders(appointmentId: string) {
-    const jobs = await this.prisma.notificationJob.findMany({
+    const jobs = await (this.prisma as any).notificationJob.findMany({
       where: { appointmentId, status: 'SCHEDULED' },
     });
 
@@ -108,7 +108,7 @@ export class NotificationsService {
     }
 
     if (jobs.length) {
-      await this.prisma.notificationJob.updateMany({
+      await (this.prisma as any).notificationJob.updateMany({
         where: { appointmentId, status: 'SCHEDULED' },
         data: { status: 'CANCELLED' },
       });
@@ -133,7 +133,7 @@ export class NotificationsService {
     if (providerMessageId) data.providerMessageId = providerMessageId;
     if (errorMessage) data.errorMessage = errorMessage;
 
-    await this.prisma.notificationJob.update({
+    await (this.prisma as any).notificationJob.update({
       where: { id: notificationJobId },
       data,
     });

@@ -12,9 +12,9 @@ export class TenantConfigService {
   constructor(private prisma: PrismaService) {}
 
   async getOrCreate(tenantId: string) {
-    const existing = await this.prisma.tenantConfig.findUnique({ where: { tenantId } });
+    const existing = await (this.prisma as any).tenantConfig.findUnique({ where: { tenantId } });
     if (existing) return existing;
-    return this.prisma.tenantConfig.create({
+    return (this.prisma as any).tenantConfig.create({
       data: {
         tenantId,
       },
@@ -23,7 +23,7 @@ export class TenantConfigService {
 
   async update(tenantId: string, dto: UpdateTenantConfigDto) {
     await this.getOrCreate(tenantId);
-    return this.prisma.tenantConfig.update({
+    return (this.prisma as any).tenantConfig.update({
       where: { tenantId },
       data: dto,
     });

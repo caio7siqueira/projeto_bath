@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
+import { ActorType, UserRole } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomUUID } from 'crypto';
@@ -27,7 +27,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     // SUPER_ADMIN não precisa de tenant; demais perfis requerem tenantSlug válido
     let tenantId: string | null = null;
-    if (dto.role !== $Enums.UserRole.SUPER_ADMIN) {
+    if (dto.role !== UserRole.SUPER_ADMIN) {
       if (!dto.tenantSlug) {
         throw new BadRequestException('tenantSlug é obrigatório para usuários não SUPER_ADMIN');
       }
@@ -95,7 +95,7 @@ export class AuthService {
 
     // Para usuários não SUPER_ADMIN: se tenantSlug for fornecido, deve corresponder;
     // se não for fornecido, permitimos login no próprio tenant do usuário.
-    if (user.role !== $Enums.UserRole.SUPER_ADMIN) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
       if (dto.tenantSlug) {
         if (!user.tenant || user.tenant?.slug !== dto.tenantSlug) {
           throw new UnauthorizedException('Invalid tenant');
@@ -268,7 +268,7 @@ export class AuthService {
         userId,
         success,
         reason,
-        actorType: $Enums.ActorType.USER,
+        actorType: ActorType.USER,
       },
     });
   }

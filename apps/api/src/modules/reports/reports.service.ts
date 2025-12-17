@@ -59,9 +59,9 @@ export class ReportsService {
       }
       const bucket = buckets.get(key)!;
 
-      if (appointment.status === AppointmentStatus.SCHEDULED) bucket.scheduled += 1;
-      if (appointment.status === AppointmentStatus.COMPLETED) bucket.completed += 1;
-      if (appointment.status === AppointmentStatus.CANCELLED) bucket.cancelled += 1;
+      if (appointment.status === 'SCHEDULED') bucket.scheduled += 1;
+      if (appointment.status === 'DONE') bucket.completed += 1;
+      if (appointment.status === 'CANCELLED') bucket.cancelled += 1;
     }
 
     return Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period));

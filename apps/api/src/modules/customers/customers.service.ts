@@ -103,7 +103,7 @@ export class CustomersService {
     // Check existence
     await this.findOne(tenantId, id);
 
-    const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
+    const phone = dto.phone ? normalizePhone(dto.phone) ?? undefined : undefined;
     if (dto.phone && !phone) {
       throw new ConflictException('Telefone inválido');
     }
