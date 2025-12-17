@@ -201,6 +201,6 @@ function Th({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <td className={`px-4 py-3 text-sm text-gray-900 ${className}`}>{children}</td>;
+function Td({ children, className = '', title }: { children: React.ReactNode; className?: string; title?: string }) {
+  return <td className={`px-4 py-3 text-sm text-gray-900 ${className}`} title={title}>{children}</td>;
 }
