@@ -28,6 +28,10 @@ jobs:
         run: pnpm -w typecheck
       - name: Build
         run: pnpm -w build
+      - name: Verify build output
+        run: |
+          test -f apps/api/dist/main.js
+          test -f apps/worker/dist/main.js
   e2e:
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest

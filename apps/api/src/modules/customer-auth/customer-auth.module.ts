@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { CustomerAuthService } from './customer-auth.service';
 import { CustomerAuthController } from './customer-auth.controller';
-import { TwilioProvider } from '../../integrations/twilio.provider';
+import { TwilioProvider } from '@/integrations/twilio.provider';
 
 @Module({
   imports: [ConfigModule, JwtModule.register({}), PrismaModule],

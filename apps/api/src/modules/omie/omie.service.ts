@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { OmieQueueService } from './omie.queue';
-import { fetchWithRetry } from '../../common/http-retry.util';
+import { fetchWithRetry } from '@/common/http-retry.util';
 
 export interface OmieCustomerDto {
   nome_fantasia: string;

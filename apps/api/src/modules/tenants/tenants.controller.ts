@@ -10,11 +10,11 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RequireRole } from '@/common/decorators/require-role.decorator';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto';
-import { PaginationQueryDto } from '../../common/dto/pagination.dto';
+import { PaginationQueryDto } from '@/common/dto/pagination.dto';
 
 @ApiTags('Tenants')
 @ApiBearerAuth()

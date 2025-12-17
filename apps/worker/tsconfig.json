@@ -9,9 +9,13 @@
     "allowSyntheticDefaultImports": true,
     "target": "es2020",
     "sourceMap": true,
+    "rootDir": "src",
     "outDir": "./dist",
-    "baseUrl": "./",
-    "paths": {},
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "noEmit": false,
     "strict": true,
     "skipLibCheck": true
   },

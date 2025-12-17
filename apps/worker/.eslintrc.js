@@ -10,5 +10,12 @@ module.exports = {
     node: true,
     es6: true,
   },
-  rules: {},
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: ['../*', '../../*'],
+      },
+    ],
+  },
 };

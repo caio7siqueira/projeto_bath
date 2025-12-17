@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"(no tests yet)\"",
-    "test:e2e": "echo \"(no E2E tests yet)\""
+    "test:e2e": "echo \"(no E2E tests yet)\"",
+    "verify:emit": "node -e \"require('fs').accessSync('dist/main.js')\""
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

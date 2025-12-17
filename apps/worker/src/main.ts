@@ -4,8 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import * as path from 'path';
-import { processOmieJob } from './processors/omie.processor';
-import { processNotificationJob } from './processors/notification.processor';
+import { processOmieJob } from '@/processors/omie.processor';
+import { processNotificationJob } from '@/processors/notification.processor';
 
 const envFilePath = Array.from(
   new Set([

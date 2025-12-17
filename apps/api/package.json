@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
     "pretest:e2e": "prisma generate",
-    "test:e2e": "jest --config ./jest-e2e.json --runInBand"
+    "test:e2e": "jest --config ./jest-e2e.json --runInBand",
+    "verify:emit": "node -e \"require('fs').accessSync('dist/main.js')\""
   },
   "prisma": {
     "schema": "../../prisma/schema.prisma"
