@@ -2,6 +2,36 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
+
+function LogoutButton() {
+  const { logout, user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      await logout();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-gray-400 mb-2">{user?.email}</p>
+      <button
+        onClick={handleLogout}
+        disabled={isLoading}
+        className="text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+      >
+        {isLoading ? 'Saindo...' : 'Sair'}
+      </button>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,7 +104,7 @@ export function Sidebar() {
 
           {/* Footer */}
           <div className="border-t border-gray-700 p-4">
-            <p className="text-xs text-gray-400">Demo • admin@demo.com</p>
+            <LogoutButton />
           </div>
         </div>
       </aside>

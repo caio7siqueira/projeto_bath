@@ -1,5 +1,6 @@
+import { getAuthToken } from './client';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-const TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN || '';
 
 export type AppointmentStatus =
   | 'SCHEDULED'
@@ -62,14 +63,14 @@ export async function listAppointments(filters?: ListAppointmentsQuery): Promise
     ? `${API_BASE}/v1/appointments?${qs}`
     : `${API_BASE}/v1/appointments`;
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
   if (!res.ok) throw new Error(`Failed to list appointments: ${res.status}`);
   return res.json();
 }
 
 export async function fetchAppointment(id: string): Promise<Appointment> {
   const res = await fetch(`${API_BASE}/v1/appointments/${id}`, {
-    headers: { Authorization: `Bearer ${TOKEN}` },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
   if (!res.ok) throw new Error(`Failed to fetch appointment: ${res.status}`);
   return res.json();
@@ -80,7 +81,7 @@ export async function createAppointment(dto: CreateAppointmentDto): Promise<Appo
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
     body: JSON.stringify(dto),
   });
@@ -93,7 +94,7 @@ export async function updateAppointment(id: string, dto: UpdateAppointmentDto): 
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
     body: JSON.stringify(dto),
   });
@@ -104,7 +105,7 @@ export async function updateAppointment(id: string, dto: UpdateAppointmentDto): 
 export async function cancelAppointment(id: string): Promise<Appointment> {
   const res = await fetch(`${API_BASE}/v1/appointments/${id}/cancel`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}` },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
   if (!res.ok) throw new Error(`Failed to cancel appointment: ${res.status}`);
   return res.json();

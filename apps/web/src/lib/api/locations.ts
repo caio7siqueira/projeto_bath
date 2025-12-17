@@ -1,5 +1,6 @@
+import { getAuthToken } from './client';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-const TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN || '';
 
 export interface Location {
   id: string;
@@ -15,7 +16,7 @@ export interface CreateLocationDto {
 
 export async function listLocations(): Promise<Location[]> {
   const res = await fetch(`${API_BASE}/v1/locations`, {
-    headers: { Authorization: `Bearer ${TOKEN}` },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
   if (!res.ok) throw new Error(`Failed to list locations: ${res.status}`);
   return res.json();
@@ -26,7 +27,7 @@ export async function createLocation(dto: CreateLocationDto): Promise<Location> 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
     body: JSON.stringify(dto),
   });
