@@ -238,4 +238,26 @@ export class AppointmentsRepository {
 
     return { customer, location };
   }
+
+  async updateStatus(id: string, tenantId: string, status: 'DONE' | 'NO_SHOW' | 'COMPLETED') {
+    return this.prisma.appointment.update({
+      where: { id },
+      data: { status },
+      select: {
+        id: true,
+        tenantId: true,
+        customerId: true,
+        locationId: true,
+        petId: true,
+        serviceId: true,
+        startsAt: true,
+        endsAt: true,
+        status: true,
+        notes: true,
+        cancelledAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
 }

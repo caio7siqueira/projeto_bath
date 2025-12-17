@@ -163,4 +163,42 @@ export class AppointmentsService {
 
     return this.repository.cancel(id, tenantId);
   }
+
+  async markDone(id: string, tenantId: string) {
+    const existing = await this.repository.findById(id, tenantId);
+
+    if (!existing) {
+      throw new NotFoundException(`Agendamento ${id} não encontrado`);
+    }
+
+    if (existing.status === 'CANCELLED') {
+      throw new BadRequestException('Não é possível marcar como DONE um agendamento cancelado');
+    }
+
+    // Idempotente
+    if (existing.status === 'DONE') {
+      return existing;
+    }
+
+    return this.repository.updateStatus(id, tenantId, 'DONE');
+  }
+
+  async markNoShow(id: string, tenantId: string) {
+    const existing = await this.repository.findById(id, tenantId);
+
+    if (!existing) {
+      throw new NotFoundException(`Agendamento ${id} não encontrado`);
+    }
+
+    if (existing.status === 'CANCELLED') {
+      throw new BadRequestException('Não é possível marcar como NO_SHOW um agendamento cancelado');
+    }
+
+    // Idempotente
+    if (existing.status === 'NO_SHOW') {
+      return existing;
+    }
+
+    return this.repository.updateStatus(id, tenantId, 'NO_SHOW');
+  }
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useAppointments, useCustomers, usePets, useLocations } from '@/lib/hooks';
+import { useAppStore } from '@/lib/store';
 import type { Appointment } from '@/lib/api/appointments';
 
 function formatDateTime(value: string) {
@@ -34,11 +35,12 @@ export default function AppointmentsPage() {
     fetchAppointments,
     cancelExistingAppointment,
   } = useAppointments();
+  const { updateAppointmentInStore } = useAppStore();
   const { customers, fetchCustomers } = useCustomers();
   const { pets, fetchPets } = usePets();
   const { locations, fetchLocations } = useLocations();
   const [mounted, setMounted] = useState(false);
-  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -62,13 +64,40 @@ export default function AppointmentsPage() {
   );
 
   const handleCancel = async (id: string) => {
-    setCancelingId(id);
+    setActioningId(id);
     try {
       await cancelExistingAppointment(id);
     } catch (err) {
       console.error(err);
     } finally {
-      setCancelingId(null);
+      setActioningId(null);
+    }
+  };
+
+  const handleMarkDone = async (id: string) => {
+    setActioningId(id);
+    try {
+      const { markAppointmentDone } = await import('@/lib/api/appointments-actions');
+      const updated = await markAppointmentDone(id);
+      // Atualizar na store manualmente
+      updateAppointmentInStore(id, updated);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleMarkNoShow = async (id: string) => {
+    setActioningId(id);
+    try {
+      const { markAppointmentNoShow } = await import('@/lib/api/appointments-actions');
+      const updated = await markAppointmentNoShow(id);
+      updateAppointmentInStore(id, updated);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActioningId(null);
     }
   };
 
@@ -143,15 +172,33 @@ export default function AppointmentsPage() {
                           Editar
                         </Button>
                       </Link>
-                      {appointment.status !== 'CANCELLED' && (
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleCancel(appointment.id)}
-                          isLoading={cancelingId === appointment.id}
-                        >
-                          Cancelar
-                        </Button>
+                      {appointment.status === 'SCHEDULED' && (
+                        <>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleMarkDone(appointment.id)}
+                            isLoading={actioningId === appointment.id}
+                          >
+                            Finalizar
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleMarkNoShow(appointment.id)}
+                            isLoading={actioningId === appointment.id}
+                          >
+                            Falta
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleCancel(appointment.id)}
+                            isLoading={actioningId === appointment.id}
+                          >
+                            Cancelar
+                          </Button>
+                        </>
                       )}
                     </div>
                   </td>
