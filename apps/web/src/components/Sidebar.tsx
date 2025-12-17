@@ -98,11 +98,33 @@ export function Sidebar() {
               onClick={() => setIsOpen(false)}
             />
             {isAdmin && (
-              <NavLink
-                href="/dashboard/reports"
-                label="Relatórios"
-                onClick={() => setIsOpen(false)}
-              />
+              <>
+                <NavLink
+                  href="/dashboard/reports"
+                  label="Relatórios"
+                  onClick={() => setIsOpen(false)}
+                />
+                <NavLink
+                  href="/admin/settings/tenant"
+                  label="Configurações"
+                  onClick={() => setIsOpen(false)}
+                />
+                <NavLink
+                  href="/admin/notifications"
+                  label="Notificações"
+                  onClick={() => setIsOpen(false)}
+                />
+                <NavLink
+                  href="/admin/billing"
+                  label="Billing"
+                  onClick={() => setIsOpen(false)}
+                />
+                <NavLink
+                  href="/admin/settings/tenant"
+                  label="Configurações"
+                  onClick={() => setIsOpen(false)}
+                />
+              </>
             )}
           </nav>
 

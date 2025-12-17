@@ -14,8 +14,8 @@ export interface EnqueueSmsOptions {
 @Injectable()
 export class NotificationsQueueService {
   private readonly logger = new Logger(NotificationsQueueService.name);
-  private connection: IORedis;
-  private notificationsQueue: Queue;
+  private connection: IORedis | undefined;
+  private notificationsQueue: Queue | undefined;
 
   constructor() {
     const redisUrl = process.env.REDIS_URL;

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import { CreateTenantDto, UpdateTenantDto } from './dto';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
 export class TenantsRepository {
-  private readonly prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateTenantDto) {
     return this.prisma.tenant.create({

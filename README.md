@@ -296,6 +296,7 @@ Worker:
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`
 - `TWILIO_WHATSAPP_FROM` (opcional, ex. `whatsapp:+14155238886`)
 - `DEFAULT_COUNTRY_CODE` (opcional, default `+55`)
+- `DEFAULT_COUNTRY_ISO` (opcional, default `BR`, usado para normalização de telefone)
 ```
 
 ## Scripts úteis
@@ -348,10 +349,12 @@ Variáveis de ambiente em e2e:
 - Autenticação JWT (usuários internos) com refresh token e RBAC mínimo (ADMIN/STAFF).
 - Agenda com validações (duração mínima, overlap, multi-tenant) e ações de status (DONE/NO_SHOW/CANCELLED).
 - Integrações assíncronas via BullMQ/Redis:
-  - Omie: criação de `OmieSalesEvent` ao marcar DONE e processamento no worker (upsert cliente + pedido de venda).
-  - SMS/WhatsApp via Twilio: lembrete agendado por tenant (padrão 24h antes), reagenda ao mudar horário e cancela ao cancelar o agendamento.
+  - Omie: criação de `OmieSalesEvent` ao marcar DONE e processamento no worker (upsert cliente + pedido de venda) com retries.
+  - SMS/WhatsApp via Twilio: lembrete agendado por tenant (padrão 24h antes), reagenda ao mudar horário e cancela ao cancelar o agendamento com idempotência no job.
 - Configuração por tenant (`TenantConfig`): `reminderEnabled`, `reminderHoursBefore`, `cancelWindowHours`.
-- Endpoints de admin: listar NotificationJobs por tenant; gerir TenantConfig.
+- Billing: assinatura por tenant com status e plano; bloqueio de agendamento se assinatura inativa/em atraso.
+- Normalização de telefone via `libphonenumber-js` (E.164) para clientes/contatos e lembretes.
+- Endpoints de admin: listar NotificationJobs por tenant; gerir TenantConfig; gerir assinatura (billing) com UI dedicada.
 
 ### Componentes
 - `apps/web` (Next.js): login, rotas protegidas e RBAC no UI.
@@ -373,7 +376,7 @@ Variáveis de ambiente em e2e:
 
 ### Variáveis de Ambiente
 - API (NestJS): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `REDIS_URL`, `OMIE_APP_KEY`, `OMIE_APP_SECRET`.
-- Worker: `REDIS_URL`, `API_BASE_URL` (URL pública/privada da API), `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_WHATSAPP_FROM` (opcional), `DEFAULT_COUNTRY_CODE` (padrão `+55`).
+- Worker: `REDIS_URL`, `API_BASE_URL` (URL pública/privada da API), `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_WHATSAPP_FROM` (opcional), `DEFAULT_COUNTRY_CODE` (padrão `+55`), `DEFAULT_COUNTRY_ISO` (padrão `BR`).
 
 ### Passos de Deploy
 1) Instalar dependências e gerar cliente Prisma

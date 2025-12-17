@@ -1,23 +1,27 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '@/prisma/prisma.service';
 import { CreateCustomerDto, UpdateCustomerDto, QueryCustomersDto } from './dto';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { paginatedResponse } from '../../common/dto/pagination.dto';
+import { normalizePhone } from '../../common/phone.util';
 
 @Injectable()
 export class CustomersService {
-  private readonly prisma = new PrismaClient();
-
-  constructor() {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
+    const phone = normalizePhone(dto.phone);
+    if (!phone) {
+      throw new ConflictException('Telefone inválido');
+    }
     try {
       return await this.prisma.customer.create({
         data: {
           tenantId,
           name: dto.name,
-          phone: dto.phone,
+          phone,
           email: dto.email,
           cpf: dto.cpf,
           optInGlobal: dto.optInGlobal ?? true,
@@ -53,7 +57,7 @@ export class CustomersService {
     }
 
     if (query.phone) {
-      where.phone = query.phone;
+      where.phone = normalizePhone(query.phone) || query.phone;
     }
 
     // Backward compatibility: if no page params, return simple array
@@ -99,12 +103,17 @@ export class CustomersService {
     // Check existence
     await this.findOne(tenantId, id);
 
+    const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
+    if (dto.phone && !phone) {
+      throw new ConflictException('Telefone inválido');
+    }
+
     try {
       return await this.prisma.customer.update({
         where: { id },
         data: {
           name: dto.name,
-          phone: dto.phone,
+          phone,
           email: dto.email,
           cpf: dto.cpf,
           optInGlobal: dto.optInGlobal,
@@ -145,13 +154,17 @@ export class CustomersService {
 
   async createContact(tenantId: string, customerId: string, dto: CreateContactDto) {
     await this.findOne(tenantId, customerId);
+    const phone = dto.phone ? normalizePhone(dto.phone) : null;
+    if (dto.phone && !phone) {
+      throw new ConflictException('Telefone inválido');
+    }
     return this.prisma.customerContact.create({
       data: {
         tenantId,
         customerId,
         name: dto.name,
         email: dto.email,
-        phone: dto.phone,
+        phone,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : null,
       },
     });
@@ -171,12 +184,17 @@ export class CustomersService {
       throw new NotFoundException('Contact not found');
     }
 
+    const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
+    if (dto.phone && !phone) {
+      throw new ConflictException('Telefone inválido');
+    }
+
     return this.prisma.customerContact.update({
       where: { id: contactId },
       data: {
         name: dto.name,
         email: dto.email,
-        phone: dto.phone,
+        phone,
         birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
       },
     });

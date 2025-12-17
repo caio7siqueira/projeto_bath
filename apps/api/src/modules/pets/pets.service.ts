@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaClient, $Enums } from '@prisma/client';
+import { PrismaService } from '@/prisma/prisma.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 
 @Injectable()
 export class PetsService {
-  private readonly prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, customerId: string, dto: CreatePetDto) {
     // Garantir que o customer pertence ao tenant
@@ -20,7 +20,7 @@ export class PetsService {
         customerId,
         name: dto.name,
         species: dto.species,
-        lifeStatus: dto.lifeStatus ?? $Enums.LifeStatus.ALIVE,
+        lifeStatus: dto.lifeStatus ?? 'ALIVE',
         allowNotifications: dto.allowNotifications ?? true,
       },
     });

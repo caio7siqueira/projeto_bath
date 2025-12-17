@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { AppointmentStatus, PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '@/prisma/prisma.service';
 import { AppointmentsSummaryDto } from './dto/appointments-summary.dto';
 import { AppointmentsTimeseriesDto } from './dto/appointments-timeseries.dto';
 
 @Injectable()
 export class ReportsService {
-  private readonly prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
 
   async getAppointmentsSummary(tenantId: string, dto: AppointmentsSummaryDto) {
     const where: Prisma.AppointmentWhereInput = { tenantId };
@@ -18,9 +19,9 @@ export class ReportsService {
 
     const [total, scheduled, completed, cancelled] = await Promise.all([
       this.prisma.appointment.count({ where }),
-      this.prisma.appointment.count({ where: { ...where, status: AppointmentStatus.SCHEDULED } }),
-      this.prisma.appointment.count({ where: { ...where, status: AppointmentStatus.COMPLETED } }),
-      this.prisma.appointment.count({ where: { ...where, status: AppointmentStatus.CANCELLED } }),
+      this.prisma.appointment.count({ where: { ...where, status: 'SCHEDULED' } }),
+      this.prisma.appointment.count({ where: { ...where, status: 'DONE' } }),
+      this.prisma.appointment.count({ where: { ...where, status: 'CANCELLED' } }),
     ]);
 
     return { total, scheduled, completed, cancelled };

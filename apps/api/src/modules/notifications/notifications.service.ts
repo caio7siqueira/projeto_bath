@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsQueueService } from './notifications.queue';
+import { normalizePhone } from '../../common/phone.util';
 
 @Injectable()
 export class NotificationsService {
@@ -10,16 +11,6 @@ export class NotificationsService {
     private queue: NotificationsQueueService
   ) {}
 
-  private normalizePhone(raw: string): string | null {
-    if (!raw) return null;
-    const def = process.env.DEFAULT_COUNTRY_CODE || '+55';
-    const digits = raw.replace(/[^0-9+]/g, '');
-    if (digits.startsWith('+')) return digits;
-    if (digits.startsWith('00')) return `+${digits.slice(2)}`;
-    // assume local number; prepend default country code
-    return `${def}${digits}`;
-  }
-
   async scheduleAppointmentReminder(appointmentId: string) {
     const appt = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -27,7 +18,7 @@ export class NotificationsService {
     });
 
     if (!appt) throw new Error('Appointment not found');
-    const normalized = appt.customer?.phone ? this.normalizePhone(appt.customer.phone) : null;
+    const normalized = appt.customer?.phone ? normalizePhone(appt.customer.phone) : null;
     if (!normalized) {
       this.logger.warn(`Customer ${appt.customerId} has no phone; skipping reminder`);
       return null;
@@ -47,18 +38,41 @@ export class NotificationsService {
 
     const message = `Lembrete: atendimento para ${appt.customer.name} em ${appt.startsAt.toLocaleString()}. Responda se precisar reagendar.`;
 
-    const notif = await this.prisma.notificationJob.create({
-      data: {
-        tenantId: appt.tenantId,
-        appointmentId: appt.id,
-        type: 'SMS',
-        status: 'SCHEDULED',
-        payload: {
-          to: normalized,
-          message,
-        },
-      },
+    // Idempotência: reusa job pendente se existir
+    const existing = await this.prisma.notificationJob.findFirst({
+      where: { appointmentId: appt.id, status: 'SCHEDULED' },
     });
+
+    if (existing?.queueJobId) {
+      try {
+        await this.queue.removeJob(existing.queueJobId);
+      } catch (e) {
+        this.logger.warn(`Failed to remove existing reminder job ${existing.queueJobId}: ${e}`);
+      }
+    }
+
+    const notif = existing
+      ? await this.prisma.notificationJob.update({
+          where: { id: existing.id },
+          data: {
+            payload: { to: normalized, message },
+            status: 'SCHEDULED',
+            queueJobId: null,
+            errorMessage: null,
+          },
+        })
+      : await this.prisma.notificationJob.create({
+          data: {
+            tenantId: appt.tenantId,
+            appointmentId: appt.id,
+            type: 'SMS',
+            status: 'SCHEDULED',
+            payload: {
+              to: normalized,
+              message,
+            },
+          },
+        });
 
     const jobId = await this.queue.enqueueSms({
       tenantId: appt.tenantId,

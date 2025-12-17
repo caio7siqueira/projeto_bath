@@ -1,6 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
-import { $Enums } from '@prisma/client';
+
+enum LifeStatus {
+  ALIVE = 'ALIVE',
+  DECEASED = 'DECEASED',
+}
 
 export class UpdatePetDto {
   @ApiPropertyOptional({ example: 'Rex' })
@@ -8,10 +12,10 @@ export class UpdatePetDto {
   @IsString()
   name?: string;
 
-  @ApiPropertyOptional({ enum: $Enums.LifeStatus, example: $Enums.LifeStatus.DECEASED })
+  @ApiPropertyOptional({ enum: LifeStatus, example: LifeStatus.DECEASED })
   @IsOptional()
-  @IsEnum($Enums.LifeStatus)
-  lifeStatus?: $Enums.LifeStatus;
+  @IsEnum(LifeStatus)
+  lifeStatus?: LifeStatus;
 
   @ApiPropertyOptional({ example: false })
   @IsOptional()

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '@/prisma/prisma.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
 
 @Injectable()
 export class LocationsRepository {
-  private readonly prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateLocationDto) {
     return this.prisma.location.create({

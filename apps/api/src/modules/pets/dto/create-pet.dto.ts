@@ -1,20 +1,29 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
-import { $Enums } from '@prisma/client';
+
+enum Species {
+  DOG = 'DOG',
+  CAT = 'CAT',
+}
+
+enum LifeStatus {
+  ALIVE = 'ALIVE',
+  DECEASED = 'DECEASED',
+}
 
 export class CreatePetDto {
   @ApiProperty({ example: 'Rex' })
   @IsString()
   name!: string;
 
-  @ApiProperty({ enum: $Enums.Species, example: $Enums.Species.DOG })
-  @IsEnum($Enums.Species)
-  species!: $Enums.Species;
+  @ApiProperty({ enum: Species, example: Species.DOG })
+  @IsEnum(Species)
+  species!: Species;
 
-  @ApiPropertyOptional({ enum: $Enums.LifeStatus, example: $Enums.LifeStatus.ALIVE })
+  @ApiPropertyOptional({ enum: LifeStatus, example: LifeStatus.ALIVE })
   @IsOptional()
-  @IsEnum($Enums.LifeStatus)
-  lifeStatus?: $Enums.LifeStatus;
+  @IsEnum(LifeStatus)
+  lifeStatus?: LifeStatus;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()

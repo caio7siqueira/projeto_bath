@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaClient, $Enums } from '@prisma/client';
+import { PrismaService } from '@/prisma/prisma.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { TwilioProvider } from '../../integrations/twilio.provider';
@@ -10,20 +10,20 @@ import { randomBytes } from 'crypto';
 
 @Injectable()
 export class CustomerAuthService {
-  private readonly prisma = new PrismaClient();
   private readonly logger = new Logger(CustomerAuthService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly twilio: TwilioProvider,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+  ) {}
 
   private OTP_LENGTH = 6;
   private OTP_TTL_MIN = 5; // 5 minutes
   private OTP_MAX_ATTEMPTS = 5;
   private OTP_REQUEST_THROTTLE_SEC = 60; // 60 seconds
   private LOCKOUT_MIN = 5; // locked for 5 minutes after attempts exceeded
-
-  constructor(
-    private readonly sms: TwilioProvider,
-    private readonly jwt: JwtService,
-    private readonly config: ConfigService,
-  ) {}
 
   async requestOtp(dto: RequestOtpDto) {
     const tenant = await this.prisma.tenant.findUnique({ where: { slug: dto.tenantSlug } });

@@ -15,6 +15,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { OmieModule } from './modules/omie/omie.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TenantConfigModule } from './modules/tenant-config/tenant-config.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -39,6 +41,7 @@ const envFilePath = Array.from(
         return config;
       },
     }),
+    PrismaModule,
     AuthModule,
     CustomerAuthModule,
     ProtectedModule,
@@ -52,6 +55,7 @@ const envFilePath = Array.from(
     OmieModule,
     NotificationsModule,
     TenantConfigModule,
+    BillingModule,
   ],
   controllers: [HealthController],
 })

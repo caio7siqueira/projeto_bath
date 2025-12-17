@@ -9,6 +9,7 @@ import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from 
 import { paginatedResponse } from '../../common/dto/pagination.dto';
 import { OmieService } from '../omie/omie.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BillingService } from '../billing/billing.service';
 
 const MIN_DURATION_MINUTES = 5;
 
@@ -18,9 +19,12 @@ export class AppointmentsService {
     private readonly repository: AppointmentsRepository,
     private readonly omieService: OmieService,
     private readonly notificationsService: NotificationsService,
+    private readonly billingService: BillingService,
   ) {}
 
   async create(tenantId: string, dto: CreateAppointmentDto) {
+    await this.billingService.ensureActiveSubscription(tenantId);
+
     // Validação: startsAt < endsAt
     const startsAt = new Date(dto.startsAt);
     const endsAt = new Date(dto.endsAt);

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { OmieQueueService } from './omie.queue';
+import { fetchWithRetry } from '../../common/http-retry.util';
 
 export interface OmieCustomerDto {
   nome_fantasia: string;
@@ -50,7 +51,7 @@ export class OmieService {
       param: [customer],
     };
 
-    const response = await fetch(`${this.baseUrl}/geral/clientes/`, {
+    const response = await fetchWithRetry(`${this.baseUrl}/geral/clientes/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -76,7 +77,7 @@ export class OmieService {
       param: [order],
     };
 
-    const response = await fetch(`${this.baseUrl}/produtos/pedido/`, {
+    const response = await fetchWithRetry(`${this.baseUrl}/produtos/pedido/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
