@@ -17,7 +17,7 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     //"rootDir": "src",
-    "outDir": "dist",
+    
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] }
   },
