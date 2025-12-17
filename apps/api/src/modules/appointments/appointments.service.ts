@@ -8,6 +8,7 @@ import { AppointmentsRepository } from './appointments.repository';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
 import { paginatedResponse } from '../../common/dto/pagination.dto';
 import { OmieService } from '../omie/omie.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const MIN_DURATION_MINUTES = 5;
 
@@ -16,6 +17,7 @@ export class AppointmentsService {
   constructor(
     private readonly repository: AppointmentsRepository,
     private readonly omieService: OmieService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(tenantId: string, dto: CreateAppointmentDto) {
@@ -70,7 +72,16 @@ export class AppointmentsService {
       );
     }
 
-    return this.repository.create(tenantId, dto);
+    const created = await this.repository.create(tenantId, dto);
+
+    // Agenda lembrete por SMS 24h antes (não bloqueante)
+    try {
+      await this.notificationsService.scheduleAppointmentReminder(created.id);
+    } catch (err) {
+      console.error('Failed to schedule SMS reminder:', err);
+    }
+
+    return created;
   }
 
   async findAll(tenantId: string, filters: ListAppointmentsDto) {
@@ -150,7 +161,20 @@ export class AppointmentsService {
       }
     }
 
-    return this.repository.update(id, tenantId, dto);
+    const updated = await this.repository.update(id, tenantId, dto);
+
+    // Se o horário mudou, reagenda lembrete (não bloqueante)
+    try {
+      const newStartsAt = updated.startsAt.getTime();
+      const oldStartsAt = existing.startsAt.getTime();
+      if (newStartsAt !== oldStartsAt) {
+        await this.notificationsService.rescheduleAppointmentReminder(id);
+      }
+    } catch (err) {
+      console.error('Failed to reschedule SMS reminder after update:', err);
+    }
+
+    return updated;
   }
 
   async cancel(id: string, tenantId: string) {
@@ -165,7 +189,16 @@ export class AppointmentsService {
       return existing;
     }
 
-    return this.repository.cancel(id, tenantId);
+    const cancelled = await this.repository.cancel(id, tenantId);
+
+    // Cancela lembretes pendentes (não bloqueante)
+    try {
+      await this.notificationsService.cancelAppointmentReminders(id);
+    } catch (err) {
+      console.error('Failed to cancel SMS reminders after cancellation:', err);
+    }
+
+    return cancelled;
   }
 
   async markDone(id: string, tenantId: string) {

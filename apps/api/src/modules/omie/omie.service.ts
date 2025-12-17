@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OmieQueueService } from './omie.queue';
 
 export interface OmieCustomerDto {
   nome_fantasia: string;
@@ -28,7 +29,7 @@ export class OmieService {
   private readonly appSecret: string;
   private readonly baseUrl = 'https://app.omie.com.br/api/v1';
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService, private omieQueue: OmieQueueService) {
     this.appKey = process.env.OMIE_APP_KEY || '';
     this.appSecret = process.env.OMIE_APP_SECRET || '';
 
@@ -115,7 +116,7 @@ export class OmieService {
       notes: appointment.notes,
     };
 
-    await this.prisma.omieSalesEvent.create({
+    const event = await this.prisma.omieSalesEvent.create({
       data: {
         tenantId: appointment.tenantId,
         appointmentId: appointment.id,
@@ -125,6 +126,13 @@ export class OmieService {
     });
 
     this.logger.log(`Created OmieSalesEvent for appointment ${appointmentId}`);
+
+    // Enfileira processamento pelo worker
+    try {
+      await this.omieQueue.enqueueProcessEvent(event.id);
+    } catch (e) {
+      this.logger.error('Failed to enqueue Omie event for processing', e as any);
+    }
   }
 
   async processOmieSalesEvent(eventId: string): Promise<void> {

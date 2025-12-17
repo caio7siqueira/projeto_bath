@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { OmieService } from './omie.service';
 import { OmieController } from './omie.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { OmieQueueService } from './omie.queue';
 
 @Module({
   imports: [PrismaModule],
   controllers: [OmieController],
-  providers: [OmieService],
-  exports: [OmieService],
+  providers: [OmieService, OmieQueueService],
+  exports: [OmieService, OmieQueueService],
 })
 export class OmieModule {}

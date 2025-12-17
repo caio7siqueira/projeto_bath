@@ -31,6 +31,7 @@ model Tenant {
   auditLogs              AuditLog[]
   billingSubscriptions   BillingSubscription[]
   contacts               CustomerContact[]
+  config                 TenantConfig?
 }
 
 model Location {
@@ -168,6 +169,7 @@ model Appointment {
   pet         Pet?                @relation(fields: [petId], references: [id])
   service     Service?            @relation(fields: [serviceId], references: [id])
   resources   AppointmentResource[]
+  notificationJobs NotificationJob[]
   omieSalesEvents OmieSalesEvent[]
 
   @@index([tenantId, locationId, startsAt])
@@ -255,13 +257,20 @@ model MessageCreditTransaction {
 }
 
 model NotificationJob {
-  id        String   @id @default(uuid())
-  tenantId  String
-  payload   Json
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id               String   @id @default(uuid())
+  tenantId         String
+  appointmentId    String?
+  type             String   @default("SMS") // SMS, EMAIL, WHATSAPP
+  payload          Json
+  status           String   @default("SCHEDULED") // SCHEDULED, SENT, ERROR, CANCELLED
+  errorMessage     String?
+  providerMessageId String?
+  queueJobId       String?
+  sentAt           DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  appointment      Appointment? @relation(fields: [appointmentId], references: [id])
 }
 
 model AuditLog {
@@ -282,6 +291,17 @@ model BillingSubscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model TenantConfig {
+  id                 String   @id @default(uuid())
+  tenantId           String   @unique
+  reminderEnabled    Boolean  @default(true)
+  reminderHoursBefore Int     @default(24)
+  cancelWindowHours  Int      @default(2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  tenant             Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 model RefreshToken {

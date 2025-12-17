@@ -265,6 +265,37 @@ curl -X POST http://localhost:3000/v1/appointments/{id}/cancel \
 - Overlap detection: retorna 409 Conflict se já existe agendamento SCHEDULED na mesma location com overlap
 - Multi-tenant: validação de `customerId` e `locationId` pertencentes ao mesmo tenant
 - Cancelamento: idempotente, seta `status = CANCELLED` e `cancelledAt = now()`
+
+### Integrações e Worker
+
+#### Omie (não bloqueante)
+- Ao marcar agendamento como DONE, criamos `OmieSalesEvent` (`status=PENDING`) e enfileiramos para o worker.
+- Worker chama `POST /integrations/omie/internal/process/:eventId` para processar (upsert cliente + pedido de venda).
+- Reprocesso: `POST /integrations/omie/reprocess/:eventId` (ADMIN).
+
+#### Notificações (SMS / WhatsApp via Twilio)
+- Ao criar agendamento, agendamos `NotificationJob` para T - `reminderHoursBefore` (padrão 24h) e enfileiramos.
+- Se `startsAt` mudar → reagendamos; se cancelar → cancelamos jobs pendentes.
+- Worker envia SMS/WhatsApp via Twilio e marca `SENT`/`ERROR` via `POST /integrations/notifications/internal/mark/:id`.
+- Admin: listar jobs do tenant em `GET /integrations/notifications/admin/jobs?status=SCHEDULED|SENT|ERROR&page=1&pageSize=20`.
+
+#### Configuração por Tenant
+- `GET /admin/tenant-config` (ADMIN) retorna ou cria defaults.
+- `PUT /admin/tenant-config` (ADMIN) para atualizar `reminderEnabled`, `reminderHoursBefore` e `cancelWindowHours`.
+
+### Variáveis de ambiente
+
+API (NestJS):
+- `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
+- `REDIS_URL`
+- `OMIE_APP_KEY`, `OMIE_APP_SECRET`
+
+Worker:
+- `REDIS_URL`
+- `API_BASE_URL` (ex. `http://api:3000` ou URL pública da API)
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`
+- `TWILIO_WHATSAPP_FROM` (opcional, ex. `whatsapp:+14155238886`)
+- `DEFAULT_COUNTRY_CODE` (opcional, default `+55`)
 ```
 
 ## Scripts úteis
@@ -310,3 +341,83 @@ pnpm -w test:e2e
 Variáveis de ambiente em e2e:
 - `TWILIO_DISABLED=true` (mock de SMS)
 - `DATABASE_URL` e `REDIS_URL` são injetados dinamicamente pelos testes via Testcontainers
+
+## Checkpoint — 2025-12-17
+
+### Estado Atual
+- Autenticação JWT (usuários internos) com refresh token e RBAC mínimo (ADMIN/STAFF).
+- Agenda com validações (duração mínima, overlap, multi-tenant) e ações de status (DONE/NO_SHOW/CANCELLED).
+- Integrações assíncronas via BullMQ/Redis:
+  - Omie: criação de `OmieSalesEvent` ao marcar DONE e processamento no worker (upsert cliente + pedido de venda).
+  - SMS/WhatsApp via Twilio: lembrete agendado por tenant (padrão 24h antes), reagenda ao mudar horário e cancela ao cancelar o agendamento.
+- Configuração por tenant (`TenantConfig`): `reminderEnabled`, `reminderHoursBefore`, `cancelWindowHours`.
+- Endpoints de admin: listar NotificationJobs por tenant; gerir TenantConfig.
+
+### Componentes
+- `apps/web` (Next.js): login, rotas protegidas e RBAC no UI.
+- `apps/api` (NestJS + Prisma): REST, multi-tenant, integrações e filas.
+- `apps/worker` (Node + BullMQ): processadores de `omie` e `notifications` com Twilio.
+- Banco: PostgreSQL (Prisma). Filas: Redis.
+
+### Principais Filas
+- `omie`: processa `OmieSalesEvent` via API interna `POST /integrations/omie/internal/process/:eventId`.
+- `notifications`: envia SMS/WhatsApp via Twilio e marca status na API.
+
+## Deploy em Produção — Checklist
+
+### Infraestrutura
+- Banco: PostgreSQL gerenciado (alta disponibilidade e backups automáticos).
+- Filas: Redis gerenciado (com persistência e monitoramento).
+- Runtime: Docker/Kubernetes (separar pods para API e Worker; HPA recomendado).
+- Observabilidade: logs centralizados, métricas (CPU/mem/filas), alertas e tracing opcional.
+
+### Variáveis de Ambiente
+- API (NestJS): `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `REDIS_URL`, `OMIE_APP_KEY`, `OMIE_APP_SECRET`.
+- Worker: `REDIS_URL`, `API_BASE_URL` (URL pública/privada da API), `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_WHATSAPP_FROM` (opcional), `DEFAULT_COUNTRY_CODE` (padrão `+55`).
+
+### Passos de Deploy
+1) Instalar dependências e gerar cliente Prisma
+```powershell
+pnpm install
+pnpm --filter @efizion/api prisma generate
+```
+2) Aplicar migrations (produção)
+```powershell
+pnpm --filter @efizion/api prisma migrate deploy
+```
+3) Build e Start
+```powershell
+pnpm --filter @efizion/api build
+pnpm --filter @efizion/api start
+
+pnpm --filter @efizion/worker build
+pnpm --filter @efizion/worker start
+```
+4) DNS/SSL e Gateway
+- Configurar domínio e TLS para a API (Nginx/Ingress Controller). Se o Web for SPA/PWA, servir via CDN/Static host.
+
+### Operação e Confiabilidade
+- Health Checks: habilitar endpoints de saúde e timeouts de readiness/liveness.
+- Logs: coletar stdout/stderr (JSON) e configurar retenção/consulta.
+- Métricas: monitorar filas (tamanho, latência, falhas), taxa de erro da API e latência.
+- Backups: política diária do PostgreSQL e snapshots do Redis (se aplicável).
+- Rotação de segredos: gerenciar via Secret Manager/Vault.
+
+## Roadmap de Evolução
+
+### Curto Prazo
+- UI Admin (Web) para: TenantConfig e listagem/consulta de NotificationJobs.
+- Normalização de telefone com lib especializada (ex.: `libphonenumber-js`) e validações mais fortes.
+- Idempotência adicional no agendamento de lembretes para evitar duplicações em fluxos concorrentes.
+- Rate limiting e circuit breaker nas integrações (Omie/Twilio) e DLQ para jobs que estourarem tentativas.
+
+### Médio Prazo
+- Templates de mensagens por tenant (com variáveis) e opt-out do cliente.
+- Políticas de cancelamento usando `cancelWindowHours` (bloqueio ou fluxos de cobrança).
+- Webhooks/Callbacks do Omie e reconciliação; mapeamento real de produtos/serviços.
+- Painéis de observabilidade (Grafana) para métricas de filas e integrações.
+
+### Longo Prazo
+- Multi-tenant hard (schema por tenant) ou soft isolation reforçado (row level security em nível DB).
+- Billing/assinaturas: integrar `BillingSubscription` ao gateway de pagamento.
+- Internacionalização (i18n) e suporte a múltiplos países (telefone, fuso horário, moeda).

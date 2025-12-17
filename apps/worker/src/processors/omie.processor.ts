@@ -12,7 +12,7 @@ export async function processOmieJob(job: Job<OmieJobData>): Promise<void> {
   try {
     // Chamar API backend para processar evento Omie
     const apiUrl = process.env.API_BASE_URL || 'http://localhost:3000';
-    const response = await fetch(`${apiUrl}/internal/omie/process/${eventId}`, {
+    const response = await fetch(`${apiUrl}/integrations/omie/internal/process/${eventId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });

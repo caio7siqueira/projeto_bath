@@ -13,6 +13,8 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { PetsModule } from './modules/pets/pets.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { OmieModule } from './modules/omie/omie.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { TenantConfigModule } from './modules/tenant-config/tenant-config.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -48,6 +50,8 @@ const envFilePath = Array.from(
     PetsModule,
     DashboardModule,
     OmieModule,
+    NotificationsModule,
+    TenantConfigModule,
   ],
   controllers: [HealthController],
 })
