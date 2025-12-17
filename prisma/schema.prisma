@@ -168,6 +168,7 @@ model Appointment {
   pet         Pet?                @relation(fields: [petId], references: [id])
   service     Service?            @relation(fields: [serviceId], references: [id])
   resources   AppointmentResource[]
+  omieSalesEvents OmieSalesEvent[]
 
   @@index([tenantId, locationId, startsAt])
   @@index([tenantId, customerId, startsAt])
@@ -221,12 +222,17 @@ model OmieCustomerLink {
 }
 
 model OmieSalesEvent {
-  id        String   @id @default(uuid())
-  tenantId  String
-  payload   Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id            String   @id @default(uuid())
+  tenantId      String
+  appointmentId String?
+  status        String   @default("PENDING") // PENDING, SUCCESS, ERROR
+  payload       Json
+  errorMessage  String?
+  omieOrderId   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
 }
 
 model MessageCreditsWallet {

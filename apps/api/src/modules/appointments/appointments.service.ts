@@ -7,12 +7,16 @@ import {
 import { AppointmentsRepository } from './appointments.repository';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
 import { paginatedResponse } from '../../common/dto/pagination.dto';
+import { OmieService } from '../omie/omie.service';
 
 const MIN_DURATION_MINUTES = 5;
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private readonly repository: AppointmentsRepository) {}
+  constructor(
+    private readonly repository: AppointmentsRepository,
+    private readonly omieService: OmieService,
+  ) {}
 
   async create(tenantId: string, dto: CreateAppointmentDto) {
     // Validação: startsAt < endsAt
@@ -180,7 +184,17 @@ export class AppointmentsService {
       return existing;
     }
 
-    return this.repository.updateStatus(id, tenantId, 'DONE');
+    const updated = await this.repository.updateStatus(id, tenantId, 'DONE');
+
+    // Criar evento Omie de forma não bloqueante
+    try {
+      await this.omieService.createSalesEventForAppointment(id);
+    } catch (error) {
+      // Não bloqueia o fluxo se falhar
+      console.error(`Failed to create Omie event for appointment ${id}:`, error);
+    }
+
+    return updated;
   }
 
   async markNoShow(id: string, tenantId: string) {
