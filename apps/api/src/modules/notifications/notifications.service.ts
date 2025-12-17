@@ -85,11 +85,15 @@ export class NotificationsService {
 
     await (this.prisma as any).notificationJob.update({
       where: { id: notif.id },
-      data: { queueJobId: String(jobId) },
+      data: { queueJobId: jobId ? String(jobId) : null },
     });
 
-    this.logger.log(`Scheduled SMS reminder job ${jobId} for appointment ${appt.id}`);
-    return { notificationJobId: notif.id, jobId };
+    this.logger.log(
+      jobId
+        ? `Scheduled SMS reminder job ${jobId} for appointment ${appt.id}`
+        : `Reminder queued as no-op (no queue) for appointment ${appt.id}`,
+    );
+    return { notificationJobId: notif.id, jobId }; 
   }
 
   async cancelAppointmentReminders(appointmentId: string) {

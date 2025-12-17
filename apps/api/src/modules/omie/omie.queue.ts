@@ -11,7 +11,7 @@ export class OmieQueueService {
   constructor() {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      this.logger.warn('REDIS_URL not set; omie queue will not be available');
+      this.logger.warn('REDIS_URL not set; omie queue will be disabled (no-op).');
       return;
     }
     this.connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
@@ -19,7 +19,10 @@ export class OmieQueueService {
   }
 
   async enqueueProcessEvent(eventId: string) {
-    if (!this.queue) throw new Error('Omie queue not initialized');
+    if (!this.queue) {
+      this.logger.warn('Omie queue not initialized; skipping enqueue.');
+      return null;
+    }
     const job = await this.queue.add(
       'process-omie-event',
       { eventId },

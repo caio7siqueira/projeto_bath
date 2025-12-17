@@ -20,16 +20,17 @@ export class NotificationsQueueService {
   constructor() {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      this.logger.warn('REDIS_URL not set; notifications queue will fail to enqueue');
+      this.logger.warn('REDIS_URL not set; notifications queue will be disabled (no-op).');
     } else {
       this.connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
       this.notificationsQueue = new Queue('notifications', { connection: this.connection });
     }
   }
 
-  async enqueueSms(opts: EnqueueSmsOptions) {
+  async enqueueSms(opts: EnqueueSmsOptions): Promise<string | null> {
     if (!this.notificationsQueue) {
-      throw new Error('Notifications queue not initialized');
+      this.logger.warn('Notifications queue not initialized; skipping enqueue.');
+      return null;
     }
 
     const delay = Math.max(0, opts.delayMs || 0);
@@ -57,7 +58,10 @@ export class NotificationsQueueService {
   }
 
   async removeJob(jobId: string) {
-    if (!this.notificationsQueue) throw new Error('Notifications queue not initialized');
+    if (!this.notificationsQueue) {
+      this.logger.warn(`Notifications queue not initialized; cannot remove job ${jobId}.`);
+      return;
+    }
     await this.notificationsQueue.remove(jobId);
   }
 }
