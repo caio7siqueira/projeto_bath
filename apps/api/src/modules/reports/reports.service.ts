@@ -20,7 +20,8 @@ export class ReportsService {
     const [total, scheduled, completed, cancelled] = await Promise.all([
       this.prisma.appointment.count({ where }),
       this.prisma.appointment.count({ where: { ...where, status: 'SCHEDULED' } }),
-      this.prisma.appointment.count({ where: { ...where, status: 'DONE' } }),
+      // Consider both 'DONE' and 'COMPLETED' as completed
+      this.prisma.appointment.count({ where: { ...where, OR: [{ status: 'DONE' }, { status: 'COMPLETED' }] } }),
       this.prisma.appointment.count({ where: { ...where, status: 'CANCELLED' } }),
     ]);
 
@@ -60,7 +61,7 @@ export class ReportsService {
       const bucket = buckets.get(key)!;
 
       if (appointment.status === 'SCHEDULED') bucket.scheduled += 1;
-      if (appointment.status === 'DONE') bucket.completed += 1;
+      if (appointment.status === 'DONE' || appointment.status === 'COMPLETED') bucket.completed += 1;
       if (appointment.status === 'CANCELLED') bucket.cancelled += 1;
     }
 
