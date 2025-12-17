@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useRole } from '@/lib/use-role';
 
 function LogoutButton() {
   const { logout, user } = useAuth();
@@ -35,6 +36,7 @@ function LogoutButton() {
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAdmin } = useRole();
 
   return (
     <>
@@ -95,11 +97,13 @@ export function Sidebar() {
               label="Locais"
               onClick={() => setIsOpen(false)}
             />
-            <NavLink
-              href="/dashboard/reports"
-              label="Relatórios"
-              onClick={() => setIsOpen(false)}
-            />
+            {isAdmin && (
+              <NavLink
+                href="/dashboard/reports"
+                label="Relatórios"
+                onClick={() => setIsOpen(false)}
+              />
+            )}
           </nav>
 
           {/* Footer */}
