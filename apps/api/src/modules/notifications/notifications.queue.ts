@@ -19,11 +19,29 @@ export class NotificationsQueueService {
 
   constructor() {
     const redisUrl = process.env.REDIS_URL;
+    if (process.env.NODE_ENV === 'test') {
+      this.logger.log('Notifications queue disabled in test mode.');
+      return;
+    }
     if (!redisUrl) {
       this.logger.warn('REDIS_URL not set; notifications queue will be disabled (no-op).');
     } else {
-      this.connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
-      this.notificationsQueue = new Queue('notifications', { connection: this.connection });
+      this.connection = new IORedis(redisUrl, {
+        maxRetriesPerRequest: null,
+        lazyConnect: true,
+        enableOfflineQueue: false,
+        retryStrategy: () => null,
+      });
+      this.connection
+        .connect()
+        .then(() => {
+          this.notificationsQueue = new Queue('notifications', { connection: this.connection! });
+        })
+        .catch((err) => {
+          this.logger.warn(`Failed to connect to Redis; disabling notifications queue. ${err}`);
+          this.connection = undefined;
+          this.notificationsQueue = undefined;
+        });
     }
   }
 
