@@ -54,7 +54,7 @@ export class NotificationsQueueService {
       }
     );
 
-    return job.id;
+    return job.id ?? null;
   }
 
   async removeJob(jobId: string) {
