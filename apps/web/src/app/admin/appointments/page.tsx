@@ -125,6 +125,21 @@ export default function AppointmentsPage() {
     window.location.href = `/admin/appointments/${clickInfo.event.id}`;
   };
 
+  // Drag & drop (desktop): atualiza agendamento ao mover/redimensionar
+  const { updateExistingAppointment } = useAppointments();
+  const handleEventDrop = async (dropInfo: any) => {
+    const id = dropInfo.event.id;
+    const startsAt = dropInfo.event.startStr;
+    const endsAt = dropInfo.event.endStr;
+    try {
+      await updateExistingAppointment(id, { startsAt, endsAt });
+    } catch (err) {
+      alert('Erro ao mover agendamento: ' + (err instanceof Error ? err.message : ''));
+      dropInfo.revert();
+    }
+  };
+  const handleEventResize = handleEventDrop;
+
   // Mobile: lista vertical por horário, swipe entre dias, FAB
   const [mobileDay, setMobileDay] = useState(() => {
     const today = new Date();
@@ -207,31 +222,33 @@ export default function AppointmentsPage() {
           ) : (
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
               <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="timeGridWeek"
-                headerToolbar={{
-                  left: 'prev,next today',
-                  center: 'title',
-                  right: 'dayGridMonth,timeGridWeek,timeGridDay',
-                }}
-                locales={[ptBrLocale]}
-                locale="pt-br"
-                selectable
-                editable
-                selectMirror
-                select={handleDateSelect}
-                eventClick={handleEventClick}
-                events={events}
-                height="auto"
-                slotMinTime="07:00:00"
-                slotMaxTime="21:00:00"
-                nowIndicator
-                eventDisplay="block"
-                eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                dayMaxEvents={3}
-                aspectRatio={1.5}
-              />
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="timeGridWeek"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay',
+                  }}
+                  locales={[ptBrLocale]}
+                  locale="pt-br"
+                  selectable
+                  editable
+                  selectMirror
+                  select={handleDateSelect}
+                  eventClick={handleEventClick}
+                  eventDrop={handleEventDrop}
+                  eventResize={handleEventResize}
+                  events={events}
+                  height="auto"
+                  slotMinTime="07:00:00"
+                  slotMaxTime="21:00:00"
+                  nowIndicator
+                  eventDisplay="block"
+                  eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  dayMaxEvents={3}
+                  aspectRatio={1.5}
+                />
             </div>
           )}
         </>
