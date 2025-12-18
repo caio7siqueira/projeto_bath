@@ -19,7 +19,7 @@ export default function NewCustomerPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, touchedFields, isSubmitted },
     reset,
   } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -30,7 +30,7 @@ export default function NewCustomerPage() {
       cpf: "",
       optInGlobal: false,
     },
-    mode: "onTouched",
+    mode: "onBlur",
     reValidateMode: "onChange",
   });
 
@@ -71,6 +71,7 @@ export default function NewCustomerPage() {
             placeholder="João Silva"
             required
             error={errors.name?.message}
+            touched={touchedFields.name || isSubmitted}
             {...register("name")}
           />
           <FormField
@@ -79,6 +80,7 @@ export default function NewCustomerPage() {
             placeholder="(11) 98765-4321"
             required
             error={errors.phone?.message}
+            touched={touchedFields.phone || isSubmitted}
             {...register("phone")}
           />
           <FormField
@@ -87,6 +89,7 @@ export default function NewCustomerPage() {
             type="email"
             placeholder="joao@example.com"
             error={errors.email?.message}
+            touched={touchedFields.email || isSubmitted}
             {...register("email")}
           />
           <FormField
@@ -94,6 +97,7 @@ export default function NewCustomerPage() {
             id="cpf"
             placeholder="123.456.789-00"
             error={errors.cpf?.message}
+            touched={touchedFields.cpf || isSubmitted}
             {...register("cpf")}
           />
           <div className="flex gap-3 pt-4">
