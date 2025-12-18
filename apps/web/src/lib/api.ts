@@ -1,20 +1,45 @@
+import { getAuthToken } from './api/client';
+
+// Centraliza a configuração da API para todo o frontend
+export function getApiBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_API_URL;
+  if (!url) {
+    throw new Error('NEXT_PUBLIC_API_URL não está definida. Configure a variável de ambiente corretamente.');
+  }
+  return url.replace(/\/$/, ''); // remove barra final se houver
+}
+
+export function getApiUrl(path: string) {
+  const base = getApiBaseUrl();
+  if (!path.startsWith('/')) path = '/' + path;
+  return base + '/v1' + path;
+}
 
 
 // Cliente HTTP centralizado para toda a aplicação web
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-if (!API_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL não definida. Configure no .env.local ou ambiente de produção.');
-}
-
 export async function apiFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
+  const url = getApiUrl(path);
+  const token = getAuthToken();
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(options && options.headers ? options.headers : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const res = await fetch(url, {
+    ...(options || {}),
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers || {}),
-    },
+    headers,
   });
+  if (res.status === 401) {
+    // Limpa tokens e redireciona para login
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    throw { message: 'Não autorizado. Faça login novamente.', status: 401 };
+  }
   if (!res.ok) {
     let error;
     try { error = await res.json(); } catch { error = { message: 'Erro na API' }; }

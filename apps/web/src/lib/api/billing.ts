@@ -21,7 +21,7 @@ export interface UpsertBillingSubscriptionDto {
 
 export async function fetchBillingSubscription(): Promise<BillingSubscription | null> {
   try {
-    return await apiFetch('/v1/admin/billing/subscription', {
+    return await apiFetch('/admin/billing/subscription', {
       headers: { Authorization: `Bearer ${getAuthToken()}` },
     });
   } catch (err: any) {
@@ -34,7 +34,7 @@ export async function fetchBillingSubscription(): Promise<BillingSubscription | 
 export async function upsertBillingSubscription(
   dto: UpsertBillingSubscriptionDto,
 ): Promise<BillingSubscription> {
-  return apiFetch('/v1/admin/billing/subscription', {
+  return apiFetch('/admin/billing/subscription', {
     method: 'PUT',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),

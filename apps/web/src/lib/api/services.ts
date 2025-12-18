@@ -10,7 +10,7 @@ export interface Service {
 }
 
 export async function listServices(): Promise<Service[]> {
-  return apiFetch('/v1/services', {
+  return apiFetch('/services', {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }

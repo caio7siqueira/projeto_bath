@@ -16,13 +16,13 @@ export interface CreateLocationDto {
 import { getAuthToken } from './client';
 
 export async function listLocations(): Promise<Location[]> {
-  return apiFetch('/v1/locations', {
+  return apiFetch('/locations', {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 export async function createLocation(dto: CreateLocationDto): Promise<Location> {
-  return apiFetch('/v1/locations', {
+  return apiFetch('/locations', {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),

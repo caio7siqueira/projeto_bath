@@ -60,21 +60,21 @@ export async function listAppointments(filters?: ListAppointmentsQuery): Promise
   if (filters?.to) search.set('to', filters.to);
   if (filters?.status) search.set('status', filters.status);
   const qs = search.toString();
-  return apiFetch(`/v1/appointments${qs ? `?${qs}` : ''}`, {
+  return apiFetch(`/appointments${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 
 export async function fetchAppointment(id: string): Promise<Appointment> {
-  return apiFetch(`/v1/appointments/${id}`, {
+  return apiFetch(`/appointments/${id}`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 
 export async function createAppointment(dto: CreateAppointmentDto): Promise<Appointment> {
-  return apiFetch('/v1/appointments', {
+  return apiFetch('/appointments', {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
@@ -82,14 +82,14 @@ export async function createAppointment(dto: CreateAppointmentDto): Promise<Appo
 }
 
 export async function updateAppointment(id: string, dto: UpdateAppointmentDto): Promise<Appointment> {
-  return apiFetch(`/v1/appointments/${id}`, {
+  return apiFetch(`/appointments/${id}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
   });
 }
 export async function cancelAppointment(id: string): Promise<Appointment> {
-  return apiFetch(`/v1/appointments/${id}/cancel`, {
+  return apiFetch(`/appointments/${id}/cancel`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });

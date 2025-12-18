@@ -51,13 +51,13 @@ export interface CustomerContact {
 
 // Customers CRUD
 export async function listCustomers(): Promise<Customer[]> {
-  return apiFetch('/v1/customers', {
+  return apiFetch('/customers', {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 export async function fetchCustomer(token: string, customerId: string): Promise<Customer> {
-  return apiFetch(`/v1/customers/${customerId}`, {
+  return apiFetch(`/customers/${customerId}`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }

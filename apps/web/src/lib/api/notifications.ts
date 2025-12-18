@@ -46,7 +46,7 @@ export async function listNotificationJobs(filters: NotificationJobsFilters = {}
   if (filters.page) params.set('page', String(filters.page));
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
   const qs = params.toString();
-  return apiFetch(`/v1/integrations/notifications/admin/jobs${qs ? `?${qs}` : ''}`, {
+  return apiFetch(`/integrations/notifications/admin/jobs${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   }) as Promise<ListNotificationJobsResponse>;
 }

@@ -24,7 +24,7 @@ export async function fetchReportsSummary(
   if (from) params.set('from', from);
   if (to) params.set('to', to);
   const qs = params.toString();
-  return apiFetch(`/v1/reports/appointments/summary${qs ? `?${qs}` : ''}`, {
+  return apiFetch(`/reports/appointments/summary${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
@@ -40,7 +40,7 @@ export async function fetchReportsTimeseries(
   if (to) params.set('to', to);
   if (granularity) params.set('granularity', granularity);
   const qs = params.toString();
-  return apiFetch(`/v1/reports/appointments/timeseries${qs ? `?${qs}` : ''}`, {
+  return apiFetch(`/reports/appointments/timeseries${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
