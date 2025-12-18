@@ -136,8 +136,8 @@ export function Sidebar() {
                 {/* Configurações */}
                 <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>
                 <NavLink
-                  href="/admin/settings/tenant"
-                  label="Configurações do Tenant"
+                  href="/admin/settings"
+                  label="Configurações"
                   onClick={() => setIsOpen(false)}
                 />
               </>
