@@ -9,9 +9,9 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'apps/api/src/common/guards/jwt-auth.guard';
-import { RequireRole } from 'apps/api/src/common/decorators/require-role.decorator';
-import { TenantUser } from 'apps/api/src/common/decorators/tenant-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { LocationsService } from './locations.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
 

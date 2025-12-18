@@ -10,11 +10,11 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'apps/api/src/common/guards/jwt-auth.guard';
-import { RequireRole } from 'apps/api/src/common/decorators/require-role.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto, UpdateTenantDto } from './dto';
-import { PaginationQueryDto } from 'apps/api/src/common/dto/pagination.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Tenants')
 @ApiBearerAuth()
@@ -34,6 +34,9 @@ export class TenantsController {
   @RequireRole('ADMIN')
   @ApiOperation({ summary: 'Listar todos os tenants (ADMIN)' })
   async findAll(@Query() query: PaginationQueryDto) {
+    return this.service.findAll(query);
+  }
+
   @Get(':id')
   @RequireRole('ADMIN')
   @ApiOperation({ summary: 'Obter tenant por ID (ADMIN)' })

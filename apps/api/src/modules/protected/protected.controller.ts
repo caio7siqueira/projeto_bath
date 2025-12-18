@@ -1,9 +1,9 @@
 import { Controller, Get, Param, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'apps/api/src/common/guards/jwt-auth.guard';
-import { RolesGuard } from 'apps/api/src/common/guards/roles.guard';
-import { Roles } from 'apps/api/src/common/decorators/roles.decorator';
-import { CurrentUser } from 'apps/api/src/common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Protected')
 @ApiBearerAuth()
