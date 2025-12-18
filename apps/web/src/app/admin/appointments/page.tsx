@@ -115,18 +115,30 @@ export default function AppointmentsPage() {
   const calendarRef = useRef(null);
 
   const handleDateSelect = (selectInfo: any) => {
-    // Redireciona para página de novo agendamento já com data/hora
     const start = selectInfo.startStr;
     const end = selectInfo.endStr;
     window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(start)}&endsAt=${encodeURIComponent(end)}`;
   };
 
   const handleEventClick = (clickInfo: any) => {
-    // Redireciona para edição
     window.location.href = `/admin/appointments/${clickInfo.event.id}`;
   };
 
-  // TODO: Implementar handlers de mover/redimensionar (drag-n-drop) integrando com API
+  // Mobile: lista vertical por horário, swipe entre dias, FAB
+  const [mobileDay, setMobileDay] = useState(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  });
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const mobileAppointments = useMemo(() => {
+    const dayStr = mobileDay.toISOString().slice(0, 10);
+    return appointments.filter(a => a.startsAt.slice(0, 10) === dayStr)
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  }, [appointments, mobileDay]);
+
+  const handlePrevDay = () => setMobileDay(new Date(mobileDay.getTime() - 86400000));
+  const handleNextDay = () => setMobileDay(new Date(mobileDay.getTime() + 86400000));
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -137,7 +149,7 @@ export default function AppointmentsPage() {
             Visualize, crie e gerencie agendamentos de clientes, pets e serviços.
           </p>
         </div>
-        <Link href="/admin/appointments/new">
+        <Link href="/admin/appointments/new" className="hidden md:inline-block">
           <Button>Novo Agendamento</Button>
         </Link>
       </div>
@@ -154,34 +166,71 @@ export default function AppointmentsPage() {
           <p className="text-gray-600">Crie seu primeiro agendamento.</p>
         </Card>
       ) : (
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
-            headerToolbar={{
-              left: 'prev,next today',
-              center: 'title',
-              right: 'dayGridMonth,timeGridWeek,timeGridDay',
-            }}
-            locales={[ptBrLocale]}
-            locale="pt-br"
-            selectable
-            editable
-            selectMirror
-            select={handleDateSelect}
-            eventClick={handleEventClick}
-            events={events}
-            height="auto"
-            slotMinTime="07:00:00"
-            slotMaxTime="21:00:00"
-            nowIndicator
-            eventDisplay="block"
-            eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-            dayMaxEvents={3}
-            aspectRatio={1.5}
-          />
-        </div>
+        <>
+          {/* Mobile: lista vertical, swipe, FAB */}
+          {isMobile ? (
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <Button onClick={handlePrevDay} size="sm">◀</Button>
+                <span className="font-semibold text-lg">{mobileDay.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</span>
+                <Button onClick={handleNextDay} size="sm">▶</Button>
+              </div>
+              <div className="space-y-3">
+                {mobileAppointments.length === 0 ? (
+                  <Card>
+                    <CardHeader title="Nenhum agendamento para este dia" />
+                  </Card>
+                ) : (
+                  mobileAppointments.map(a => (
+                    <Card key={a.id} className="flex flex-col p-3 border-l-4" style={{ borderColor: statusColors[a.status] }}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-base">{customerById[a.customerId] || 'Cliente'}</div>
+                          <div className="text-xs text-gray-500">{a.petId && petById[a.petId]}</div>
+                          <div className="text-xs text-gray-500">{a.serviceId && serviceById[a.serviceId]}</div>
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded bg-gray-100" style={{ color: statusColors[a.status] }}>{a.status}</div>
+                      </div>
+                      <div className="text-sm mt-1">{new Date(a.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(a.endsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      <Button size="xs" className="mt-2 w-full" onClick={() => window.location.href = `/admin/appointments/${a.id}`}>Ver detalhes</Button>
+                    </Card>
+                  ))
+                )}
+              </div>
+              {/* FAB flutuante */}
+              <Button className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg md:hidden" onClick={() => window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(mobileDay.toISOString().slice(0,10)+'T09:00:00')}`}>+ Agendar</Button>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="timeGridWeek"
+                headerToolbar={{
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'dayGridMonth,timeGridWeek,timeGridDay',
+                }}
+                locales={[ptBrLocale]}
+                locale="pt-br"
+                selectable
+                editable
+                selectMirror
+                select={handleDateSelect}
+                eventClick={handleEventClick}
+                events={events}
+                height="auto"
+                slotMinTime="07:00:00"
+                slotMaxTime="21:00:00"
+                nowIndicator
+                eventDisplay="block"
+                eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                dayMaxEvents={3}
+                aspectRatio={1.5}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
