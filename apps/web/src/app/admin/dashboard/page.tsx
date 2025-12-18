@@ -26,35 +26,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-        if (!baseUrl || !accessToken) {
-          throw new Error('Missing API configuration ou token');
-        }
-        const response = await fetch(`${baseUrl}/v1/dashboard/reports`, {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'include',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        const data = await response.json();
+        // Usa client centralizado
+        const data = await import('@/lib/api').then(m => m.apiFetch('/dashboard/reports'));
         setStats(data);
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar dashboard';
-        console.error('Dashboard fetch error:', errorMsg);
+        const errorMsg = err && typeof err === 'object' && 'message' in err ? (err as any).message : 'Erro ao carregar dashboard';
         setError(errorMsg);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
-  }, [accessToken]);
+  }, []);
 
   if (loading) {
     return (
