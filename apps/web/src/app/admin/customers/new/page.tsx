@@ -34,9 +34,11 @@ export default function NewCustomerPage() {
     reValidateMode: "onChange",
   });
 
+  const [success, setSuccess] = useState<string | null>(null);
   const onSubmit = async (data: CustomerFormData) => {
     setIsSaving(true);
     setError(null);
+    setSuccess(null);
     try {
       const submitData: any = {
         name: data.name,
@@ -46,7 +48,8 @@ export default function NewCustomerPage() {
       if (data.cpf) submitData.cpf = data.cpf;
       if (data.optInGlobal !== undefined) submitData.optInGlobal = data.optInGlobal;
       await createNewCustomer(submitData);
-      router.push("/admin/customers");
+      setSuccess('Cliente criado com sucesso!');
+      setTimeout(() => router.push("/admin/customers"), 1200);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao salvar";
       setError(message);
@@ -62,6 +65,9 @@ export default function NewCustomerPage() {
       </div>
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
+      )}
+      {success && (
+        <div className="mb-4 rounded-lg bg-green-50 p-4 text-green-800 animate-fade-in">{success}</div>
       )}
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
