@@ -5,12 +5,15 @@ import { useAuth } from '@/lib/auth-context';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 
+
 interface DashboardStats {
   totalCustomers: number;
   totalPets: number;
   totalAppointments: number;
   totalLocations: number;
 }
+
+export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
     totalPets: 0,
