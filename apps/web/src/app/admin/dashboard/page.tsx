@@ -11,7 +11,6 @@ interface DashboardStats {
   totalAppointments: number;
   totalLocations: number;
 }
-
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
     totalPets: 0,
