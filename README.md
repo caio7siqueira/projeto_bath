@@ -56,6 +56,37 @@ pnpm db:seed
 pnpm dev
 ```
 
+
+## Healthchecks
+
+Todos os apps do monorepo expõem healthchecks simples, sem dependências externas, para uso em CI/CD, monitoramento e automação. Nenhum healthcheck lança erro ou depende de banco/redis.
+
+### API
+
+- **Endpoint:** `GET /v1/health`
+- **Resposta:**
+  ```json
+  { "ok": true, "timestamp": "2024-01-01T00:00:00.000Z" }
+  ```
+
+### Worker
+
+- **Export:** `getHealth()` em `apps/worker/src/health.ts`
+- **Uso:**
+  ```ts
+  import { getHealth } from './health';
+  getHealth(); // { status: 'ok', app: 'worker', uptime: 123.45, timestamp: '...' }
+  ```
+
+### Web
+
+- **Arquivo:** `/public/health.json`
+- **Exemplo:**
+  ```json
+  { "status": "ok", "app": "web", "timestamp": "2024-01-01T00:00:00.000Z" }
+  ```
+
+---
 ## Endpoints
 
 ### Auth (Internal Users)

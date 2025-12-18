@@ -1,0 +1,5 @@
+{
+  "status": "ok",
+  "app": "web",
+  "timestamp": "{{BUILD_TIMESTAMP}}"
+}
