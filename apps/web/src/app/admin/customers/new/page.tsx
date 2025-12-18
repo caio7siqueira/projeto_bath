@@ -34,14 +34,26 @@ export default function NewCustomerPage() {
     reValidateMode: "onChange",
   });
 
-  const [success, setSuccess] = useState<string | null>(null);
-  const onSubmit = async (data: CustomerFormData) => {
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const submitData: any = {
-        name: data.name,
+          {/* UX degradável para pets */}
+          {petsError ? (
+            <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">
+              Não foi possível carregar pets. Você pode cadastrar depois.
+            </div>
+          ) : filteredPets.length === 0 ? (
+            <div className="mb-4 rounded-lg bg-blue-50 p-4 text-blue-800 flex items-center justify-between">
+              Nenhum pet cadastrado ainda.
+              <span className="ml-2 text-xs">Você pode cadastrar depois.</span>
+            </div>
+          ) : (
+            <FormField
+              label="Pet"
+              id="petId"
+              error={errors.petId?.message}
+              touched={touchedFields.petId || isSubmitted}
+              {...register("petId")}
+              options={filteredPets.map((p) => ({ value: p.id, label: p.name }))}
+            />
+          )}
         phone: data.phone,
       };
       if (data.email) submitData.email = data.email;

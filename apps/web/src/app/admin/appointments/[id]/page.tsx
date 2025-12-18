@@ -39,7 +39,7 @@ export default function AppointmentFormPage() {
     cancelExistingAppointment,
   } = useAppointments();
   const { customers, fetchCustomers } = useCustomers();
-  const { pets, fetchPets } = usePets();
+  const { pets, fetchPets, error: petsError } = usePets();
   const { locations, fetchLocations } = useLocations();
 
   const {
@@ -174,14 +174,26 @@ export default function AppointmentFormPage() {
             options={customers.map((c) => ({ value: c.id, label: c.name }))}
           />
 
-          <SelectField
-            label="Pet"
-            id="petId"
-            error={errors.petId?.message}
-            disabled={isEditing && !watch('petId')}
-            {...register('petId')}
-            options={filteredPets.map((p) => ({ value: p.id, label: p.name }))}
-          />
+          {/* UX degradável para pets */}
+          {petsError ? (
+            <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">
+              Não foi possível carregar pets. Você pode cadastrar depois.
+            </div>
+          ) : filteredPets.length === 0 ? (
+            <div className="mb-4 rounded-lg bg-blue-50 p-4 text-blue-800 flex items-center justify-between">
+              Nenhum pet cadastrado ainda.
+              <span className="ml-2 text-xs">Você pode cadastrar depois.</span>
+            </div>
+          ) : (
+            <SelectField
+              label="Pet"
+              id="petId"
+              error={errors.petId?.message}
+              disabled={isEditing && !watch('petId')}
+              {...register('petId')}
+              options={filteredPets.map((p) => ({ value: p.id, label: p.name }))}
+            />
+          )}
 
           <SelectField
             label="Local"
