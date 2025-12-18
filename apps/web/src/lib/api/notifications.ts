@@ -1,6 +1,5 @@
-import { getAuthToken } from './client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+import { apiFetch } from '../api';
 
 export type NotificationStatus = 'SCHEDULED' | 'SENT' | 'ERROR' | 'CANCELLED';
 export type NotificationChannel = 'SMS' | 'EMAIL' | 'WHATSAPP';
@@ -36,6 +35,8 @@ export interface NotificationJobsFilters {
   pageSize?: number;
 }
 
+import { getAuthToken } from './client';
+
 export async function listNotificationJobs(filters: NotificationJobsFilters = {}) {
   const params = new URLSearchParams();
   if (filters.status) params.set('status', filters.status);
@@ -44,15 +45,8 @@ export async function listNotificationJobs(filters: NotificationJobsFilters = {}
   if (filters.to) params.set('to', filters.to);
   if (filters.page) params.set('page', String(filters.page));
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
-
   const qs = params.toString();
-  const url = `${API_BASE}/integrations/notifications/admin/jobs${qs ? `?${qs}` : ''}`;
-
-  const res = await fetch(url, {
+  return apiFetch(`/integrations/notifications/admin/jobs${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
-  });
-  if (!res.ok) {
-    throw new Error(`Falha ao listar notificações: ${res.status}`);
-  }
-  return res.json() as Promise<ListNotificationJobsResponse>;
+  }) as Promise<ListNotificationJobsResponse>;
 }

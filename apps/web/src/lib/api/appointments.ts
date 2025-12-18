@@ -1,6 +1,7 @@
-import { getAuthToken } from './client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+
+import { apiFetch } from '../api';
+import { getAuthToken } from './client';
 
 export type AppointmentStatus =
   | 'SCHEDULED'
@@ -50,6 +51,7 @@ export interface ListAppointmentsQuery {
   status?: AppointmentStatus;
 }
 
+
 export async function listAppointments(filters?: ListAppointmentsQuery): Promise<Appointment[]> {
   const search = new URLSearchParams();
   if (filters?.locationId) search.set('locationId', filters.locationId);
@@ -57,56 +59,38 @@ export async function listAppointments(filters?: ListAppointmentsQuery): Promise
   if (filters?.from) search.set('from', filters.from);
   if (filters?.to) search.set('to', filters.to);
   if (filters?.status) search.set('status', filters.status);
-
   const qs = search.toString();
-  const url = qs
-    ? `${API_BASE}/v1/appointments?${qs}`
-    : `${API_BASE}/v1/appointments`;
-
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
-  if (!res.ok) throw new Error(`Failed to list appointments: ${res.status}`);
-  return res.json();
-}
-
-export async function fetchAppointment(id: string): Promise<Appointment> {
-  const res = await fetch(`${API_BASE}/v1/appointments/${id}`, {
+  return apiFetch(`/v1/appointments${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
-  if (!res.ok) throw new Error(`Failed to fetch appointment: ${res.status}`);
-  return res.json();
 }
 
+
+export async function fetchAppointment(id: string): Promise<Appointment> {
+  return apiFetch(`/v1/appointments/${id}`, {
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
+  });
+}
+
+
 export async function createAppointment(dto: CreateAppointmentDto): Promise<Appointment> {
-  const res = await fetch(`${API_BASE}/v1/appointments`, {
+  return apiFetch('/v1/appointments', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error(`Failed to create appointment: ${res.status}`);
-  return res.json();
 }
 
 export async function updateAppointment(id: string, dto: UpdateAppointmentDto): Promise<Appointment> {
-  const res = await fetch(`${API_BASE}/v1/appointments/${id}`, {
+  return apiFetch(`/v1/appointments/${id}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error(`Failed to update appointment: ${res.status}`);
-  return res.json();
 }
-
 export async function cancelAppointment(id: string): Promise<Appointment> {
-  const res = await fetch(`${API_BASE}/v1/appointments/${id}/cancel`, {
+  return apiFetch(`/v1/appointments/${id}/cancel`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
-  if (!res.ok) throw new Error(`Failed to cancel appointment: ${res.status}`);
-  return res.json();
 }

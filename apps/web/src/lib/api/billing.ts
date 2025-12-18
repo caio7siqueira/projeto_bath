@@ -1,6 +1,6 @@
-import { getAuthToken } from './client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+import { apiFetch } from '../api';
+import { getAuthToken } from './client';
 
 export type BillingStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'INACTIVE';
 
@@ -18,36 +18,25 @@ export interface UpsertBillingSubscriptionDto {
   status: BillingStatus;
 }
 
+
 export async function fetchBillingSubscription(): Promise<BillingSubscription | null> {
-  const res = await fetch(`${API_BASE}/admin/billing/subscription`, {
-    headers: {
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-  });
-
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error(`Falha ao carregar assinatura: ${res.status}`);
+  try {
+    return await apiFetch('/admin/billing/subscription', {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    });
+  } catch (err: any) {
+    if (err && err.status === 404) return null;
+    throw new Error(`Falha ao carregar assinatura: ${err?.status || ''}`);
   }
-
-  return res.json();
 }
+
 
 export async function upsertBillingSubscription(
   dto: UpsertBillingSubscriptionDto,
 ): Promise<BillingSubscription> {
-  const res = await fetch(`${API_BASE}/admin/billing/subscription`, {
+  return apiFetch('/admin/billing/subscription', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
   });
-
-  if (!res.ok) {
-    throw new Error(`Falha ao salvar assinatura: ${res.status}`);
-  }
-
-  return res.json();
 }

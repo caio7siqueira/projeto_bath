@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+
+import { apiFetch } from '../api';
 
 export interface ReportsSummary {
   total: number;
@@ -22,17 +23,10 @@ export async function fetchReportsSummary(
   const params = new URLSearchParams();
   if (from) params.set('from', from);
   if (to) params.set('to', to);
-
-  const url = `${API_BASE}/v1/reports/appointments/summary${params.toString() ? '?' + params.toString() : ''}`;
-  const res = await fetch(url, {
+  const qs = params.toString();
+  return apiFetch(`/v1/reports/appointments/summary${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  if (!res.ok) {
-    throw new Error(`Fetch summary failed: ${res.status} ${res.statusText}`);
-  }
-
-  return res.json();
 }
 
 export async function fetchReportsTimeseries(
@@ -45,15 +39,8 @@ export async function fetchReportsTimeseries(
   if (from) params.set('from', from);
   if (to) params.set('to', to);
   if (granularity) params.set('granularity', granularity);
-
-  const url = `${API_BASE}/v1/reports/appointments/timeseries${params.toString() ? '?' + params.toString() : ''}`;
-  const res = await fetch(url, {
+  const qs = params.toString();
+  return apiFetch(`/v1/reports/appointments/timeseries${qs ? `?${qs}` : ''}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  if (!res.ok) {
-    throw new Error(`Fetch timeseries failed: ${res.status} ${res.statusText}`);
-  }
-
-  return res.json();
 }

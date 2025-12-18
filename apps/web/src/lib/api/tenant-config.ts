@@ -1,6 +1,6 @@
 import { getAuthToken } from './client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+import { apiFetch } from '../api';
 
 export interface TenantConfig {
   id: string;
@@ -19,19 +19,15 @@ export interface UpdateTenantConfigDto {
 }
 
 export async function fetchTenantConfig(): Promise<TenantConfig> {
-  const res = await fetch(`${API_BASE}/admin/tenant-config`, {
+  return apiFetch('/admin/tenant-config', {
     headers: {
       Authorization: `Bearer ${getAuthToken()}`,
     },
   });
-  if (!res.ok) {
-    throw new Error(`Falha ao carregar configurações do tenant: ${res.status}`);
-  }
-  return res.json();
 }
 
 export async function updateTenantConfig(dto: UpdateTenantConfigDto): Promise<TenantConfig> {
-  const res = await fetch(`${API_BASE}/admin/tenant-config`, {
+  return apiFetch('/admin/tenant-config', {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -39,8 +35,4 @@ export async function updateTenantConfig(dto: UpdateTenantConfigDto): Promise<Te
     },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) {
-    throw new Error(`Falha ao atualizar configurações do tenant: ${res.status}`);
-  }
-  return res.json();
 }

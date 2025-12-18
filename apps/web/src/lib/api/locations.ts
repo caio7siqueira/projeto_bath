@@ -1,6 +1,5 @@
-import { getAuthToken } from './client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+import { apiFetch } from '../api';
 
 export interface Location {
   id: string;
@@ -14,23 +13,18 @@ export interface CreateLocationDto {
   name: string;
 }
 
+import { getAuthToken } from './client';
+
 export async function listLocations(): Promise<Location[]> {
-  const res = await fetch(`${API_BASE}/v1/locations`, {
+  return apiFetch('/v1/locations', {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
-  if (!res.ok) throw new Error(`Failed to list locations: ${res.status}`);
-  return res.json();
 }
 
 export async function createLocation(dto: CreateLocationDto): Promise<Location> {
-  const res = await fetch(`${API_BASE}/v1/locations`, {
+  return apiFetch('/v1/locations', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
   });
-  if (!res.ok) throw new Error(`Failed to create location: ${res.status}`);
-  return res.json();
 }
