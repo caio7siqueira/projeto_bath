@@ -29,7 +29,7 @@ export interface RefreshResponse {
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return apiFetch('/v1/auth/login', {
+  return apiFetch('/auth/login', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -37,7 +37,7 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 
 
 export async function refresh(data: RefreshRequest): Promise<RefreshResponse> {
-  return apiFetch('/v1/auth/refresh', {
+  return apiFetch('/auth/refresh', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -45,7 +45,7 @@ export async function refresh(data: RefreshRequest): Promise<RefreshResponse> {
 
 
 export async function logout(accessToken: string, refreshToken: string): Promise<void> {
-  await apiFetch('/v1/auth/logout', {
+  await apiFetch('/auth/logout', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ refreshToken }),

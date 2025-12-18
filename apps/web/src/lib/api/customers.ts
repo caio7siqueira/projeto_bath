@@ -63,7 +63,7 @@ export async function fetchCustomer(token: string, customerId: string): Promise<
 }
 
 export async function createCustomer(dto: CreateCustomerDto): Promise<Customer> {
-  return apiFetch('/v1/customers', {
+  return apiFetch('/customers', {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
@@ -74,7 +74,7 @@ export async function updateCustomer(
   customerId: string,
   dto: UpdateCustomerDto
 ): Promise<Customer> {
-  return apiFetch(`/v1/customers/${customerId}`, {
+  return apiFetch(`/customers/${customerId}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
@@ -82,14 +82,14 @@ export async function updateCustomer(
 }
 
 export async function deleteCustomer(customerId: string): Promise<void> {
-  await apiFetch(`/v1/customers/${customerId}`, {
+  await apiFetch(`/customers/${customerId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 export async function fetchCustomerPets(token: string, customerId: string): Promise<Pet[]> {
-  return apiFetch(`/v1/customers/${customerId}/pets`, {
+  return apiFetch(`/customers/${customerId}/pets`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
@@ -105,13 +105,13 @@ export interface CreatePetDto {
 export interface UpdatePetDto extends Partial<CreatePetDto> {}
 
 export async function listPets(): Promise<Pet[]> {
-  return apiFetch('/v1/pets', {
+  return apiFetch('/pets', {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 export async function createPet(customerId: string, dto: CreatePetDto): Promise<Pet> {
-  return apiFetch(`/v1/customers/${customerId}/pets`, {
+  return apiFetch(`/customers/${customerId}/pets`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
@@ -122,7 +122,7 @@ export async function updatePet(
   petId: string,
   dto: UpdatePetDto
 ): Promise<Pet> {
-  return apiFetch(`/v1/pets/${petId}`, {
+  return apiFetch(`/pets/${petId}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
@@ -130,14 +130,14 @@ export async function updatePet(
 }
 
 export async function deletePet(petId: string): Promise<void> {
-  await apiFetch(`/v1/pets/${petId}`, {
+  await apiFetch(`/pets/${petId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 export async function fetchCustomerContacts(token: string, customerId: string): Promise<CustomerContact[]> {
-  return apiFetch(`/v1/customers/${customerId}/contacts`, {
+  return apiFetch(`/customers/${customerId}/contacts`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
