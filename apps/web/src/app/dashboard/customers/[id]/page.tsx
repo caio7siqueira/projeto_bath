@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import { fetchCustomer, fetchCustomerContacts, fetchCustomerPets, Customer, CustomerContact, Pet } from '@/lib/api/customers';
-
-const MOCK_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN || '';
 
 export default function CustomerDetailPage() {
   const params = useParams();
   const customerId = params?.id as string;
+  const { accessToken } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export default function CustomerDetailPage() {
   const [contacts, setContacts] = useState<CustomerContact[]>([]);
 
   useEffect(() => {
-    if (!MOCK_TOKEN) {
+    if (!accessToken) {
       setError('Token não configurado.');
       setLoading(false);
       return;
@@ -30,9 +30,9 @@ export default function CustomerDetailPage() {
     }
 
     Promise.all([
-      fetchCustomer(MOCK_TOKEN, customerId),
-      fetchCustomerContacts(MOCK_TOKEN, customerId),
-      fetchCustomerPets(MOCK_TOKEN, customerId),
+      fetchCustomer(accessToken, customerId),
+      fetchCustomerContacts(accessToken, customerId),
+      fetchCustomerPets(accessToken, customerId),
     ])
       .then(([customerData, contactsData, petsData]) => {
         setCustomer(customerData);
@@ -41,11 +41,10 @@ export default function CustomerDetailPage() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Erro ao buscar detalhes do cliente:', err);
-        setError(err.message || 'Falha ao buscar dados');
+        setError(err instanceof Error ? err.message : 'Erro ao carregar cliente');
         setLoading(false);
       });
-  }, [customerId]);
+  }, [customerId, accessToken]);
 
   if (loading) {
     return (

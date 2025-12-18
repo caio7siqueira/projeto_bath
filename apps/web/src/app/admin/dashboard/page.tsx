@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 
@@ -11,7 +12,6 @@ interface DashboardStats {
   totalLocations: number;
 }
 
-export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
     totalPets: 0,
@@ -20,31 +20,27 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { accessToken } = useAuth();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-        const token = process.env.NEXT_PUBLIC_DEMO_TOKEN;
-
-        if (!baseUrl || !token) {
-          throw new Error('Missing API configuration');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!baseUrl || !accessToken) {
+          throw new Error('Missing API configuration ou token');
         }
-
         const response = await fetch(`${baseUrl}/v1/dashboard/reports`, {
           method: 'GET',
           mode: 'cors',
           credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         });
-
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-
         const data = await response.json();
         setStats(data);
       } catch (err) {
@@ -55,9 +51,8 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
-
     fetchStats();
-  }, []);
+  }, [accessToken]);
 
   if (loading) {
     return (
