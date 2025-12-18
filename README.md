@@ -1,3 +1,13 @@
+## Variáveis de ambiente (Web)
+
+Para o frontend acessar a API corretamente, defina a variável:
+
+```
+NEXT_PUBLIC_API_URL=https://api.efizion.com.br # produção
+NEXT_PUBLIC_API_URL=http://localhost:3000      # local
+```
+
+Configure no arquivo `.env.local` em `apps/web` para desenvolvimento local.
 # Efizion Bath Monorepo
 
 [![E2E CI](https://github.com/caio7siqueira/projeto_bath/actions/workflows/e2e.yml/badge.svg)](https://github.com/caio7siqueira/projeto_bath/actions/workflows/e2e.yml)
