@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { OmieQueueService } from './omie.queue';
 import { fetchWithRetry } from '@/common/http-retry.util';
 

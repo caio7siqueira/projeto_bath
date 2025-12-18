@@ -9,7 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ActorType, UserRole } from '@prisma/client';
-import { PrismaService } from '@/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomUUID } from 'crypto';
 import { RegisterDto, LoginDto, RefreshDto } from './dto';
