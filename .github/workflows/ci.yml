@@ -26,6 +26,10 @@ jobs:
         run: pnpm -w lint
       - name: Typecheck
         run: pnpm -w typecheck
+      - name: Criar .env.local para o frontend
+        run: echo "NEXT_PUBLIC_API_URL=https://api.efizion.com.br" > $GITHUB_WORKSPACE/apps/web/.env.local
+      - name: Verificar .env.local
+        run: ls -l $GITHUB_WORKSPACE/apps/web/
       - name: Build
         run: pnpm -w build
       - name: Verify build output
