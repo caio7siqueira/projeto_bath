@@ -36,7 +36,7 @@ function LogoutButton() {
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAdmin } = useRole();
+  const { isAdmin, isSuperAdmin } = useRole();
 
   return (
     <>
@@ -48,103 +48,45 @@ export function Sidebar() {
       >
         ☰
       </button>
-
-      {/* Overlay for mobile */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
           className="fixed inset-0 z-30 bg-black/50 md:hidden"
         />
       )}
-
-      {/* Sidebar */}
       <aside
-        className={`${
+        className={`$
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white transition-transform duration-300 md:sticky md:top-0 md:h-screen md:translate-x-0 md:overflow-y-auto`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="border-b border-gray-700 p-6">
             <h1 className="text-2xl font-bold">Bath</h1>
-            <p className="mt-1 text-sm text-gray-400">Gerenciador</p>
+            <p className="mt-1 text-sm text-gray-400">Gestão Petshop</p>
           </div>
-
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
-            <NavLink
-              href="/admin/dashboard"
-              label="Dashboard"
-              onClick={() => setIsOpen(false)}
-            />
-            <NavLink
-              href="/admin/customers"
-              label="Clientes"
-              onClick={() => setIsOpen(false)}
-            />
-            <NavLink
-              href="/admin/pets"
-              label="Pets"
-              onClick={() => setIsOpen(false)}
-            />
-            <NavLink
-              href="/admin/appointments"
-              label="Agendamentos"
-              onClick={() => setIsOpen(false)}
-            />
-            <NavLink
-              href="/admin/locations"
-              label="Locais"
-              onClick={() => setIsOpen(false)}
-            />
-            {isAdmin && (
+            {/* Operacional */}
+            <div className="mb-2 mt-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Operacional</div>
+            <NavLink href="/admin/appointments" label="Agenda" onClick={() => setIsOpen(false)} />
+            <NavLink href="/admin/customers" label="Clientes" onClick={() => setIsOpen(false)} />
+            <NavLink href="/admin/pets" label="Pets" onClick={() => setIsOpen(false)} />
+            <NavLink href="/admin/locations" label="Locais" onClick={() => setIsOpen(false)} />
+            {/* Administrativo */}
+            <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administrativo</div>
+            <NavLink href="/dashboard/reports" label="Relatórios" onClick={() => setIsOpen(false)} />
+            <NavLink href="/admin/notifications" label="Notificações" onClick={() => setIsOpen(false)} />
+            <NavLink href="/admin/billing" label="Financeiro" onClick={() => setIsOpen(false)} />
+            {/* Configurações */}
+            <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>
+            <NavLink href="/admin/settings" label="Configurações" onClick={() => setIsOpen(false)} />
+            {/* Super Admin */}
+            {isSuperAdmin && (
               <>
-                {/* Operacional */}
-                <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Operacional</div>
-                <NavLink
-                  href="/admin/appointments"
-                  label="Agenda"
-                  onClick={() => setIsOpen(false)}
-                />
-                <NavLink
-                  href="/admin/customers"
-                  label="Clientes"
-                  onClick={() => setIsOpen(false)}
-                />
-                <NavLink
-                  href="/admin/pets"
-                  label="Pets"
-                  onClick={() => setIsOpen(false)}
-                />
-                {/* Administrativo */}
-                <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administrativo</div>
-                <NavLink
-                  href="/dashboard/reports"
-                  label="Relatórios"
-                  onClick={() => setIsOpen(false)}
-                />
-                <NavLink
-                  href="/admin/notifications"
-                  label="Notificações"
-                  onClick={() => setIsOpen(false)}
-                />
-                <NavLink
-                  href="/admin/billing"
-                  label="Financeiro"
-                  onClick={() => setIsOpen(false)}
-                />
-                {/* Configurações */}
-                <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>
-                <NavLink
-                  href="/admin/settings"
-                  label="Configurações"
-                  onClick={() => setIsOpen(false)}
-                />
+                <div className="mb-2 mt-4 text-xs font-semibold text-blue-400 uppercase tracking-wider">Super Admin</div>
+                <NavLink href="/super-admin/users" label="Usuários da Plataforma" onClick={() => setIsOpen(false)} />
               </>
             )}
           </nav>
-
-          {/* Footer */}
           <div className="border-t border-gray-700 p-4">
             <LogoutButton />
           </div>

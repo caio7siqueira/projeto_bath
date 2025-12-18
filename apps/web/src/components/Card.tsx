@@ -1,14 +1,17 @@
 'use client';
 
-interface CardProps {
-  children: React.ReactNode;
+import type { HTMLAttributes, ReactNode } from 'react';
+
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
   className?: string;
   header?: string;
 }
 
-export function Card({ children, className = '', header }: CardProps) {
+export function Card({ children, className = '', header, ...rest }: CardProps) {
   return (
     <div
+      {...rest}
       className={`rounded-lg border border-gray-200 bg-white p-6 shadow-sm ${className}`}
     >
       {header && <h3 className="text-lg font-semibold mb-4 text-gray-900">{header}</h3>}

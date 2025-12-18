@@ -1,20 +1,22 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useCustomers } from "@/lib/hooks";
-import { Card, CardHeader } from "@/components/Card";
-import { Button } from "@/components/Button";
-import { FormField } from "@/components/FormField";
-import { customerSchema, type CustomerFormData } from "@/lib/schemas";
-import { useState } from "react";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { FormField } from '@/components/FormField';
+import { useCustomers } from '@/lib/hooks';
+import { customerSchema, type CustomerFormData } from '@/lib/schemas';
 
 export default function NewCustomerPage() {
   const router = useRouter();
   const { createNewCustomer } = useCustomers();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const {
     register,
@@ -24,46 +26,42 @@ export default function NewCustomerPage() {
   } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
-      name: "",
-      phone: "",
-      email: "",
-      cpf: "",
+      name: '',
+      phone: '',
+      email: '',
+      cpf: '',
       optInGlobal: false,
     },
-    mode: "onBlur",
-    reValidateMode: "onChange",
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
   });
 
-          {/* UX degradável para pets */}
-          {petsError ? (
-            <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">
-              Não foi possível carregar pets. Você pode cadastrar depois.
-            </div>
-          ) : filteredPets.length === 0 ? (
-            <div className="mb-4 rounded-lg bg-blue-50 p-4 text-blue-800 flex items-center justify-between">
-              Nenhum pet cadastrado ainda.
-              <span className="ml-2 text-xs">Você pode cadastrar depois.</span>
-            </div>
-          ) : (
-            <FormField
-              label="Pet"
-              id="petId"
-              error={errors.petId?.message}
-              touched={touchedFields.petId || isSubmitted}
-              {...register("petId")}
-              options={filteredPets.map((p) => ({ value: p.id, label: p.name }))}
-            />
-          )}
+  const onSubmit = async (data: CustomerFormData) => {
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const submitData: CustomerFormData = {
+        name: data.name,
         phone: data.phone,
       };
       if (data.email) submitData.email = data.email;
       if (data.cpf) submitData.cpf = data.cpf;
       if (data.optInGlobal !== undefined) submitData.optInGlobal = data.optInGlobal;
+
       await createNewCustomer(submitData);
       setSuccess('Cliente criado com sucesso!');
-      setTimeout(() => router.push("/admin/customers"), 1200);
+      reset({
+        name: '',
+        phone: '',
+        email: '',
+        cpf: '',
+        optInGlobal: false,
+      });
+      setTimeout(() => router.push('/admin/customers'), 1200);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao salvar";
+      const message = err instanceof Error ? err.message : 'Erro ao salvar';
       setError(message);
     } finally {
       setIsSaving(false);
@@ -79,7 +77,9 @@ export default function NewCustomerPage() {
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
       )}
       {success && (
-        <div className="mb-4 rounded-lg bg-green-50 p-4 text-green-800 animate-fade-in">{success}</div>
+        <div className="mb-4 rounded-lg bg-green-50 p-4 text-green-800 animate-fade-in">
+          {success}
+        </div>
       )}
       <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -90,7 +90,7 @@ export default function NewCustomerPage() {
             required
             error={errors.name?.message}
             touched={touchedFields.name || isSubmitted}
-            {...register("name")}
+            {...register('name')}
           />
           <FormField
             label="Telefone"
@@ -99,7 +99,7 @@ export default function NewCustomerPage() {
             required
             error={errors.phone?.message}
             touched={touchedFields.phone || isSubmitted}
-            {...register("phone")}
+            {...register('phone')}
           />
           <FormField
             label="Email"
@@ -108,7 +108,7 @@ export default function NewCustomerPage() {
             placeholder="joao@example.com"
             error={errors.email?.message}
             touched={touchedFields.email || isSubmitted}
-            {...register("email")}
+            {...register('email')}
           />
           <FormField
             label="CPF"
@@ -116,7 +116,7 @@ export default function NewCustomerPage() {
             placeholder="123.456.789-00"
             error={errors.cpf?.message}
             touched={touchedFields.cpf || isSubmitted}
-            {...register("cpf")}
+            {...register('cpf')}
           />
           <div className="flex gap-3 pt-4">
             <Button type="submit" isLoading={isSaving}>
@@ -125,7 +125,7 @@ export default function NewCustomerPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push("/admin/customers")}
+              onClick={() => router.push('/admin/customers')}
             >
               Cancelar
             </Button>

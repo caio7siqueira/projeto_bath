@@ -35,7 +35,7 @@ export default function AppointmentsPage() {
   const { customers, fetchCustomers } = useCustomers();
   const { pets, fetchPets } = usePets();
   const { locations, fetchLocations } = useLocations();
-    const { services, fetchServices } = useServices();
+  const { services, isLoading: servicesLoading, error: servicesError, fetchServices } = useServices();
   const [mounted, setMounted] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
 
@@ -92,7 +92,52 @@ export default function AppointmentsPage() {
     }
   };
 
-  if (!mounted) return null;
+  if (!mounted) {
+    // Skeleton inicial
+    return (
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 w-1/3 bg-gray-200 rounded" />
+          <div className="h-6 w-1/2 bg-gray-100 rounded" />
+          <div className="h-96 bg-gray-100 rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  // Loading/erro/empty de serviços (UX degradável)
+  if (servicesLoading) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto text-center text-gray-500">Carregando serviços...</div>
+    );
+  }
+  if (servicesError) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">{servicesError}</div>
+        <Card>
+          <CardHeader title="Nenhum serviço disponível" />
+          <p className="text-gray-600">Cadastre serviços para poder agendar.</p>
+          <Link href="/admin/services/new">
+            <Button className="mt-4">Cadastrar Serviço</Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+  if (services.length === 0) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <Card>
+          <CardHeader title="Nenhum serviço cadastrado" />
+          <p className="text-gray-600">Cadastre serviços para poder agendar.</p>
+          <Link href="/admin/services/new">
+            <Button className="mt-4">Cadastrar Serviço</Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
 
   // Mapeia agendamentos para eventos do FullCalendar
   const events = appointments.map((a) => ({
@@ -193,7 +238,11 @@ export default function AppointmentsPage() {
       )}
 
       {isLoading ? (
-        <div className="text-center text-gray-600">Carregando agenda...</div>
+        <div className="space-y-4">
+          <div className="animate-pulse h-8 w-1/3 bg-gray-200 rounded mx-auto" />
+          <div className="animate-pulse h-6 w-1/2 bg-gray-100 rounded mx-auto" />
+          <div className="animate-pulse h-96 bg-gray-100 rounded-lg" />
+        </div>
       ) : appointments.length === 0 ? (
         <Card>
           <CardHeader title="Nenhum agendamento" />
@@ -205,9 +254,9 @@ export default function AppointmentsPage() {
           {isMobile ? (
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <Button onClick={handlePrevDay} size="sm">◀</Button>
+                <Button onClick={handlePrevDay} size="sm" aria-label="Dia anterior">◀</Button>
                 <span className="font-semibold text-lg">{mobileDay.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })}</span>
-                <Button onClick={handleNextDay} size="sm">▶</Button>
+                <Button onClick={handleNextDay} size="sm" aria-label="Próximo dia">▶</Button>
               </div>
               <div className="space-y-3">
                 {/* Slots horários para tap & hold */}
@@ -215,15 +264,16 @@ export default function AppointmentsPage() {
                   const hour = 7 + i;
                   const slotAppointments = mobileAppointments.filter(a => new Date(a.startsAt).getHours() === hour);
                   return (
-                    <div key={hour} className="relative" onTouchStart={() => handleMobileSlotTouchStart(hour)} onTouchEnd={handleMobileSlotTouchEnd}>
+                    <div key={hour} className="relative group" onTouchStart={() => handleMobileSlotTouchStart(hour)} onTouchEnd={handleMobileSlotTouchEnd}>
                       <div className="text-xs text-gray-400 mb-1">{hour.toString().padStart(2, '0')}:00</div>
                       {slotAppointments.length === 0 ? (
-                        <div className="h-12 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-xs select-none">
+                        <div className="h-12 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-xs select-none group-hover:bg-blue-50 transition-colors">
                           Tap & hold para agendar
                         </div>
                       ) : (
                         slotAppointments.map(a => (
-                          <Card key={a.id} className="flex flex-col p-3 border-l-4 group cursor-pointer transition-shadow hover:shadow-lg" style={{ borderColor: statusColors[a.status] }} onClick={() => window.location.href = `/admin/appointments/${a.id}` }>
+                          <Card key={a.id} className="flex flex-col p-3 border-l-4 group cursor-pointer transition-shadow hover:shadow-lg focus-within:ring-2 focus-within:ring-blue-400" style={{ borderColor: statusColors[a.status] }} tabIndex={0} aria-label={`Agendamento de ${customerById[a.customerId] || 'Cliente'}`}
+                            onClick={() => window.location.href = `/admin/appointments/${a.id}` }>
                             <div className="flex items-center justify-between">
                               <div>
                                 <div className="font-semibold text-base flex items-center gap-2">
@@ -245,7 +295,8 @@ export default function AppointmentsPage() {
                 })}
               </div>
               {/* FAB flutuante */}
-              <Button className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg md:hidden" onClick={() => window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(mobileDay.toISOString().slice(0,10)+'T09:00:00')}`}>+ Agendar</Button>
+              <Button className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg md:hidden focus:ring-2 focus:ring-blue-400" onClick={() => window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(mobileDay.toISOString().slice(0,10)+'T09:00:00')}`}
+                aria-label="Novo agendamento">+ Agendar</Button>
             </div>
           ) : (
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
@@ -276,6 +327,7 @@ export default function AppointmentsPage() {
                   eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
                   dayMaxEvents={3}
                   aspectRatio={1.5}
+                  eventClassNames={(arg) => `transition-shadow focus:ring-2 focus:ring-blue-400 ${arg.event.extendedProps.status ? 'border-l-4' : ''}`}
                 />
             </div>
           )}

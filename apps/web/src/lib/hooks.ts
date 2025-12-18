@@ -11,9 +11,15 @@ export function useServices() {
     try {
       const data = await listServices();
       setServices(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
+    } catch (err: any) {
+      // Se 404, retorna array vazio e mensagem amigável
+      if (err?.status === 404) {
+        setServices([]);
+        setErrorState('Nenhum serviço cadastrado ainda.');
+      } else {
+        const message = err instanceof Error ? err.message : 'Erro ao carregar serviços';
+        setErrorState(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -298,10 +304,17 @@ export function usePets() {
     try {
       const data = await listPets();
       setPets(data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
+    } catch (err: any) {
+      // Se 404, retorna array vazio e mensagem amigável
+      if (err?.status === 404) {
+        setPets([]);
+        setErrorState('Nenhum pet cadastrado ainda.');
+        setError('Nenhum pet cadastrado ainda.');
+      } else {
+        const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
+        setErrorState(message);
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }

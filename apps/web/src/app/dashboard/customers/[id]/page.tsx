@@ -56,6 +56,17 @@ export default function CustomerDetailPage() {
   }
 
   if (error || !customer) {
+    if (error && error.includes('Token não configurado')) {
+      return (
+        <div className="flex flex-col gap-2 p-8 text-center">
+          <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">
+            Token não configurado. Configure <b>NEXT_PUBLIC_DEMO_TOKEN</b> nas variáveis de ambiente para acessar o modo demo.
+          </div>
+          <div className="mb-2 text-gray-700">Peça ao responsável técnico para configurar a variável de ambiente <b>NEXT_PUBLIC_DEMO_TOKEN</b> no painel de deploy.</div>
+          <div className="mb-2 text-gray-500 text-sm">Ou acesse a documentação para mais detalhes.</div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col gap-2">
         <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Cliente</p>

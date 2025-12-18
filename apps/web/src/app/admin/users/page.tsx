@@ -9,7 +9,7 @@ import { FormField, SelectField } from "@/components/FormField";
 
 const ROLES = [
   { value: "ADMIN", label: "Admin" },
-  { value: "SUPERADMIN", label: "Superadmin" },
+  { value: "SUPER_ADMIN", label: "Super Admin" },
 ];
 
 export default function SuperadminUsersPage() {
@@ -24,7 +24,7 @@ export default function SuperadminUsersPage() {
     // TODO: fetch real users
     setTimeout(() => {
       setUsers([
-        { id: 1, email: "admin@demo.com", name: "Admin Demo", role: "SUPERADMIN", tenant: "global" },
+        { id: 1, email: "admin@demo.com", name: "Admin Demo", role: "SUPER_ADMIN", tenant: "global" },
       ]);
       setIsLoading(false);
     }, 500);
