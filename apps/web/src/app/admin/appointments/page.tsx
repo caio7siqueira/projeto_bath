@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { useAppointments, useCustomers, usePets, useLocations } from '@/lib/hooks';
+import { useAppointments, useCustomers, usePets, useLocations, useServices } from '@/lib/hooks';
 import { useAppStore } from '@/lib/store';
 import type { Appointment } from '@/lib/api/appointments';
 import FullCalendar from '@fullcalendar/react';
@@ -35,6 +35,7 @@ export default function AppointmentsPage() {
   const { customers, fetchCustomers } = useCustomers();
   const { pets, fetchPets } = usePets();
   const { locations, fetchLocations } = useLocations();
+    const { services, fetchServices } = useServices();
   const [mounted, setMounted] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
 
@@ -44,12 +45,14 @@ export default function AppointmentsPage() {
     fetchCustomers();
     fetchPets();
     fetchLocations();
+    fetchServices();
   }, []);
 
 
   const customerById = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
   const petById = useMemo(() => Object.fromEntries(pets.map((p) => [p.id, p.name])), [pets]);
   const locationById = useMemo(() => Object.fromEntries(locations.map((l) => [l.id, l.name])), [locations]);
+  const serviceById = useMemo(() => Object.fromEntries(services.map((s) => [s.id, s.name])), [services]);
 
   const handleCancel = async (id: string) => {
     setActioningId(id);
@@ -94,7 +97,7 @@ export default function AppointmentsPage() {
   // Mapeia agendamentos para eventos do FullCalendar
   const events = appointments.map((a) => ({
     id: a.id,
-    title: `${customerById[a.customerId] || 'Cliente'}${a.petId ? ' - ' + (petById[a.petId] || '') : ''}\n${a.serviceName || ''}`,
+    title: `${customerById[a.customerId] || 'Cliente'}${a.petId ? ' - ' + (petById[a.petId] || '') : ''}\n${a.serviceId ? (serviceById[a.serviceId] || '') : ''}`,
     start: a.startsAt,
     end: a.endsAt,
     backgroundColor: statusColors[a.status],
@@ -104,6 +107,7 @@ export default function AppointmentsPage() {
       customerName: customerById[a.customerId],
       petName: a.petId ? petById[a.petId] : undefined,
       locationName: locationById[a.locationId],
+      serviceName: a.serviceId ? (serviceById[a.serviceId] || '') : undefined,
     },
   }));
 

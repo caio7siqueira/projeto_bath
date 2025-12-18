@@ -1,4 +1,31 @@
 import { useState } from 'react';
+import { listServices, type Service } from './api/services';
+export function useServices() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setErrorState] = useState<string | null>(null);
+
+  const fetchServices = async () => {
+    setIsLoading(true);
+    setErrorState(null);
+    try {
+      const data = await listServices();
+      setServices(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setErrorState(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    services,
+    isLoading,
+    error,
+    fetchServices,
+  };
+}
 import { useAppStore } from './store';
 import {
   listCustomers,
