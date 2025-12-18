@@ -9,14 +9,32 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS for local dev and any Codespaces domain
+  // CORS_ORIGIN pode ser string única ou lista separada por vírgula
+  // Exemplo: CORS_ORIGIN=https://pet.efizion.com.br,http://localhost:3000,http://localhost:3001
+  const envOrigins = process.env.CORS_ORIGIN;
+  const fallbackOrigins = [
+    'https://pet.efizion.com.br',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
+  // Regex para *.app.github.dev (Codespaces)
+  const codespacesRegex = /\.app\.github\.dev$/;
+  // Normaliza e filtra origens
+  const allowedOrigins = (envOrigins
+    ? envOrigins.split(',').map(o => o.trim()).filter(Boolean)
+    : fallbackOrigins);
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://organic-guacamole-55p5gwg9974hvp5p-3001.app.github.dev',
-      /\.app\.github\.dev$/, // Allow all Codespaces domains
-    ],
+    origin: (origin, callback) => {
+      // Permite requests sem Origin (curl, healthcheck, server-to-server)
+      if (!origin) return callback(null, true);
+      // Permite se origin está na lista
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Permite *.app.github.dev
+      if (codespacesRegex.test(origin)) return callback(null, true);
+      // Bloqueia demais
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
     credentials: true,
