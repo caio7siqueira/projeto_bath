@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsUUID, IsISO8601, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaginationQueryDto } from '@/common/dto/pagination.dto';
+import { PaginationQueryDto } from 'apps/api/src/common/dto/pagination.dto';
 
 export enum AppointmentStatusFilter {
   SCHEDULED = 'SCHEDULED',

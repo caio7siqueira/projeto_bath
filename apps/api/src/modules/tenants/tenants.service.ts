@@ -4,7 +4,7 @@ import { CreateTenantDto, UpdateTenantDto } from './dto';
 import {
   PaginationQueryDto,
   paginatedResponse,
-} from '@/common/dto/pagination.dto';
+} from 'apps/api/src/common/dto/pagination.dto';
 
 @Injectable()
 export class TenantsService {

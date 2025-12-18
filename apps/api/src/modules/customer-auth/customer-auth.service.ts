@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ActorType } from '@prisma/client';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { TwilioProvider } from '@/integrations/twilio.provider';
+import { TwilioProvider } from 'apps/api/src/integrations/twilio.provider';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';

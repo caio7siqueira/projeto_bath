@@ -297,7 +297,6 @@ Worker:
 - `TWILIO_WHATSAPP_FROM` (opcional, ex. `whatsapp:+14155238886`)
 - `DEFAULT_COUNTRY_CODE` (opcional, default `+55`)
 - `DEFAULT_COUNTRY_ISO` (opcional, default `BR`, usado para normalização de telefone)
-```
 
 ## Scripts úteis
 
@@ -424,3 +423,28 @@ pnpm --filter @efizion/worker start
 - Multi-tenant hard (schema por tenant) ou soft isolation reforçado (row level security em nível DB).
 - Billing/assinaturas: integrar `BillingSubscription` ao gateway de pagamento.
 - Internacionalização (i18n) e suporte a múltiplos países (telefone, fuso horário, moeda).
+
+## Política de Imports e Blindagem CI/CD
+
+> **ATENÇÃO:** Este monorepo **NÃO** permite o uso de aliases TypeScript (`@/`, `src/`, etc.) em produção. Todos os imports devem ser **absolutos reais** a partir da raiz do monorepo (ex: `apps/api/src/...`).
+
+### Regras obrigatórias:
+- **Proibido** usar `@/`, `src/` ou qualquer alias em qualquer arquivo `.ts`.
+- **Proibido** definir `paths` no `tsconfig.json` para produção.
+- **Obrigatório** usar caminhos absolutos reais em todos os imports internos (exemplo: `import { X } from 'apps/api/src/common/x';`).
+- **CI/CD**: Pull requests e builds de produção falharão se houver qualquer uso de alias ou import inválido.
+
+### Como revisar:
+- Antes de abrir PR, busque por `@/` e `src/` nos imports:
+  ```bash
+  grep -E "@/|src/" apps/api/src/**/*.ts apps/worker/src/**/*.ts
+  ```
+  O resultado deve ser **vazio**.
+- Se encontrar, corrija para o caminho absoluto real.
+
+### Motivo
+- O Node.js puro (Railway, Docker, CI/CD) **NÃO** resolve aliases do TypeScript em runtime.
+- Evita dependência de hacks como `tsconfig-paths` ou `module-alias`.
+- Garante que qualquer erro de importação será detectado no build/test, nunca em produção.
+
+---

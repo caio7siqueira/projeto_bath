@@ -4,8 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCustomerDto, UpdateCustomerDto, QueryCustomersDto } from './dto';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
-import { paginatedResponse } from '@/common/dto/pagination.dto';
-import { normalizePhone } from '@/common/phone.util';
+import { paginatedResponse } from 'apps/api/src/common/dto/pagination.dto';
+import { normalizePhone } from 'apps/api/src/common/phone.util';
 
 @Injectable()
 export class CustomersService {

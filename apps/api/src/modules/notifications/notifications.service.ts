@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsQueueService } from './notifications.queue';
-import { normalizePhone } from '@/common/phone.util';
+import { normalizePhone } from 'apps/api/src/common/phone.util';
 
 @Injectable()
 export class NotificationsService {

@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { AppointmentsRepository } from './appointments.repository';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
-import { paginatedResponse } from '@/common/dto/pagination.dto';
-import { OmieService } from '@/modules/omie/omie.service';
-import { NotificationsService } from '@/modules/notifications/notifications.service';
-import { BillingService } from '@/modules/billing/billing.service';
+import { paginatedResponse } from 'apps/api/src/common/dto/pagination.dto';
+import { OmieService } from 'apps/api/src/modules/omie/omie.service';
+import { NotificationsService } from 'apps/api/src/modules/notifications/notifications.service';
+import { BillingService } from 'apps/api/src/modules/billing/billing.service';
 
 const MIN_DURATION_MINUTES = 5;
 
