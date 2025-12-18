@@ -19,7 +19,7 @@ export interface UpdateTenantConfigDto {
 }
 
 export async function fetchTenantConfig(): Promise<TenantConfig> {
-  return apiFetch('/admin/tenant-config', {
+  return apiFetch('/v1/admin/tenant-config', {
     headers: {
       Authorization: `Bearer ${getAuthToken()}`,
     },
@@ -27,7 +27,7 @@ export async function fetchTenantConfig(): Promise<TenantConfig> {
 }
 
 export async function updateTenantConfig(dto: UpdateTenantConfigDto): Promise<TenantConfig> {
-  return apiFetch('/admin/tenant-config', {
+  return apiFetch('/v1/admin/tenant-config', {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

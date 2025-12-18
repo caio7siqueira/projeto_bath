@@ -2,9 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { fetchReportsSummary, fetchReportsTimeseries, ReportsSummary, ReportsTimeseriesItem } from '@/lib/api/reports';
-
-// Mock token (em produção, obter do contexto de auth ou cookie)
-const MOCK_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN || '';
+import { getAuthToken } from '@/lib/api/client';
 
 function formatPeriod(period: string) {
   return new Date(period).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
@@ -17,8 +15,9 @@ export default function ReportsPage() {
   const [series, setSeries] = useState<ReportsTimeseriesItem[]>([]);
 
   useEffect(() => {
-    if (!MOCK_TOKEN) {
-      setError('Token não configurado. Configure NEXT_PUBLIC_DEMO_TOKEN no .env ou implemente autenticação.');
+    const token = getAuthToken();
+    if (!token) {
+      setError('Você precisa estar autenticado para acessar os relatórios.');
       setLoading(false);
       return;
     }
@@ -29,8 +28,8 @@ export default function ReportsPage() {
     const to = now.toISOString();
 
     Promise.all([
-      fetchReportsSummary(MOCK_TOKEN, from, to),
-      fetchReportsTimeseries(MOCK_TOKEN, from, to, 'day'),
+      fetchReportsSummary(token, from, to),
+      fetchReportsTimeseries(token, from, to, 'day'),
     ])
       .then(([summaryData, timeseriesData]) => {
         setTotals(summaryData);
@@ -70,7 +69,7 @@ export default function ReportsPage() {
       <div className="flex flex-col gap-2">
         <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Relatórios</p>
         <h2 className="text-2xl font-semibold text-white">Visão de Agendamentos</h2>
-        <p className="text-sm text-slate-400">Dados mockados. Conecte ao backend usando os endpoints /v1/reports/appointments/summary e /v1/reports/appointments/timeseries.</p>
+        <p className="text-sm text-slate-400">Relatórios reais dos agendamentos do seu petshop.</p>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

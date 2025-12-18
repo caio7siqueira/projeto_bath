@@ -3,7 +3,7 @@ import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata = {
   title: 'Efizion Bath',
-  description: 'SaaS multi-tenant para petshops',
+  description: 'SaaS multi-tenant para petshop, banho & tosa e clínica veterinária',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

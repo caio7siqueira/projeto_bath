@@ -99,14 +99,28 @@ export function Sidebar() {
             />
             {isAdmin && (
               <>
+                {/* Operacional */}
+                <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Operacional</div>
                 <NavLink
-                  href="/dashboard/reports"
-                  label="Relatórios"
+                  href="/admin/appointments"
+                  label="Agenda"
                   onClick={() => setIsOpen(false)}
                 />
                 <NavLink
-                  href="/admin/settings/tenant"
-                  label="Configurações"
+                  href="/admin/customers"
+                  label="Clientes"
+                  onClick={() => setIsOpen(false)}
+                />
+                <NavLink
+                  href="/admin/pets"
+                  label="Pets"
+                  onClick={() => setIsOpen(false)}
+                />
+                {/* Administrativo */}
+                <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administrativo</div>
+                <NavLink
+                  href="/dashboard/reports"
+                  label="Relatórios"
                   onClick={() => setIsOpen(false)}
                 />
                 <NavLink
@@ -116,12 +130,14 @@ export function Sidebar() {
                 />
                 <NavLink
                   href="/admin/billing"
-                  label="Billing"
+                  label="Financeiro"
                   onClick={() => setIsOpen(false)}
                 />
+                {/* Configurações */}
+                <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>
                 <NavLink
                   href="/admin/settings/tenant"
-                  label="Configurações"
+                  label="Configurações do Tenant"
                   onClick={() => setIsOpen(false)}
                 />
               </>

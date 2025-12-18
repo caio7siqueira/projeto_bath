@@ -12,6 +12,11 @@
     "test:e2e": "echo \"(no E2E tests yet)\""
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
     "@hookform/resolvers": "^3.3.4",
     "next": "^14.2.6",
     "next-pwa": "^5.6.0",

@@ -135,7 +135,7 @@ export default function DashboardPage() {
 
         <Card header="Bem-vindo">
           <p className="text-gray-600 mb-4">
-            Sistema de gestão para petshops. Use o menu lateral para navegar entre as seções.
+            Sistema de gestão para petshop, banho & tosa e clínica veterinária. Use o menu lateral para navegar entre as seções.
           </p>
           <ul className="text-sm text-gray-500 space-y-2">
             <li>✓ Clientes - Gerencie sua base de clientes</li>

@@ -1,31 +1,27 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useAppointments, useCustomers, usePets, useLocations } from '@/lib/hooks';
 import { useAppStore } from '@/lib/store';
 import type { Appointment } from '@/lib/api/appointments';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ptBrLocale from '@fullcalendar/core/locales/pt-br';
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
-}
 
-function statusLabel(status: Appointment['status']) {
-  const labels: Record<Appointment['status'], string> = {
-    SCHEDULED: 'Agendado',
-    CANCELLED: 'Cancelado',
-    COMPLETED: 'Concluído',
-    DONE: 'Finalizado',
-    RESCHEDULED: 'Reagendado',
-    NO_SHOW: 'Falta',
-  };
-  return labels[status] || status;
-}
+const statusColors: Record<Appointment['status'], string> = {
+  SCHEDULED: '#2563eb', // azul
+  CANCELLED: '#ef4444', // vermelho
+  COMPLETED: '#22c55e', // verde
+  DONE: '#22c55e',
+  RESCHEDULED: '#f59e42', // laranja
+  NO_SHOW: '#a3a3a3', // cinza
+};
 
 export default function AppointmentsPage() {
   const {
@@ -50,18 +46,10 @@ export default function AppointmentsPage() {
     fetchLocations();
   }, []);
 
-  const customerById = useMemo(
-    () => Object.fromEntries(customers.map((c) => [c.id, c.name])),
-    [customers]
-  );
-  const petById = useMemo(
-    () => Object.fromEntries(pets.map((p) => [p.id, p.name])),
-    [pets]
-  );
-  const locationById = useMemo(
-    () => Object.fromEntries(locations.map((l) => [l.id, l.name])),
-    [locations]
-  );
+
+  const customerById = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
+  const petById = useMemo(() => Object.fromEntries(pets.map((p) => [p.id, p.name])), [pets]);
+  const locationById = useMemo(() => Object.fromEntries(locations.map((l) => [l.id, l.name])), [locations]);
 
   const handleCancel = async (id: string) => {
     setActioningId(id);
@@ -103,13 +91,46 @@ export default function AppointmentsPage() {
 
   if (!mounted) return null;
 
+  // Mapeia agendamentos para eventos do FullCalendar
+  const events = appointments.map((a) => ({
+    id: a.id,
+    title: `${customerById[a.customerId] || 'Cliente'}${a.petId ? ' - ' + (petById[a.petId] || '') : ''}\n${a.serviceName || ''}`,
+    start: a.startsAt,
+    end: a.endsAt,
+    backgroundColor: statusColors[a.status],
+    borderColor: statusColors[a.status],
+    extendedProps: {
+      ...a,
+      customerName: customerById[a.customerId],
+      petName: a.petId ? petById[a.petId] : undefined,
+      locationName: locationById[a.locationId],
+    },
+  }));
+
+  // Handlers de interação (criação, mover, redimensionar)
+  const calendarRef = useRef(null);
+
+  const handleDateSelect = (selectInfo: any) => {
+    // Redireciona para página de novo agendamento já com data/hora
+    const start = selectInfo.startStr;
+    const end = selectInfo.endStr;
+    window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(start)}&endsAt=${encodeURIComponent(end)}`;
+  };
+
+  const handleEventClick = (clickInfo: any) => {
+    // Redireciona para edição
+    window.location.href = `/admin/appointments/${clickInfo.event.id}`;
+  };
+
+  // TODO: Implementar handlers de mover/redimensionar (drag-n-drop) integrando com API
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agendamentos</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
           <p className="mt-2 text-gray-600">
-            Acompanhe e gerencie todos os agendamentos.
+            Visualize, crie e gerencie agendamentos de clientes, pets e serviços.
           </p>
         </div>
         <Link href="/admin/appointments/new">
@@ -122,90 +143,40 @@ export default function AppointmentsPage() {
       )}
 
       {isLoading ? (
-        <div className="text-center text-gray-600">Carregando...</div>
+        <div className="text-center text-gray-600">Carregando agenda...</div>
       ) : appointments.length === 0 ? (
         <Card>
           <CardHeader title="Nenhum agendamento" />
           <p className="text-gray-600">Crie seu primeiro agendamento.</p>
         </Card>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Cliente</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Pet</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Local</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Início</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fim</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {appointments.map((appointment) => (
-                <tr key={appointment.id}>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {customerById[appointment.customerId] || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {appointment.petId ? petById[appointment.petId] || '—' : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {locationById[appointment.locationId] || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {formatDateTime(appointment.startsAt)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {formatDateTime(appointment.endsAt)}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                      {statusLabel(appointment.status)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <div className="flex justify-end gap-2">
-                      <Link href={`/admin/appointments/${appointment.id}`}>
-                        <Button variant="secondary" size="sm">
-                          Editar
-                        </Button>
-                      </Link>
-                      {appointment.status === 'SCHEDULED' && (
-                        <>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleMarkDone(appointment.id)}
-                            isLoading={actioningId === appointment.id}
-                          >
-                            Finalizar
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleMarkNoShow(appointment.id)}
-                            isLoading={actioningId === appointment.id}
-                          >
-                            Falta
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleCancel(appointment.id)}
-                            isLoading={actioningId === appointment.id}
-                          >
-                            Cancelar
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek,timeGridDay',
+            }}
+            locales={[ptBrLocale]}
+            locale="pt-br"
+            selectable
+            editable
+            selectMirror
+            select={handleDateSelect}
+            eventClick={handleEventClick}
+            events={events}
+            height="auto"
+            slotMinTime="07:00:00"
+            slotMaxTime="21:00:00"
+            nowIndicator
+            eventDisplay="block"
+            eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+            dayMaxEvents={3}
+            aspectRatio={1.5}
+          />
         </div>
       )}
     </div>

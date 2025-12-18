@@ -196,7 +196,7 @@ export default function AppointmentFormPage() {
           <FormField
             label="Serviço (opcional)"
             id="serviceId"
-            placeholder="Banho, Tosa..."
+            placeholder="Banho, tosa, consulta..."
             error={errors.serviceId?.message}
             disabled={isEditing}
             {...register('serviceId')}
