@@ -156,6 +156,24 @@ export default function AppointmentsPage() {
   const handlePrevDay = () => setMobileDay(new Date(mobileDay.getTime() - 86400000));
   const handleNextDay = () => setMobileDay(new Date(mobileDay.getTime() + 86400000));
 
+  // Tap & hold para criar agendamento rápido no mobile
+  const tapTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [tapStart, setTapStart] = useState<Date | null>(null);
+  const handleMobileSlotTouchStart = (hour: number) => {
+    setTapStart(new Date());
+    tapTimeout.current = setTimeout(() => {
+      const date = new Date(mobileDay);
+      date.setHours(hour, 0, 0, 0);
+      const startsAt = date.toISOString();
+      const endsAt = new Date(date.getTime() + 60 * 60 * 1000).toISOString();
+      window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(startsAt)}&endsAt=${encodeURIComponent(endsAt)}`;
+    }, 600); // 600ms para tap & hold
+  };
+  const handleMobileSlotTouchEnd = () => {
+    if (tapTimeout.current) clearTimeout(tapTimeout.current);
+    setTapStart(null);
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -192,29 +210,39 @@ export default function AppointmentsPage() {
                 <Button onClick={handleNextDay} size="sm">▶</Button>
               </div>
               <div className="space-y-3">
-                {mobileAppointments.length === 0 ? (
-                  <Card>
-                    <CardHeader title="Nenhum agendamento para este dia" />
-                  </Card>
-                ) : (
-                  mobileAppointments.map(a => (
-                    <Card key={a.id} className="flex flex-col p-3 border-l-4 group cursor-pointer transition-shadow hover:shadow-lg" style={{ borderColor: statusColors[a.status] }} onClick={() => window.location.href = `/admin/appointments/${a.id}` }>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-semibold text-base flex items-center gap-2">
-                            <span>{customerById[a.customerId] || 'Cliente'}</span>
-                            {a.petId && <span className="text-xs text-gray-500">• {petById[a.petId]}</span>}
-                          </div>
-                          {a.serviceId && <div className="text-xs text-blue-600 font-medium">{serviceById[a.serviceId]}</div>}
+                {/* Slots horários para tap & hold */}
+                {[...Array(14)].map((_, i) => {
+                  const hour = 7 + i;
+                  const slotAppointments = mobileAppointments.filter(a => new Date(a.startsAt).getHours() === hour);
+                  return (
+                    <div key={hour} className="relative" onTouchStart={() => handleMobileSlotTouchStart(hour)} onTouchEnd={handleMobileSlotTouchEnd}>
+                      <div className="text-xs text-gray-400 mb-1">{hour.toString().padStart(2, '0')}:00</div>
+                      {slotAppointments.length === 0 ? (
+                        <div className="h-12 bg-gray-50 rounded-lg border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-xs select-none">
+                          Tap & hold para agendar
                         </div>
-                        <div className="text-xs px-2 py-1 rounded bg-gray-100 font-bold uppercase tracking-wide" style={{ color: statusColors[a.status] }}>{a.status}</div>
-                      </div>
-                      <div className="text-sm mt-1 text-gray-700">{new Date(a.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(a.endsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-                      <div className="text-xs text-gray-400 mt-1">{locationById[a.locationId]}</div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-600 mt-2">Clique para editar</div>
-                    </Card>
-                  ))
-                )}
+                      ) : (
+                        slotAppointments.map(a => (
+                          <Card key={a.id} className="flex flex-col p-3 border-l-4 group cursor-pointer transition-shadow hover:shadow-lg" style={{ borderColor: statusColors[a.status] }} onClick={() => window.location.href = `/admin/appointments/${a.id}` }>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-semibold text-base flex items-center gap-2">
+                                  <span>{customerById[a.customerId] || 'Cliente'}</span>
+                                  {a.petId && <span className="text-xs text-gray-500">• {petById[a.petId]}</span>}
+                                </div>
+                                {a.serviceId && <div className="text-xs text-blue-600 font-medium">{serviceById[a.serviceId]}</div>}
+                              </div>
+                              <div className="text-xs px-2 py-1 rounded bg-gray-100 font-bold uppercase tracking-wide" style={{ color: statusColors[a.status] }}>{a.status}</div>
+                            </div>
+                            <div className="text-sm mt-1 text-gray-700">{new Date(a.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} - {new Date(a.endsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div className="text-xs text-gray-400 mt-1">{locationById[a.locationId]}</div>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-600 mt-2">Clique para editar</div>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {/* FAB flutuante */}
               <Button className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg md:hidden" onClick={() => window.location.href = `/admin/appointments/new?startsAt=${encodeURIComponent(mobileDay.toISOString().slice(0,10)+'T09:00:00')}`}>+ Agendar</Button>
