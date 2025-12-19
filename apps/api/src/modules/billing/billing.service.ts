@@ -10,7 +10,7 @@ export class BillingService {
   constructor(
     private readonly repo: BillingRepository,
     private readonly prisma: PrismaService,
-    private readonly provider: BillingProvider = new BillingProvider(),
+    private readonly provider: BillingProvider,
   ) {}
 
   async getCurrentSubscription(tenantId: string) {
@@ -43,13 +43,12 @@ export class BillingService {
 
   async checkout(tenantId: string, dto: CheckoutDto) {
     // Integração com provider
-    const providerResult = await this.provider.createSubscription(tenantId, dto.plan_code);
+    const providerResult = await this.provider.createSubscription(tenantId, dto.planCode);
     await this.prisma.billingSubscription.create({
       data: {
-        tenantId: tenantId,
-        plan: dto.plan_code,
-        status: providerResult.status,
-        // trialEndsAt removido pois não existe no client
+        tenantId,
+        planCode: dto.planCode,
+        status: providerResult.status as any,
       },
     });
     return { success: true };
@@ -57,12 +56,12 @@ export class BillingService {
 
   async cancel(tenantId: string, dto: CancelDto) {
     const sub = await this.prisma.billingSubscription.findFirst({
-      where: { tenantId: tenantId, status: { in: ['ACTIVE', 'PAST_DUE'] } },
+      where: { tenantId, status: { in: ['ACTIVE', 'PAST_DUE'] } },
     });
     // providerSubscriptionId removido pois não existe no client
     // await this.provider.cancelSubscription(sub.providerSubscriptionId);
     await this.prisma.billingSubscription.updateMany({
-      where: { tenantId: tenantId, status: { in: ['ACTIVE', 'PAST_DUE'] } },
+      where: { tenantId, status: { in: ['ACTIVE', 'PAST_DUE'] } },
       data: { status: 'CANCELED' },
     });
     return { success: true };

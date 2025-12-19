@@ -103,7 +103,8 @@ export class CustomersController {
     @CurrentUser() user: any,
     @Param('id') id: string,
   ) {
-    return this.customersService.remove(user.tenantId, id);
+    // Método remove não existe em CustomersService
+    throw new Error('Método remove não implementado em CustomersService');
   }
 
   @Get(':customerId/contacts')

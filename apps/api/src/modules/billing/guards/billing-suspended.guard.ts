@@ -10,7 +10,7 @@ export class BillingSuspendedGuard implements CanActivate {
     const tenantId = req.user?.tenantId;
     if (!tenantId) return true;
     const subscription = await this.prisma.billingSubscription.findFirst({
-      where: { tenant_id: tenantId },
+      where: { tenantId },
     });
     if (subscription?.status === 'SUSPENDED') {
       throw new ForbiddenException('Tenant em modo leitura devido à suspensão de assinatura.');

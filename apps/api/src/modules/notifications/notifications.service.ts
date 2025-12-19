@@ -65,7 +65,7 @@ export class NotificationsService {
           data: {
             tenantId: appt.tenantId,
             appointmentId: appt.id,
-            type: 'SMS',
+            channel: 'SMS',
             status: 'SCHEDULED',
             payload: {
               to: normalized,

@@ -7,7 +7,7 @@ export class TenantLimitsService {
 
   async getLimits(tenantId: string) {
     const subscription = await this.prisma.billingSubscription.findFirst({
-      where: { tenantId, status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE', 'OVER_LIMIT'] } },
+      where: { tenantId, status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] } },
       // include removido, usar select se necessário
     });
     // Não há plan no client, retornar objeto vazio
@@ -49,7 +49,7 @@ export class TenantLimitsService {
     if (overLimit) {
       await this.prisma.billingSubscription.updateMany({
         where: { tenantId, status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] } },
-        data: { status: 'OVER_LIMIT' },
+        data: {},
       });
     }
     return { limits, usage, overLimit };

@@ -6,35 +6,39 @@ export async function processNotificationJob(jobId: string) {
   if (!job) return;
 
   // 1. Verificar opt-in (exemplo: via config do tenant)
-  const config = await prisma.tenantConfig.findUnique({ where: { tenantId: job.tenant_id } });
-  if (config && job.type === 'REMINDER' && !config.reminderEnabled) {
+  const config = await prisma.tenantConfig.findUnique({ where: { tenantId: job.tenantId } });
+  // Se for tipo REMINDER e opt-in desativado
+  const payload = typeof job.payload === 'object' && job.payload !== null ? job.payload as { type?: string } : {};
+  if (config && payload.type === 'REMINDER' && !config.reminderEnabled) {
     await prisma.notificationJob.update({
       where: { id: jobId },
-      data: { status: 'FAILED', error: 'Opt-in desativado' },
+      data: { status: 'ERROR', errorMessage: 'Opt-in desativado' },
     });
     return;
   }
 
   // 2. Verificar saldo do canal
-  const wallet = await prisma.messageCreditsWallet.findUnique({
-    where: { tenant_id_channel: { tenant_id: job.tenant_id, channel: job.channel } },
+  const wallet = await prisma.messageCreditsWallet.findFirst({
+    where: { tenantId: job.tenantId },
   });
   if (!wallet || wallet.balance <= 0) {
     await prisma.notificationJob.update({
       where: { id: jobId },
-      data: { status: 'FAILED', error: 'Saldo insuficiente' },
+      data: { status: 'ERROR', errorMessage: 'Saldo insuficiente' },
     });
     // Registra tentativa
-    await prisma.messageCreditTransaction.create({
-      data: {
-        tenant_id: job.tenant_id,
-        channel: job.channel,
-        type: 'CONSUME',
-        amount: 0,
-        reason: 'Tentativa sem saldo',
-        walletId: wallet?.id,
-      },
-    });
+    if (wallet) {
+      await prisma.messageCreditTransaction.create({
+        data: {
+          tenantId: job.tenantId,
+          channel: job.channel,
+          walletId: wallet.id,
+          type: 'CONSUME',
+          amount: 0,
+          reason: 'Tentativa sem saldo',
+        },
+      });
+    }
     return;
   }
 
@@ -53,26 +57,28 @@ export async function processNotificationJob(jobId: string) {
   if (sent) {
     await prisma.notificationJob.update({
       where: { id: jobId },
-      data: { status: 'SENT', provider_message_id: providerId },
+      data: { status: 'SENT', providerMessageId: providerId },
     });
     await prisma.messageCreditsWallet.update({
       where: { id: wallet.id },
       data: { balance: { decrement: 1 } },
     });
-    await prisma.messageCreditTransaction.create({
-      data: {
-        tenant_id: job.tenant_id,
-        channel: job.channel,
-        type: 'CONSUME',
-        amount: 1,
-        reason: 'Envio de mensagem',
-        walletId: wallet.id,
-      },
-    });
+    if (wallet) {
+      await prisma.messageCreditTransaction.create({
+        data: {
+          tenantId: job.tenantId,
+          channel: job.channel,
+          walletId: wallet.id,
+          type: 'CONSUME',
+          amount: 1,
+          reason: 'Envio de mensagem',
+        },
+      });
+    }
   } else {
     await prisma.notificationJob.update({
       where: { id: jobId },
-      data: { status: 'FAILED', error: 'Falha no envio' },
+      data: { status: 'ERROR', errorMessage: 'Falha no envio' },
     });
   }
 }

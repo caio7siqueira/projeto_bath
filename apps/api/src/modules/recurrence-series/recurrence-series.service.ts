@@ -12,8 +12,10 @@ export class RecurrenceSeriesService {
     const series = await this.prisma.recurrenceSeries.create({
       data: {
         tenantId,
-        rule: dto.rule,
-        // startDate e endDate removidos pois não existem no client
+        frequency: dto.rule as any,
+        interval: dto.interval,
+        startAt: new Date(dto.startDate),
+        endAt: new Date(dto.endDate),
       },
     });
     // Gera datas recorrentes
@@ -43,8 +45,10 @@ export class RecurrenceSeriesService {
     await this.prisma.recurrenceSeries.update({
       where: { id },
       data: {
-        rule: dto.rule ?? series.rule,
-        // startDate e endDate removidos pois não existem no client
+        frequency: (dto.rule as any) ?? series.frequency,
+        interval: dto.interval ?? series.interval,
+        startAt: dto.startDate ? new Date(dto.startDate) : series.startAt,
+        endAt: dto.endDate ? new Date(dto.endDate) : series.endAt,
       },
     });
     // TODO: Materializar novas instâncias futuras se necessário

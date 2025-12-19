@@ -17,8 +17,8 @@ export class BillingRepository {
     return this.prisma.billingSubscription.create({
       data: {
         tenantId,
-        plan: dto.plan,
-        status: dto.status,
+        planCode: dto.plan,
+        status: dto.status as any,
       },
     });
   }

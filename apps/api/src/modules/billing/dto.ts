@@ -1,5 +1,5 @@
 export class CheckoutDto {
-  plan_code: string;
+  planCode: string = '';
   // outros campos do checkout
 }
 
@@ -8,7 +8,7 @@ export class CancelDto {
 }
 
 export class WebhookDto {
-  provider_subscription_id: string;
-  status: string;
+  providerSubscriptionId: string = '';
+  status: string = '';
   // outros campos do webhook
 }

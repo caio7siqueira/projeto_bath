@@ -4,8 +4,8 @@ const prisma = new PrismaClient();
 
 export async function consumePendingJobs() {
   const jobs = await prisma.notificationJob.findMany({
-    where: { status: 'PENDING' },
-    orderBy: { created_at: 'asc' },
+    where: { status: 'SCHEDULED' },
+    orderBy: { createdAt: 'asc' },
     take: 10,
   });
   for (const job of jobs) {

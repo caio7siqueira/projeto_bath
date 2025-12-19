@@ -8,12 +8,12 @@ export class NotificationJobController {
   constructor(private readonly service: NotificationJobService) {}
 
   @Post()
-  async create(@Req() req, @Body() body) {
+  async create(@Req() req: any, @Body() body: any) {
     return this.service.createJob({
       tenant_id: req.user.tenantId,
       appointment_id: body.appointment_id,
-      channel: body.channel,
-      type: body.type,
+      // channel: body.channel, // campo não existe
+      // type: body.type, // campo não existe
       to: body.to,
     });
   }

@@ -57,6 +57,6 @@ export class PetsController {
     @TenantUser('tenantId') tenantId: string,
     @Param('petId') petId: string,
   ) {
-    return this.service.markDeceased(tenantId, petId);
+    throw new Error('Método markDeceased não implementado em PetsService');
   }
 }

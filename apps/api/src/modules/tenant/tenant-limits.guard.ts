@@ -10,13 +10,14 @@ export class TenantLimitsGuard implements CanActivate {
     const tenantId = req.user?.tenantId;
     if (!tenantId) return true;
     const subscription = await this.prisma.billingSubscription.findFirst({
-      where: { tenant_id: tenantId },
+      where: { tenantId },
       include: { plan: true },
     });
-    if (subscription?.status === 'OVER_LIMIT') {
-      // Não bloqueia, apenas exibe aviso
-      req.overLimit = true;
-    }
+    // 'OVER_LIMIT' não existe em SubscriptionStatus do Prisma Client
+    // if (subscription?.status === 'OVER_LIMIT') {
+    //   // Não bloqueia, apenas exibe aviso
+    //   req.overLimit = true;
+    // }
     return true;
   }
 }

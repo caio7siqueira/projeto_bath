@@ -26,7 +26,7 @@ export class PetsService {
         species: dto.species,
         lifeStatus: dto.lifeStatus ?? 'ALIVE',
         allowNotifications: dto.allowNotifications ?? true,
-        is_deceased: false,
+        isDeceased: false,
       },
     });
   }
@@ -39,7 +39,7 @@ export class PetsService {
     if (pet.tenantId !== tenantId) {
       throw new ForbiddenException('Cross-tenant access denied');
     }
-    if (pet.is_deceased && (dto.lifeStatus || dto.allowNotifications)) {
+    if (pet.isDeceased && (dto.lifeStatus || dto.allowNotifications)) {
       // Permitir editar apenas nome, porte, foto (não desmarcar falecimento)
       // Se tentar editar status, bloquear
       throw new ForbiddenException('Não é permitido editar status ou notificações de pet falecido');

@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,22 +13,37 @@ export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
+    // Logging para debug
+    console.log('[CustomersService.create] tenantId:', tenantId);
+    console.log('[CustomersService.create] dto:', JSON.stringify(dto));
     const phone = normalizePhone(dto.phone);
+    if (!tenantId || typeof tenantId !== 'string') {
+      throw new ConflictException('tenantId obrigatório e deve ser string');
+    }
+    if (!dto.name || typeof dto.name !== 'string' || dto.name.trim().length === 0) {
+      throw new ConflictException('Nome obrigatório e deve ser string não vazia');
+    }
+    if (!dto.phone || typeof dto.phone !== 'string' || dto.phone.trim().length === 0) {
+      throw new ConflictException('Telefone obrigatório e deve ser string não vazia');
+    }
     if (!phone) {
       throw new ConflictException('Telefone inválido');
     }
     try {
+      // Remover status e qualquer campo não presente no banco
       return await this.prisma.customer.create({
         data: {
           tenantId,
           name: dto.name,
           phone,
-          email: dto.email,
-          cpf: dto.cpf,
-          optInGlobal: dto.optInGlobal ?? true,
+          email: dto.email ?? undefined,
+          cpf: dto.cpf ?? undefined,
+          optInGlobal: typeof dto.optInGlobal === 'boolean' ? dto.optInGlobal : true,
+          // NÃO incluir status, isActive, deleted_at, lastLoginAt, createdAt, updatedAt
         },
       });
     } catch (error) {
+      console.error('[CustomersService.create] Prisma error:', error);
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
@@ -42,7 +58,7 @@ export class CustomersService {
     const where: Prisma.CustomerWhereInput = {
       tenantId,
       isActive: true,
-      status: 'ACTIVE',
+      // status removido do filtro, pois pode não existir no banco
     };
 
     if (query.q) {
@@ -147,15 +163,11 @@ export class CustomersService {
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-    if (customer.status === 'DELETED') {
-      throw new ConflictException('Customer já está deletado');
-    }
     // Soft delete
     await this.prisma.customer.update({
       where: { id },
       data: {
-        status: 'DELETED',
-        deleted_at: new Date(),
+        deletedAt: new Date(),
         isActive: false,
       },
     });
@@ -171,7 +183,7 @@ export class CustomersService {
         status: 'CANCELLED',
         notes: 'Cancelado por remoção do cliente',
         cancelledAt: new Date(),
-        status_reason: 'CUSTOMER_DELETED',
+        // status_reason removido, não existe no Prisma Client
       },
     });
     // Auditoria mínima
