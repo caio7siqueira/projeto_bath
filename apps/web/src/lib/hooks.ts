@@ -52,8 +52,6 @@ import {
   deleteCustomer,
   listPets,
   createPet,
-  updatePet,
-  deletePet,
   type Customer,
   type CreateCustomerDto,
   type UpdateCustomerDto,
@@ -361,30 +359,7 @@ export function usePets() {
     }
   };
 
-  const updateExistingPet = async (id: string, dto: UpdatePetDto) => {
-    try {
-      const pet = await updatePet(id, dto);
-      updatePetInStore(id, pet);
-      return pet;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
-    }
-  };
-
-  const deleteExistingPet = async (id: string) => {
-    try {
-      await deletePet(id);
-      removePet(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
-    }
-  };
+  // updateExistingPet e deleteExistingPet removidos pois dependiam de endpoints inexistentes
 
   return {
     pets,
@@ -392,7 +367,5 @@ export function usePets() {
     error,
     fetchPets,
     createNewPet,
-    updateExistingPet,
-    deleteExistingPet,
   };
 }

@@ -9,6 +9,7 @@ import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormField, SelectField } from '@/components/FormField';
 import { petSchema, type PetFormData } from '@/lib/schemas';
+import { z } from 'zod';
 
 export default function PetFormPage() {
   const router = useRouter();
@@ -24,7 +25,14 @@ export default function PetFormPage() {
     watch,
     setValue,
   } = useForm<PetFormData & { customerId: string }>({
-    resolver: zodResolver(petSchema.extend({ customerId: petId === 'new' ? z.string().min(1, 'Cliente é obrigatório') : z.string().optional() })),
+    resolver: zodResolver(
+      petSchema.extend({
+        customerId:
+          petId === 'new'
+            ? z.string().min(1, 'Cliente é obrigatório')
+            : z.string().optional(),
+      })
+    ),
     defaultValues: {
       name: '',
       species: 'DOG',
@@ -34,7 +42,7 @@ export default function PetFormPage() {
     },
   });
 
-  const { pets, createNewPet, updateExistingPet, fetchPets, isLoading } = usePets();
+  const { pets, createNewPet, fetchPets, isLoading } = usePets();
   const { customers, fetchCustomers } = useCustomers();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +103,10 @@ export default function PetFormPage() {
       if (data.allowNotifications !== undefined) submitData.allowNotifications = data.allowNotifications;
 
       if (isEditing) {
-        await updateExistingPet(petId, submitData);
+        // Atualização de pet não suportada pois não há endpoint
+        setError('Atualização de pet não suportada.');
+        setIsSaving(false);
+        return;
       } else {
         await createNewPet(data.customerId, submitData);
       }
