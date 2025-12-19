@@ -6,7 +6,7 @@ import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 export enum AppointmentStatusFilter {
   SCHEDULED = 'SCHEDULED',
   CANCELLED = 'CANCELLED',
-  COMPLETED = 'COMPLETED',
+  DONE = 'DONE',
 }
 
 export class ListAppointmentsDto extends PaginationQueryDto {

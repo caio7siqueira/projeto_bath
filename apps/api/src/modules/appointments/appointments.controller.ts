@@ -97,17 +97,4 @@ export class AppointmentsController {
   ) {
     return this.appointmentsService.markDone(id, tenantId);
   }
-
-  @Post(':id/mark-no-show')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Marcar agendamento como NO_SHOW (idempotente)' })
-  @ApiResponse({ status: 200, description: 'Agendamento marcado como NO_SHOW' })
-  @ApiResponse({ status: 400, description: 'Não é possível marcar cancelado como NO_SHOW' })
-  @ApiResponse({ status: 404, description: 'Agendamento não encontrado' })
-  async markNoShow(
-    @Param('id') id: string,
-    @TenantUser('tenantId') tenantId: string,
-  ) {
-    return this.appointmentsService.markNoShow(id, tenantId);
-  }
 }

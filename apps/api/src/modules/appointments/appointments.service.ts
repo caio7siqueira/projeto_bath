@@ -44,10 +44,12 @@ export class AppointmentsService {
     }
 
     // Validação: customerId e locationId pertencem ao tenant
-    const { customer, location } = await this.repository.validateReferences(
+    const { customer, location, pet, service } = await this.repository.validateReferences(
       tenantId,
       dto.customerId,
       dto.locationId,
+      dto.petId,
+      dto.serviceId,
     );
 
     if (!customer) {
@@ -60,6 +62,14 @@ export class AppointmentsService {
       throw new NotFoundException(
         `Localização ${dto.locationId} não encontrada no tenant ${tenantId}`,
       );
+    }
+
+    if (dto.petId && !pet) {
+      throw new NotFoundException('Pet não encontrado ou inativo para este cliente.');
+    }
+
+    if (dto.serviceId && !service) {
+      throw new NotFoundException('Serviço não encontrado ou inativo.');
     }
 
     // Verificação de conflito: overlap com outros appointments SCHEDULED
@@ -166,6 +176,9 @@ export class AppointmentsService {
     }
 
     const updated = await this.repository.update(id, tenantId, dto);
+    if (!updated) {
+      throw new NotFoundException(`Agendamento ${id} não encontrado`);
+    }
 
     // Se o horário mudou, reagenda lembrete (não bloqueante)
     try {
@@ -194,6 +207,9 @@ export class AppointmentsService {
     }
 
     const cancelled = await this.repository.cancel(id, tenantId);
+    if (!cancelled) {
+      throw new NotFoundException(`Agendamento ${id} não encontrado`);
+    }
 
     // Cancela lembretes pendentes (não bloqueante)
     try {
@@ -222,6 +238,9 @@ export class AppointmentsService {
     }
 
     const updated = await this.repository.updateStatus(id, tenantId, 'DONE');
+    if (!updated) {
+      throw new NotFoundException(`Agendamento ${id} não encontrado`);
+    }
 
     // Criar evento Omie de forma não bloqueante
     try {
@@ -234,22 +253,4 @@ export class AppointmentsService {
     return updated;
   }
 
-  async markNoShow(id: string, tenantId: string) {
-    const existing = await this.repository.findById(id, tenantId);
-
-    if (!existing) {
-      throw new NotFoundException(`Agendamento ${id} não encontrado`);
-    }
-
-    if (existing.status === 'CANCELLED') {
-      throw new BadRequestException('Não é possível marcar como NO_SHOW um agendamento cancelado');
-    }
-
-    // Idempotente
-    if (existing.status === 'NO_SHOW') {
-      return existing;
-    }
-
-    return this.repository.updateStatus(id, tenantId, 'NO_SHOW');
-  }
 }

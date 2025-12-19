@@ -151,50 +151,25 @@ export class AppointmentsRepository {
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.status !== undefined) data.status = dto.status;
 
-    return this.prisma.appointment.update({
-      where: { id },
+    const updated = await this.prisma.appointment.updateMany({
+      where: { id, tenantId },
       data,
-      select: {
-        id: true,
-        tenantId: true,
-        customerId: true,
-        locationId: true,
-        petId: true,
-        serviceId: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        notes: true,
-        cancelledAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
     });
+    if (updated.count === 0) return null;
+
+    return this.findById(id, tenantId);
   }
 
   async cancel(id: string, tenantId: string) {
-    return this.prisma.appointment.update({
-      where: { id },
+    const updated = await this.prisma.appointment.updateMany({
+      where: { id, tenantId },
       data: {
         status: 'CANCELLED',
         cancelledAt: new Date(),
       },
-      select: {
-        id: true,
-        tenantId: true,
-        customerId: true,
-        locationId: true,
-        petId: true,
-        serviceId: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        notes: true,
-        cancelledAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
     });
+    if (updated.count === 0) return null;
+    return this.findById(id, tenantId);
   }
 
   /**
@@ -230,34 +205,43 @@ export class AppointmentsRepository {
   /**
    * Valida se customer e location pertencem ao mesmo tenant
    */
-  async validateReferences(tenantId: string, customerId: string, locationId: string) {
-    const [customer, location] = await Promise.all([
-      this.prisma.customer.findFirst({ where: { id: customerId, tenantId } }),
+  async validateReferences(
+    tenantId: string,
+    customerId: string,
+    locationId: string,
+    petId?: string,
+    serviceId?: string,
+  ) {
+    const [customer, location, pet, service] = await Promise.all([
+      this.prisma.customer.findFirst({ where: { id: customerId, tenantId, isActive: true } }),
       this.prisma.location.findFirst({ where: { id: locationId, tenantId } }),
+      petId
+        ? this.prisma.pet.findFirst({
+            where: {
+              id: petId,
+              tenantId,
+              customerId,
+              lifeStatus: 'ALIVE',
+            },
+          })
+        : null,
+      serviceId
+        ? this.prisma.service.findFirst({
+            // active é coluna recém-adicionada; cast evita conflito de tipagem se o client não estiver regenerado ainda
+            where: { id: serviceId, tenantId, active: true } as any,
+          })
+        : null,
     ]);
 
-    return { customer, location };
+    return { customer, location, pet, service };
   }
 
-  async updateStatus(id: string, tenantId: string, status: 'DONE' | 'NO_SHOW' | 'COMPLETED') {
-    return this.prisma.appointment.update({
-      where: { id },
-      data: { status },
-      select: {
-        id: true,
-        tenantId: true,
-        customerId: true,
-        locationId: true,
-        petId: true,
-        serviceId: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        notes: true,
-        cancelledAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+  async updateStatus(id: string, tenantId: string, status: 'DONE' | 'CANCELLED' | 'SCHEDULED') {
+    const updated = await this.prisma.appointment.updateMany({
+      where: { id, tenantId },
+      data: { status, cancelledAt: status === 'CANCELLED' ? new Date() : null },
     });
+    if (updated.count === 0) return null;
+    return this.findById(id, tenantId);
   }
 }

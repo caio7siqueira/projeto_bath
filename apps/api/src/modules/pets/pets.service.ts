@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
@@ -27,22 +27,18 @@ export class PetsService {
   }
 
   async update(tenantId: string, petId: string, dto: UpdatePetDto) {
-    const pet = await this.prisma.pet.findUnique({ where: { id: petId }, select: { tenantId: true } });
-    if (!pet) {
-      throw new NotFoundException('Pet not found');
-    }
-    if (pet.tenantId !== tenantId) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    return this.prisma.pet.update({
-      where: { id: petId },
+    const updated = await this.prisma.pet.updateMany({
+      where: { id: petId, tenantId },
       data: {
         name: dto.name,
         lifeStatus: dto.lifeStatus,
         allowNotifications: dto.allowNotifications,
       },
     });
+    if (updated.count === 0) {
+      throw new NotFoundException('Pet not found');
+    }
+    return this.prisma.pet.findUnique({ where: { id: petId } });
   }
 
   async listByCustomer(tenantId: string, customerId: string) {

@@ -100,7 +100,7 @@ export class CustomersService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
-    // Check existence
+    // Check existence scoped by tenant
     await this.findOne(tenantId, id);
 
     const phone = dto.phone ? normalizePhone(dto.phone) ?? undefined : undefined;
@@ -109,8 +109,8 @@ export class CustomersService {
     }
 
     try {
-      return await this.prisma.customer.update({
-        where: { id },
+      const updated = await this.prisma.customer.updateMany({
+        where: { id, tenantId },
         data: {
           name: dto.name,
           phone,
@@ -119,6 +119,10 @@ export class CustomersService {
           optInGlobal: dto.optInGlobal,
         },
       });
+      if (updated.count === 0) {
+        throw new NotFoundException('Customer not found');
+      }
+      return this.findOne(tenantId, id);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -135,10 +139,13 @@ export class CustomersService {
     await this.findOne(tenantId, id);
 
     // Soft delete
-    await this.prisma.customer.update({
-      where: { id },
+    const removed = await this.prisma.customer.updateMany({
+      where: { id, tenantId },
       data: { isActive: false },
     });
+    if (removed.count === 0) {
+      throw new NotFoundException('Customer not found');
+    }
 
     return { message: 'Customer deleted successfully' };
   }

@@ -16,6 +16,7 @@ import { OmieModule } from './modules/omie/omie.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TenantConfigModule } from './modules/tenant-config/tenant-config.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { ServicesModule } from './modules/services/services.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 const envFilePath = Array.from(
@@ -56,6 +57,7 @@ const envFilePath = Array.from(
     NotificationsModule,
     TenantConfigModule,
     BillingModule,
+    ServicesModule,
   ],
   controllers: [HealthController],
 })
