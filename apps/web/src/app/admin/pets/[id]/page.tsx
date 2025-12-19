@@ -21,13 +21,16 @@ export default function PetFormPage() {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<PetFormData>({
-    resolver: zodResolver(petSchema),
+    watch,
+    setValue,
+  } = useForm<PetFormData & { customerId: string }>({
+    resolver: zodResolver(petSchema.extend({ customerId: petId === 'new' ? z.string().min(1, 'Cliente é obrigatório') : z.string().optional() })),
     defaultValues: {
       name: '',
       species: 'DOG',
       lifeStatus: 'ALIVE',
       allowNotifications: true,
+      customerId: '',
     },
   });
 
@@ -35,7 +38,7 @@ export default function PetFormPage() {
   const { customers, fetchCustomers } = useCustomers();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<string>('');
+  // Removido selectedCustomer, usar customerId do useForm
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,12 +50,12 @@ export default function PetFormPage() {
     if (!isEditing || !petId || customers.length === 0) return;
     const existing = pets.find((p) => p.id === petId);
     if (existing) {
-      setSelectedCustomer(existing.customerId);
       reset({
         name: existing.name,
         species: existing.species,
         lifeStatus: existing.lifeStatus,
         allowNotifications: existing.allowNotifications,
+        customerId: existing.customerId,
       });
       return;
     }
@@ -62,12 +65,12 @@ export default function PetFormPage() {
         const loaded = await fetchPets(customer.id, { append: true });
         const match = loaded.find((p) => p.id === petId);
         if (match) {
-          setSelectedCustomer(match.customerId);
           reset({
             name: match.name,
             species: match.species,
             lifeStatus: match.lifeStatus,
             allowNotifications: match.allowNotifications,
+            customerId: match.customerId,
           });
           break;
         }
@@ -78,12 +81,7 @@ export default function PetFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, petId, customers, pets]);
 
-  const onSubmit = async (data: PetFormData) => {
-    if (!selectedCustomer && !isEditing) {
-      setError('Cliente é obrigatório');
-      return;
-    }
-
+  const onSubmit = async (data: PetFormData & { customerId: string }) => {
     setIsSaving(true);
     setError(null);
 
@@ -99,7 +97,7 @@ export default function PetFormPage() {
       if (isEditing) {
         await updateExistingPet(petId, submitData);
       } else {
-        await createNewPet(selectedCustomer, submitData);
+        await createNewPet(data.customerId, submitData);
       }
       router.push('/admin/pets');
     } catch (err) {
@@ -131,10 +129,10 @@ export default function PetFormPage() {
             {!isEditing && (
               <SelectField
                 label="Cliente"
-                id="customer"
+                id="customerId"
                 required
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
+                error={errors.customerId?.message}
+                {...register('customerId')}
                 options={customers.map((c) => ({
                   value: c.id,
                   label: c.name,

@@ -1,31 +1,43 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocations } from '@/lib/hooks';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormField } from '@/components/FormField';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export default function LocationsPage() {
   const { locations, isLoading, error, fetchLocations, createNewLocation } = useLocations();
-  const [name, setName] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+
+  const locationSchema = z.object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+  });
+
+  type LocationFormData = z.infer<typeof locationSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<LocationFormData>({
+    resolver: zodResolver(locationSchema),
+    defaultValues: { name: '' },
+  });
 
   useEffect(() => {
     fetchLocations();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setIsSaving(true);
+  const onSubmit = async (data: LocationFormData) => {
     try {
-      await createNewLocation({ name: name.trim() });
-      setName('');
+      await createNewLocation({ name: data.name.trim() });
+      reset();
     } catch (err) {
       console.error(err);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -41,16 +53,16 @@ export default function LocationsPage() {
       )}
 
       <Card>
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             label="Nome do local"
             id="name"
             placeholder="Unidade Centro"
             required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            error={errors.name?.message}
+            {...register('name')}
           />
-          <Button type="submit" isLoading={isSaving} disabled={!name.trim()}>
+          <Button type="submit" isLoading={isSubmitting}>
             Adicionar local
           </Button>
         </form>

@@ -39,9 +39,7 @@ export default function PetsPage() {
               Gerencie os animais de estimação dos seus clientes.
             </p>
           </div>
-          <Link href="/admin/pets/new">
-            <Button>Novo Pet</Button>
-          </Link>
+          {/* Botão de novo pet removido pois rota não existe */}
         </div>
 
         {customersError && (

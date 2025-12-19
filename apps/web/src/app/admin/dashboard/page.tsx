@@ -106,13 +106,7 @@ export default function DashboardPage() {
             >
               Novo Cliente
             </Button>
-            <Button 
-              variant="secondary" 
-              className="w-full"
-              onClick={() => window.location.href = '/admin/pets/new'}
-            >
-              Novo Pet
-            </Button>
+            {/* Botão Novo Pet removido pois rota não existe */}
           </div>
         </Card>
 

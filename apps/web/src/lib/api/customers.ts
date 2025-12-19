@@ -118,23 +118,7 @@ export async function createPet(customerId: string, dto: CreatePetDto): Promise<
   });
 }
 
-export async function updatePet(
-  petId: string,
-  dto: UpdatePetDto
-): Promise<Pet> {
-  return apiFetch(`/pets/${petId}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-    body: JSON.stringify(dto),
-  });
-}
-
-export async function deletePet(petId: string): Promise<void> {
-  await apiFetch(`/pets/${petId}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-  });
-}
+// updatePet e deletePet removidos pois endpoint /pets/:petId não existe
 
 export async function fetchCustomerContacts(token: string, customerId: string): Promise<CustomerContact[]> {
   return apiFetch(`/customers/${customerId}/contacts`, {
