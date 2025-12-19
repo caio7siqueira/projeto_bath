@@ -86,7 +86,7 @@ describe('Reports (E2E)', () => {
     await request(app.getHttpServer())
       .patch(`/v1/appointments/${a2.body.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ status: 'COMPLETED' })
+      .send({ status: 'DONE' })
       .expect(200);
 
     // A3: CANCELLED
