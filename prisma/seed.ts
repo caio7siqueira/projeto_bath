@@ -11,6 +11,35 @@ const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@demo.com';
 const ADMIN_NAME = process.env.SEED_ADMIN_NAME || 'Admin Demo';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'Admin123!';
 
+async function seedBillingPlans() {
+  await prisma.billingPlan.createMany({
+    data: [
+      {
+        code: 'STARTER',
+        name: 'Starter',
+        limits: { filiais: 1, usuarios: 3 },
+        price_cents: 9900,
+        active: true,
+      },
+      {
+        code: 'PRO',
+        name: 'Pro',
+        limits: { filiais: 3, usuarios: 10 },
+        price_cents: 19900,
+        active: true,
+      },
+      {
+        code: 'FRANCHISE',
+        name: 'Franchise',
+        limits: { filiais: 10, usuarios: 50 },
+        price_cents: 49900,
+        active: true,
+      },
+    ],
+    skipDuplicates: true,
+  });
+}
+
 async function run() {
   // 1) Tenant (idempotente)
   const tenant = await prisma.tenant.upsert({
@@ -50,6 +79,8 @@ async function run() {
       passwordHash,
     },
   });
+
+  await seedBillingPlans();
 
   console.log('Seed complete');
   console.log({

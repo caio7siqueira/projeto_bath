@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import { UpsertBillingSubscriptionDto } from './dto/upsert-billing-subscription.dto';
@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantUser } from '../../common/decorators/tenant-user.decorator';
+import { ModeLeituraInterceptor } from './mode-leitura.interceptor';
 
 @ApiTags('billing')
 @ApiBearerAuth()

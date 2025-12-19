@@ -11,6 +11,7 @@ import {
   type NotificationStatus,
   type NotificationChannel,
 } from '@/lib/api/notifications';
+import NotificationSettings from './settings';
 
 const statusOptions: NotificationStatus[] = ['SCHEDULED', 'SENT', 'ERROR', 'CANCELLED'];
 const channelOptions: NotificationChannel[] = ['SMS', 'EMAIL', 'WHATSAPP'];
@@ -24,6 +25,7 @@ export default function NotificationsAdminPage() {
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<NotificationJobsFilters>({ status: undefined, type: undefined });
+  const [settings, setSettings] = useState(null);
 
   const load = async (opts: NotificationJobsFilters = {}) => {
     setLoading(true);
@@ -176,6 +178,10 @@ export default function NotificationsAdminPage() {
             </div>
           </div>
         )}
+      </Card>
+
+      <Card>
+        <NotificationSettings settings={settings} onUpdate={data => {/* PATCH para /v1/notification-settings */}} />
       </Card>
     </div>
   );

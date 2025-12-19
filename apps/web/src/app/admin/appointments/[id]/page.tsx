@@ -63,6 +63,7 @@ export default function AppointmentFormPage() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [appointment, setAppointment] = useState<any>(null);
 
   const selectedCustomerId = watch('customerId');
 
@@ -80,6 +81,7 @@ export default function AppointmentFormPage() {
       if (!isEditing || !appointmentId) return;
       try {
         const appointment = await fetchAppointmentById(appointmentId);
+        setAppointment(appointment);
         reset({
           customerId: appointment.customerId,
           locationId: appointment.locationId,
@@ -272,6 +274,13 @@ export default function AppointmentFormPage() {
             />
           )}
 
+          {appointment?.recurrenceSeriesId && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700 font-semibold">Recorrente</span>
+              <span className="text-xs text-gray-500">Este agendamento faz parte de uma série recorrente.</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3 pt-4">
             <Button type="submit" isLoading={isSaving}>
               {isEditing ? 'Atualizar' : 'Criar'} Agendamento
@@ -291,6 +300,23 @@ export default function AppointmentFormPage() {
                 isLoading={isCanceling}
               >
                 Cancelar agendamento
+              </Button>
+            )}
+            {isEditing && appointment?.recurrenceSeriesId && (
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  if (window.confirm('Deseja cancelar toda a série recorrente? Isso afetará todos os agendamentos futuros.')) {
+                    fetch(`/v1/appointments/${appointmentId}/cancel`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ scope: 'SERIES' }),
+                    }).then(() => router.push('/admin/appointments'));
+                  }
+                }}
+              >
+                Cancelar série recorrente
               </Button>
             )}
           </div>

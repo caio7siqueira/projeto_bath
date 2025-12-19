@@ -18,6 +18,7 @@ export interface Appointment {
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+  recurrenceSeriesId?: string | null;
 }
 
 export interface CreateAppointmentDto {

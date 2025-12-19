@@ -42,6 +42,7 @@ export class CustomersService {
     const where: Prisma.CustomerWhereInput = {
       tenantId,
       isActive: true,
+      status: 'ACTIVE',
     };
 
     if (query.q) {
@@ -134,20 +135,55 @@ export class CustomersService {
     }
   }
 
-  async remove(tenantId: string, id: string) {
-    // Check existence
-    await this.findOne(tenantId, id);
-
-    // Soft delete
-    const removed = await this.prisma.customer.updateMany({
+  async softDelete(tenantId: string, id: string, user: any) {
+    // Permitir apenas SUPERADMIN
+    if (user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Apenas SUPERADMIN pode deletar clientes');
+    }
+    // Buscar cliente
+    const customer = await this.prisma.customer.findFirst({
       where: { id, tenantId },
-      data: { isActive: false },
     });
-    if (removed.count === 0) {
+    if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-
-    return { message: 'Customer deleted successfully' };
+    if (customer.status === 'DELETED') {
+      throw new ConflictException('Customer já está deletado');
+    }
+    // Soft delete
+    await this.prisma.customer.update({
+      where: { id },
+      data: {
+        status: 'DELETED',
+        deleted_at: new Date(),
+        isActive: false,
+      },
+    });
+    // Cancelar agendamentos futuros
+    await this.prisma.appointment.updateMany({
+      where: {
+        tenantId,
+        customerId: id,
+        status: 'SCHEDULED',
+        startsAt: { gt: new Date() },
+      },
+      data: {
+        status: 'CANCELLED',
+        notes: 'Cancelado por remoção do cliente',
+        cancelledAt: new Date(),
+        status_reason: 'CUSTOMER_DELETED',
+      },
+    });
+    // Auditoria mínima
+    await this.prisma.auditLog.create({
+      data: {
+        tenantId,
+        actorId: user.id,
+        action: 'CUSTOMER_SOFT_DELETE',
+        payload: { customerId: id },
+      },
+    });
+    return { message: 'Customer soft deleted' };
   }
 
   // Contacts

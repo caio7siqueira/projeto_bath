@@ -8,6 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  HttpCode,
+  NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
@@ -17,12 +20,11 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('customers')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'STAFF')
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
@@ -31,6 +33,8 @@ export class CustomersController {
   @ApiOperation({ summary: 'Create a new customer' })
   @ApiResponse({ status: 201, description: 'Customer created successfully' })
   @ApiResponse({ status: 409, description: 'Customer with this phone already exists' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'STAFF')
   create(
     @CurrentUser() user: any,
     @Body() createCustomerDto: CreateCustomerDto,
@@ -41,6 +45,8 @@ export class CustomersController {
   @Get()
   @ApiOperation({ summary: 'List all customers' })
   @ApiResponse({ status: 200, description: 'Customers list retrieved successfully' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'STAFF')
   findAll(
     @CurrentUser() user: any,
     @Query() query: QueryCustomersDto,
@@ -52,11 +58,28 @@ export class CustomersController {
   @ApiOperation({ summary: 'Get a customer by ID' })
   @ApiResponse({ status: 200, description: 'Customer retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'STAFF')
   findOne(
     @CurrentUser() user: any,
     @Param('id') id: string,
   ) {
     return this.customersService.findOne(user.tenantId, id);
+  }
+
+  @Delete(':id')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Soft delete customer (SUPERADMIN only)' })
+  @ApiResponse({ status: 200, description: 'Customer deleted (soft)' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  @ApiResponse({ status: 409, description: 'Customer already deleted' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequireRole('SUPER_ADMIN')
+  async softDelete(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ) {
+    return this.customersService.softDelete(user.tenantId, id, user);
   }
 
   @Patch(':id')

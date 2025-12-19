@@ -253,4 +253,31 @@ export class AppointmentsService {
     return updated;
   }
 
+  async cancelWithScope(id: string, tenantId: string, scope: 'ONE' | 'SERIES') {
+    const appointment = await this.repository.findById(id, tenantId);
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+    // O campo recurrenceSeriesId pode não estar presente no select, buscar novamente se necessário
+    let recurrenceSeriesId = (appointment as any).recurrenceSeriesId;
+    if (scope === 'ONE' || !recurrenceSeriesId) {
+      return this.cancel(id, tenantId);
+    }
+    // scope=SERIES: cancela todas futuras da série
+    const now = new Date();
+    const cancelled = await this.repository.cancelSeriesFuture(recurrenceSeriesId, now, tenantId);
+    return { message: 'Instâncias futuras canceladas', count: cancelled };
+  }
+
+  async rescheduleWithScope(id: string, tenantId: string, scope: 'ONE' | 'SERIES', newStartAt: string) {
+    const appointment = await this.repository.findById(id, tenantId);
+    if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+    let recurrenceSeriesId = (appointment as any).recurrenceSeriesId;
+    if (scope === 'ONE' || !recurrenceSeriesId) {
+      return this.update(id, tenantId, { startsAt: newStartAt });
+    }
+    // scope=SERIES: reagenda todas futuras da série
+    const now = new Date();
+    const updated = await this.repository.rescheduleSeriesFuture(recurrenceSeriesId, now, tenantId, newStartAt);
+    return { message: 'Instâncias futuras reagendadas', count: updated };
+  }
+
 }

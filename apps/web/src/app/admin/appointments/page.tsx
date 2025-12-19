@@ -1,3 +1,4 @@
+"use client";
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -111,8 +112,22 @@ export default function AppointmentsPage() {
       locationName: locationById[a.locationId],
       serviceName: a.serviceId ? (serviceById[a.serviceId] || '') : undefined,
       status: a.status,
+      isRecurrence: !!a.recurrenceSeriesId,
     },
   }));
+
+  // Adiciona legenda de recorrência e ações rápidas
+  const renderEventContent = (eventInfo: any) => {
+    const { isRecurrence } = eventInfo.event.extendedProps;
+    return (
+      <div className="flex flex-col">
+        <span>{eventInfo.event.title}</span>
+        {isRecurrence && (
+          <span className="text-xs text-purple-600 font-semibold mt-1">Recorrente</span>
+        )}
+      </div>
+    );
+  };
 
   // Handlers de interação (criação, mover, redimensionar)
   const calendarRef = useRef(null);
@@ -304,6 +319,7 @@ export default function AppointmentsPage() {
                   dayMaxEvents={3}
                   aspectRatio={1.5}
                   eventClassNames={(arg) => `transition-shadow focus:ring-2 focus:ring-blue-400 ${arg.event.extendedProps.status ? 'border-l-4' : ''}`}
+                  eventContent={renderEventContent}
                 />
             </div>
           )}

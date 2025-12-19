@@ -11,6 +11,7 @@ export interface BillingSubscription {
   status: BillingStatus;
   createdAt: string;
   updatedAt: string;
+  trialEndsAt?: string;
 }
 
 export interface UpsertBillingSubscriptionDto {

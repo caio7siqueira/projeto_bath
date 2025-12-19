@@ -18,6 +18,8 @@ import { TenantConfigModule } from './modules/tenant-config/tenant-config.module
 import { BillingModule } from './modules/billing/billing.module';
 import { ServicesModule } from './modules/services/services.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RecurrenceSeriesModule } from './modules/recurrence-series/recurrence-series.module';
+import { SuperadminModule } from './modules/superadmin/superadmin.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -58,6 +60,8 @@ const envFilePath = Array.from(
     TenantConfigModule,
     BillingModule,
     ServicesModule,
+    RecurrenceSeriesModule,
+    SuperadminModule,
   ],
   controllers: [HealthController],
 })

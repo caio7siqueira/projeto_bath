@@ -1,3 +1,69 @@
+model MessageCreditsWallet {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  channel    Channel
+  balance    Int      @default(0)
+  updated_at DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  transactions MessageCreditTransaction[]
+  @@unique([tenant_id, channel])
+}
+
+model MessageCreditTransaction {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  channel    Channel
+  type       TransactionType
+  amount     Int
+  reason     String
+  created_at DateTime @default(now())
+  walletId   String
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  wallet     MessageCreditsWallet @relation(fields: [walletId], references: [id])
+}
+
+enum Channel {
+  SMS
+  WHATSAPP
+}
+
+enum TransactionType {
+  PURCHASE
+  CONSUME
+  ADJUSTMENT
+  REFUND
+}
+model BillingPlan {
+  code        String   @id
+  name        String
+  limits      Json
+  price_cents Int
+  active      Boolean  @default(true)
+  subscriptions BillingSubscription[]
+}
+
+model BillingSubscription {
+  id                      String   @id @default(uuid())
+  tenant_id               String
+  plan_code               String
+  status                  SubscriptionStatus @default(TRIAL)
+  trial_ends_at           DateTime?
+  current_period_end      DateTime?
+  provider                String?
+  provider_subscription_id String?
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+  tenant                  Tenant   @relation(fields: [tenant_id], references: [id])
+  plan                    BillingPlan @relation(fields: [plan_code], references: [code])
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+}
 generator client {
   provider = "prisma-client-js"
 }
@@ -27,6 +93,7 @@ model Tenant {
   omieCustomerLinks      OmieCustomerLink[]
   omieSalesEvents        OmieSalesEvent[]
   messageCreditsWallets  MessageCreditsWallet[]
+  messageCreditTransactions MessageCreditTransaction[]
   notificationJobs       NotificationJob[]
   auditLogs              AuditLog[]
   billingSubscriptions   BillingSubscription[]
@@ -76,6 +143,8 @@ model Customer {
   cpf          String?
   optInGlobal  Boolean            @default(true)
   isActive     Boolean            @default(true)
+  status       CustomerStatus     @default(ACTIVE)
+  deleted_at   DateTime?
   lastLoginAt  DateTime?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -92,6 +161,11 @@ model Customer {
   @@index([tenantId, cpf])
 }
 
+enum CustomerStatus {
+  ACTIVE
+  DELETED
+}
+
 model Pet {
   id           String        @id @default(uuid())
   tenantId     String
@@ -100,6 +174,8 @@ model Pet {
   species      Species
   lifeStatus   LifeStatus    @default(ALIVE)
   allowNotifications Boolean @default(true)
+  is_deceased  Boolean       @default(false)
+  deceased_at  DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
@@ -166,6 +242,7 @@ model Appointment {
   status      AppointmentStatus   @default(SCHEDULED)
   notes       String?
   cancelledAt DateTime?
+  recurrenceSeriesId String?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   tenant      Tenant              @relation(fields: [tenantId], references: [id])
@@ -173,12 +250,14 @@ model Appointment {
   customer    Customer            @relation(fields: [customerId], references: [id])
   pet         Pet?                @relation(fields: [petId], references: [id])
   service     Service?            @relation(fields: [serviceId], references: [id])
+  recurrenceSeries RecurrenceSeries? @relation(fields: [recurrenceSeriesId], references: [id])
   resources   AppointmentResource[]
   notificationJobs NotificationJob[]
   omieSalesEvents OmieSalesEvent[]
 
   @@index([tenantId, locationId, startsAt])
   @@index([tenantId, customerId, startsAt])
+  @@index([recurrenceSeriesId])
 }
 
 enum AppointmentStatus {
@@ -201,10 +280,21 @@ model AppointmentResource {
 model RecurrenceSeries {
   id        String   @id @default(uuid())
   tenantId  String
-  rule      String
+  rule      RecurrenceRule
+  interval  Int? // para CUSTOM_INTERVAL
+  startDate DateTime
+  endDate   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  appointments Appointment[]
+}
+
+enum RecurrenceRule {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM_INTERVAL
 }
 
 model OmieConnection {
@@ -242,24 +332,6 @@ model OmieSalesEvent {
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
 }
 
-model MessageCreditsWallet {
-  id           String                     @id @default(uuid())
-  tenantId     String
-  balance      Int                        @default(0)
-  createdAt    DateTime                   @default(now())
-  updatedAt    DateTime                   @updatedAt
-  tenant       Tenant                     @relation(fields: [tenantId], references: [id])
-  transactions MessageCreditTransaction[]
-}
-
-model MessageCreditTransaction {
-  id        String   @id @default(uuid())
-  walletId  String
-  amount    Int
-  reason    String
-  createdAt DateTime @default(now())
-  wallet    MessageCreditsWallet @relation(fields: [walletId], references: [id])
-}
 
 model NotificationJob {
   id               String   @id @default(uuid())
@@ -288,15 +360,6 @@ model AuditLog {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
 }
 
-model BillingSubscription {
-  id        String   @id @default(uuid())
-  tenantId  String
-  plan      String
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-}
 
 model TenantConfig {
   id                 String   @id @default(uuid())
@@ -345,6 +408,18 @@ model OtpCode {
 
   @@index([phone])
   @@index([customerId])
+}
+
+enum NotificationType {
+  REMINDER
+  NO_SHOW_FOLLOWUP
+  OTP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 model LoginLog {

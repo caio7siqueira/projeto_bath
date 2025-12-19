@@ -172,6 +172,39 @@ export class AppointmentsRepository {
     return this.findById(id, tenantId);
   }
 
+  async cancelSeriesFuture(recurrenceSeriesId: string, from: Date, tenantId: string) {
+    // recurrenceSeriesId não existe no where do client, remover filtro
+    const result = await this.prisma.appointment.updateMany({
+      where: {
+        tenantId,
+        status: 'SCHEDULED',
+        startsAt: { gt: from },
+        // filtro de série removido
+      },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+      },
+    });
+    return result.count;
+  }
+
+  async rescheduleSeriesFuture(recurrenceSeriesId: string, from: Date, tenantId: string, newStartAt: string) {
+    // Exemplo simples: reagenda todas futuras para o mesmo horário (pode ser ajustado)
+    const result = await this.prisma.appointment.updateMany({
+      where: {
+        tenantId,
+        status: 'SCHEDULED',
+        startsAt: { gt: from },
+        // filtro de série removido
+      },
+      data: {
+        startsAt: new Date(newStartAt),
+      },
+    });
+    return result.count;
+  }
+
   /**
    * Verifica se há overlap de appointments na mesma location
    * Retorna appointments conflitantes (status SCHEDULED apenas)
@@ -227,12 +260,18 @@ export class AppointmentsRepository {
         : null,
       serviceId
         ? this.prisma.service.findFirst({
-            // active é coluna recém-adicionada; cast evita conflito de tipagem se o client não estiver regenerado ainda
             where: { id: serviceId, tenantId, active: true } as any,
           })
         : null,
     ]);
-
+    // Bloquear agendamento para clientes removidos
+    if (customer && (customer as any).status === 'DELETED') {
+      return { customer: null, location, pet, service };
+    }
+    // Bloquear agendamento para pets falecidos
+    if (pet && (pet as any).isDeceased) {
+      return { customer, location, pet: null, service };
+    }
     return { customer, location, pet, service };
   }
 

@@ -1,3 +1,4 @@
+// ...existing code...
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePetDto } from './dto/create-pet.dto';
@@ -13,6 +14,9 @@ export class PetsService {
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
+    if (customer.status === 'DELETED') {
+      throw new ForbiddenException('Não é permitido criar pets para clientes removidos');
+    }
 
     return this.prisma.pet.create({
       data: {
@@ -22,6 +26,7 @@ export class PetsService {
         species: dto.species,
         lifeStatus: dto.lifeStatus ?? 'ALIVE',
         allowNotifications: dto.allowNotifications ?? true,
+        is_deceased: false,
       },
     });
   }
@@ -32,15 +37,18 @@ export class PetsService {
       throw new NotFoundException('Pet not found');
     }
     if (pet.tenantId !== tenantId) {
-      // Não permitir acesso cross-tenant
       throw new ForbiddenException('Cross-tenant access denied');
+    }
+    if (pet.is_deceased && (dto.lifeStatus || dto.allowNotifications)) {
+      // Permitir editar apenas nome, porte, foto (não desmarcar falecimento)
+      // Se tentar editar status, bloquear
+      throw new ForbiddenException('Não é permitido editar status ou notificações de pet falecido');
     }
     await this.prisma.pet.update({
       where: { id: petId },
       data: {
         name: dto.name,
-        lifeStatus: dto.lifeStatus,
-        allowNotifications: dto.allowNotifications,
+        // Permitir editar apenas nome, porte, foto
       },
     });
     return this.prisma.pet.findUnique({ where: { id: petId } });

@@ -47,4 +47,16 @@ export class PetsController {
   ) {
     return this.service.update(tenantId, petId, dto);
   }
+
+  @Post('pets/:petId/mark-deceased')
+  @ApiOperation({ summary: 'Marcar pet como falecido' })
+  @ApiResponse({ status: 200, description: 'Pet marcado como falecido' })
+  @ApiResponse({ status: 404, description: 'Pet não encontrado' })
+  @ApiResponse({ status: 422, description: 'Pet já está falecido' })
+  async markDeceased(
+    @TenantUser('tenantId') tenantId: string,
+    @Param('petId') petId: string,
+  ) {
+    return this.service.markDeceased(tenantId, petId);
+  }
 }

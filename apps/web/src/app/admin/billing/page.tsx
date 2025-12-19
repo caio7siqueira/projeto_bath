@@ -1,11 +1,40 @@
 "use client";
+"use client";
+
 
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useRole } from '@/lib/use-role';
+import { useEffect, useState } from 'react';
+import { fetchBillingSubscription, BillingSubscription } from '@/lib/api/billing';
+
+function getTrialDaysLeft(trialEndsAt?: string) {
+  if (!trialEndsAt) return null;
+  const end = new Date(trialEndsAt);
+  const now = new Date();
+  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+}
 
 export default function BillingAdminPage() {
   const { isAdmin } = useRole();
+  const [subscription, setSubscription] = useState<BillingSubscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchBillingSubscription()
+      .then((data) => {
+        setSubscription(data);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message || 'Erro ao carregar assinatura');
+        setSubscription(null);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   if (!isAdmin) {
     return (
@@ -19,22 +48,45 @@ export default function BillingAdminPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-gray-900">Billing e Assinatura</h1>
-        <p className="text-gray-600">
-          Este módulo estará disponível em breve. Nenhuma cobrança é feita por aqui no momento.
-        </p>
-      </div>
-
-      <Card>
-        <p className="text-gray-700 mb-4">
-          A integração de billing ainda não está exposta na API. Assim que estiver ativa, você poderá
-          gerenciar plano, status de cobrança e histórico de pagamentos diretamente aqui.
-        </p>
-        <Button variant="secondary" disabled>
-          Em desenvolvimento
-        </Button>
-      </Card>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Billing e Assinatura</h1>
+      {loading && (
+        <Card>
+          <p className="text-gray-600">Carregando informações de assinatura...</p>
+        </Card>
+      )}
+      {error && (
+        <Card>
+          <p className="text-red-700">{error}</p>
+        </Card>
+      )}
+      {!loading && !error && !subscription && (
+        <Card>
+          <p className="text-gray-600">Nenhuma assinatura encontrada.</p>
+          <Button variant="primary" onClick={() => window.location.reload()}>Tentar novamente</Button>
+        </Card>
+      )}
+      {!loading && !error && subscription && (
+        <Card header="Resumo da Assinatura">
+          <div className="mb-2">
+            <span className="font-semibold">Plano atual:</span> {subscription.plan}
+          </div>
+          <div className="mb-2">
+            <span className="font-semibold">Status:</span> {subscription.status === 'ACTIVE' ? 'Ativa' : subscription.status === 'PAST_DUE' ? 'Em atraso' : subscription.status === 'CANCELLED' ? 'Cancelada' : 'Inativa'}
+          </div>
+          {subscription.trialEndsAt && getTrialDaysLeft(subscription.trialEndsAt) !== null && (
+            <div className="mb-2">
+              <span className="font-semibold">Trial restante:</span> {getTrialDaysLeft(subscription.trialEndsAt)} dias
+            </div>
+          )}
+          <div className="mb-2">
+            <span className="font-semibold">Limite de uso:</span> <span className="text-yellow-700">Soft limit: 100 agendamentos/mês</span>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button variant="primary" onClick={() => window.location.href = '/admin/billing/checkout'}>Upgrade / Trocar plano</Button>
+            <Button variant="danger" onClick={() => window.location.href = '/admin/billing/cancel'}>Cancelar assinatura</Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
