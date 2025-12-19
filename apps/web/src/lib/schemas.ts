@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 export const customerSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(255, 'Nome muito longo'),
-  phone: z.string().min(1, 'Telefone é obrigatório'),
+  phone: z
+    .string()
+    .min(10, 'Telefone é obrigatório')
+    .refine((value) => value.replace(/\D/g, '').length >= 10, {
+      message: 'Telefone inválido (ex.: (11) 98765-4321)',
+    }),
   email: z.string().email('Email inválido').or(z.literal('')).optional(),
   cpf: z.string().optional(),
   optInGlobal: z.boolean().optional(),
@@ -24,7 +29,7 @@ export const appointmentSchema = z.object({
   endsAt: z.string().min(1, 'Fim é obrigatório'),
   notes: z.string().optional().or(z.literal('')),
   status: z
-    .enum(['SCHEDULED', 'CANCELLED', 'COMPLETED', 'DONE', 'RESCHEDULED', 'NO_SHOW'])
+    .enum(['SCHEDULED', 'CANCELLED', 'DONE'])
     .optional(),
 }).strict();
 
@@ -52,11 +57,5 @@ export type AppointmentFormData = {
   startsAt: string;
   endsAt: string;
   notes?: string;
-  status?:
-    | 'SCHEDULED'
-    | 'CANCELLED'
-    | 'COMPLETED'
-    | 'DONE'
-    | 'RESCHEDULED'
-    | 'NO_SHOW';
+  status?: 'SCHEDULED' | 'CANCELLED' | 'DONE';
 };

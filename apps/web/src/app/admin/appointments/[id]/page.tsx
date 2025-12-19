@@ -20,10 +20,7 @@ function toDatetimeLocal(iso: string) {
 const statusOptions = [
   { value: 'SCHEDULED', label: 'Agendado' },
   { value: 'CANCELLED', label: 'Cancelado' },
-  { value: 'COMPLETED', label: 'Concluído' },
   { value: 'DONE', label: 'Finalizado' },
-  { value: 'RESCHEDULED', label: 'Reagendado' },
-  { value: 'NO_SHOW', label: 'Falta' },
 ];
 
 export default function AppointmentFormPage() {
@@ -51,8 +48,14 @@ export default function AppointmentFormPage() {
   } = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
+      customerId: '',
+      locationId: '',
+      petId: '',
+      serviceId: '',
       startsAt: '',
       endsAt: '',
+      notes: '',
+      status: 'SCHEDULED',
     },
   });
 
@@ -71,7 +74,6 @@ export default function AppointmentFormPage() {
   useEffect(() => {
     setMounted(true);
     fetchCustomers();
-    fetchPets();
     fetchLocations();
 
     const loadAppointment = async () => {
@@ -88,6 +90,9 @@ export default function AppointmentFormPage() {
           notes: appointment.notes || '',
           status: appointment.status,
         });
+        if (appointment.customerId) {
+          fetchPets(appointment.customerId, { append: true });
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Erro ao carregar agendamento';
         setError(message);
@@ -97,6 +102,12 @@ export default function AppointmentFormPage() {
     loadAppointment();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, appointmentId]);
+
+  useEffect(() => {
+    if (!selectedCustomerId) return;
+    fetchPets(selectedCustomerId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCustomerId]);
 
   const onSubmit = async (data: AppointmentFormData) => {
     setIsSaving(true);

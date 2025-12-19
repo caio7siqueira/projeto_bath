@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCustomers } from '@/lib/hooks';
 import { Card, CardHeader } from '@/components/Card';
@@ -19,10 +19,18 @@ export default function CustomerFormPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    control,
+    formState: { errors, touchedFields, isSubmitted },
     reset,
   } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      cpf: '',
+      optInGlobal: false,
+    },
   });
 
   const { customers, createNewCustomer, updateExistingCustomer } =
@@ -30,6 +38,22 @@ export default function CustomerFormPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
+  const formatCpf = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -99,16 +123,27 @@ export default function CustomerFormPage() {
               placeholder="João Silva"
               required
               error={errors.name?.message}
+              touched={touchedFields.name || isSubmitted}
               {...register('name')}
             />
 
-            <FormField
-              label="Telefone"
-              id="phone"
-              placeholder="(11) 98765-4321"
-              required
-              error={errors.phone?.message}
-              {...register('phone')}
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <FormField
+                  label="Telefone"
+                  id="phone"
+                  placeholder="(11) 98765-4321"
+                  required
+                  error={errors.phone?.message}
+                  touched={touchedFields.phone || isSubmitted}
+                  value={field.value ?? ''}
+                  onBlur={field.onBlur}
+                  onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                  ref={field.ref}
+                />
+              )}
             />
 
             <FormField
@@ -117,15 +152,26 @@ export default function CustomerFormPage() {
               type="email"
               placeholder="joao@example.com"
               error={errors.email?.message}
+              touched={touchedFields.email || isSubmitted}
               {...register('email')}
             />
 
-            <FormField
-              label="CPF"
-              id="cpf"
-              placeholder="123.456.789-00"
-              error={errors.cpf?.message}
-              {...register('cpf')}
+            <Controller
+              name="cpf"
+              control={control}
+              render={({ field }) => (
+                <FormField
+                  label="CPF"
+                  id="cpf"
+                  placeholder="123.456.789-00"
+                  error={errors.cpf?.message}
+                  touched={touchedFields.cpf || isSubmitted}
+                  value={field.value ?? ''}
+                  onBlur={field.onBlur}
+                  onChange={(e) => field.onChange(formatCpf(e.target.value))}
+                  ref={field.ref}
+                />
+              )}
             />
 
             <div className="flex gap-3 pt-4">

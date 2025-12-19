@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button } from '@/components/Button';
@@ -20,6 +20,7 @@ export default function NewCustomerPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, touchedFields, isSubmitted },
     reset,
@@ -35,6 +36,24 @@ export default function NewCustomerPage() {
     mode: 'onBlur',
     reValidateMode: 'onChange',
   });
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
+
+  const formatCpf = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+  };
 
   const onSubmit = async (data: CustomerFormData) => {
     setIsSaving(true);
@@ -92,14 +111,23 @@ export default function NewCustomerPage() {
             touched={touchedFields.name || isSubmitted}
             {...register('name')}
           />
-          <FormField
-            label="Telefone"
-            id="phone"
-            placeholder="(11) 98765-4321"
-            required
-            error={errors.phone?.message}
-            touched={touchedFields.phone || isSubmitted}
-            {...register('phone')}
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="Telefone"
+                id="phone"
+                placeholder="(11) 98765-4321"
+                required
+                error={errors.phone?.message}
+                touched={touchedFields.phone || isSubmitted}
+                value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                ref={field.ref}
+              />
+            )}
           />
           <FormField
             label="Email"
@@ -110,13 +138,22 @@ export default function NewCustomerPage() {
             touched={touchedFields.email || isSubmitted}
             {...register('email')}
           />
-          <FormField
-            label="CPF"
-            id="cpf"
-            placeholder="123.456.789-00"
-            error={errors.cpf?.message}
-            touched={touchedFields.cpf || isSubmitted}
-            {...register('cpf')}
+          <Controller
+            name="cpf"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                label="CPF"
+                id="cpf"
+                placeholder="123.456.789-00"
+                error={errors.cpf?.message}
+                touched={touchedFields.cpf || isSubmitted}
+                value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={(e) => field.onChange(formatCpf(e.target.value))}
+                ref={field.ref}
+              />
+            )}
           />
           <div className="flex gap-3 pt-4">
             <Button type="submit" isLoading={isSaving}>

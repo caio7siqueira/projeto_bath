@@ -12,14 +12,14 @@ interface AppStore {
   error: string | null;
 
   // Customer actions
-  setCustomers: (customers: Customer[]) => void;
+  setCustomers: (customers: Customer[] | ((prev: Customer[]) => Customer[])) => void;
   setSelectedCustomer: (customer: Customer | null) => void;
   addCustomer: (customer: Customer) => void;
   updateCustomerInStore: (id: string, customer: Customer) => void;
   removeCustomer: (id: string) => void;
 
   // Pet actions
-  setPets: (pets: Pet[]) => void;
+  setPets: (pets: Pet[] | ((prev: Pet[]) => Pet[])) => void;
   setSelectedPet: (pet: Pet | null) => void;
   addPet: (pet: Pet) => void;
   updatePetInStore: (id: string, pet: Pet) => void;
@@ -45,7 +45,10 @@ export const useAppStore = create<AppStore>((set) => ({
   isLoading: false,
   error: null,
 
-  setCustomers: (customers) => set({ customers }),
+  setCustomers: (customers) =>
+    set((state) => ({
+      customers: typeof customers === 'function' ? customers(state.customers) : customers,
+    })),
   setSelectedCustomer: (customer) => set({ selectedCustomer: customer }),
   addCustomer: (customer) =>
     set((state) => ({ customers: [...state.customers, customer] })),
@@ -58,7 +61,10 @@ export const useAppStore = create<AppStore>((set) => ({
       customers: state.customers.filter((c) => c.id !== id),
     })),
 
-  setPets: (pets) => set({ pets }),
+  setPets: (pets) =>
+    set((state) => ({
+      pets: typeof pets === 'function' ? pets(state.pets) : pets,
+    })),
   setSelectedPet: (pet) => set({ selectedPet: pet }),
   addPet: (pet) => set((state) => ({ pets: [...state.pets, pet] })),
   updatePetInStore: (id, pet) =>

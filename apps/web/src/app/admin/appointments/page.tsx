@@ -17,10 +17,7 @@ import ptBrLocale from '@fullcalendar/core/locales/pt-br';
 const statusColors: Record<Appointment['status'], string> = {
   SCHEDULED: '#2563eb', // azul
   CANCELLED: '#ef4444', // vermelho
-  COMPLETED: '#22c55e', // verde
   DONE: '#22c55e',
-  RESCHEDULED: '#f59e42', // laranja
-  NO_SHOW: '#a3a3a3', // cinza
 };
 
 export default function AppointmentsPage() {
@@ -43,11 +40,18 @@ export default function AppointmentsPage() {
     setMounted(true);
     fetchAppointments();
     fetchCustomers();
-    fetchPets();
     fetchLocations();
     fetchServices();
   }, []);
 
+  useEffect(() => {
+    if (appointments.length === 0) return;
+    const customerIds = Array.from(new Set(appointments.map((a) => a.customerId).filter(Boolean)));
+    customerIds.forEach((customerId) => {
+      fetchPets(customerId, { append: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointments]);
 
   const customerById = useMemo(() => Object.fromEntries(customers.map((c) => [c.id, c.name])), [customers]);
   const petById = useMemo(() => Object.fromEntries(pets.map((p) => [p.id, p.name])), [pets]);
@@ -79,19 +83,6 @@ export default function AppointmentsPage() {
     }
   };
 
-  const handleMarkNoShow = async (id: string) => {
-    setActioningId(id);
-    try {
-      const { markAppointmentNoShow } = await import('@/lib/api/appointments-actions');
-      const updated = await markAppointmentNoShow(id);
-      updateAppointmentInStore(id, updated);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setActioningId(null);
-    }
-  };
-
   if (!mounted) {
     // Skeleton inicial
     return (
@@ -101,40 +92,6 @@ export default function AppointmentsPage() {
           <div className="h-6 w-1/2 bg-gray-100 rounded" />
           <div className="h-96 bg-gray-100 rounded-lg" />
         </div>
-      </div>
-    );
-  }
-
-  // Loading/erro/empty de serviços (UX degradável)
-  if (servicesLoading) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto text-center text-gray-500">Carregando serviços...</div>
-    );
-  }
-  if (servicesError) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto">
-        <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">{servicesError}</div>
-        <Card>
-          <CardHeader title="Nenhum serviço disponível" />
-          <p className="text-gray-600">Cadastre serviços para poder agendar.</p>
-          <Link href="/admin/services/new">
-            <Button className="mt-4">Cadastrar Serviço</Button>
-          </Link>
-        </Card>
-      </div>
-    );
-  }
-  if (services.length === 0) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto">
-        <Card>
-          <CardHeader title="Nenhum serviço cadastrado" />
-          <p className="text-gray-600">Cadastre serviços para poder agendar.</p>
-          <Link href="/admin/services/new">
-            <Button className="mt-4">Cadastrar Serviço</Button>
-          </Link>
-        </Card>
       </div>
     );
   }
@@ -232,6 +189,25 @@ export default function AppointmentsPage() {
           <Button>Novo Agendamento</Button>
         </Link>
       </div>
+
+      {servicesLoading && (
+        <div className="mb-4 rounded-lg bg-blue-50 p-4 text-blue-800">
+          Carregando serviços disponíveis...
+        </div>
+      )}
+      {servicesError && (
+        <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">
+          Não foi possível carregar serviços agora. Você ainda pode visualizar a agenda.
+        </div>
+      )}
+      {!servicesLoading && services.length === 0 && !servicesError && (
+        <div className="mb-4 rounded-lg bg-blue-50 p-4 text-blue-800 flex items-center justify-between">
+          Nenhum serviço cadastrado ainda.
+          <Link href="/admin/services/new">
+            <Button size="sm" variant="secondary" className="ml-2">Cadastrar serviço</Button>
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>

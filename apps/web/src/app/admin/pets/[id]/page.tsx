@@ -24,12 +24,14 @@ export default function PetFormPage() {
   } = useForm<PetFormData>({
     resolver: zodResolver(petSchema),
     defaultValues: {
+      name: '',
+      species: 'DOG',
       lifeStatus: 'ALIVE',
       allowNotifications: true,
     },
   });
 
-  const { pets, createNewPet, updateExistingPet } = usePets();
+  const { pets, createNewPet, updateExistingPet, fetchPets, isLoading } = usePets();
   const { customers, fetchCustomers } = useCustomers();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,19 +41,42 @@ export default function PetFormPage() {
   useEffect(() => {
     setMounted(true);
     fetchCustomers();
-    if (isEditing && pets.length > 0) {
-      const pet = pets.find((p) => p.id === petId);
-      if (pet) {
-        setSelectedCustomer(pet.customerId);
-        reset({
-          name: pet.name,
-          species: pet.species,
-          lifeStatus: pet.lifeStatus,
-          allowNotifications: pet.allowNotifications,
-        });
-      }
+  }, [fetchCustomers]);
+
+  useEffect(() => {
+    if (!isEditing || !petId || customers.length === 0) return;
+    const existing = pets.find((p) => p.id === petId);
+    if (existing) {
+      setSelectedCustomer(existing.customerId);
+      reset({
+        name: existing.name,
+        species: existing.species,
+        lifeStatus: existing.lifeStatus,
+        allowNotifications: existing.allowNotifications,
+      });
+      return;
     }
-  }, [isEditing, petId, pets, fetchCustomers, reset]);
+
+    const loadPet = async () => {
+      for (const customer of customers) {
+        const loaded = await fetchPets(customer.id, { append: true });
+        const match = loaded.find((p) => p.id === petId);
+        if (match) {
+          setSelectedCustomer(match.customerId);
+          reset({
+            name: match.name,
+            species: match.species,
+            lifeStatus: match.lifeStatus,
+            allowNotifications: match.allowNotifications,
+          });
+          break;
+        }
+      }
+    };
+
+    loadPet();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, petId, customers, pets]);
 
   const onSubmit = async (data: PetFormData) => {
     if (!selectedCustomer && !isEditing) {

@@ -1,12 +1,10 @@
 import { getAuthToken } from './api/client';
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+
 // Centraliza a configuração da API para todo o frontend
 export function getApiBaseUrl() {
-  const url = process.env.NEXT_PUBLIC_API_URL;
-  if (!url) {
-    throw new Error('NEXT_PUBLIC_API_URL não está definida. Configure a variável de ambiente corretamente.');
-  }
-  return url.replace(/\/$/, ''); // remove barra final se houver
+  return API_URL;
 }
 
 export function getApiUrl(path: string) {
@@ -14,7 +12,6 @@ export function getApiUrl(path: string) {
   if (!path.startsWith('/')) path = '/' + path;
   return base + '/v1' + path;
 }
-
 
 // Cliente HTTP centralizado para toda a aplicação web
 export async function apiFetch(path: string, options?: RequestInit) {

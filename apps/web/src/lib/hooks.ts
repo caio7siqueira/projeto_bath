@@ -1,18 +1,17 @@
-import { useState } from 'react';
-import { listServices, type Service } from './api/services';
+import { useCallback, useState } from 'react';
+import { listServices, createService, type Service, type CreateServiceDto } from './api/services';
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
 
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     setIsLoading(true);
     setErrorState(null);
     try {
       const data = await listServices();
       setServices(data);
     } catch (err: any) {
-      // Se 404, retorna array vazio e mensagem amigável
       if (err?.status === 404) {
         setServices([]);
         setErrorState('Nenhum serviço cadastrado ainda.');
@@ -23,13 +22,26 @@ export function useServices() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  const createNewService = useCallback(async (dto: CreateServiceDto) => {
+    try {
+      const service = await createService(dto);
+      setServices((prev) => [service, ...prev]);
+      return service;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao criar serviço';
+      setErrorState(message);
+      throw err;
+    }
+  }, []);
 
   return {
     services,
     isLoading,
     error,
     fetchServices,
+    createNewService,
   };
 }
 import { useAppStore } from './store';
@@ -298,23 +310,39 @@ export function usePets() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
 
-  const fetchPets = async () => {
+  const fetchPets = async (customerId: string, opts?: { append?: boolean }) => {
+    if (!customerId) {
+      setErrorState('Selecione um cliente para listar os pets.');
+      return [];
+    }
+
     setIsLoading(true);
     setErrorState(null);
     try {
-      const data = await listPets();
-      setPets(data);
+      const data = await listPets(customerId);
+      if (opts?.append) {
+        setPets((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          data.forEach((p) => map.set(p.id, p));
+          return Array.from(map.values());
+        });
+      } else {
+        setPets(data);
+      }
+      return data;
     } catch (err: any) {
       // Se 404, retorna array vazio e mensagem amigável
       if (err?.status === 404) {
-        setPets([]);
-        setErrorState('Nenhum pet cadastrado ainda.');
-        setError('Nenhum pet cadastrado ainda.');
+        if (!opts?.append) setPets([]);
+        const friendly = 'Nenhum pet cadastrado para este cliente ainda.';
+        setErrorState(friendly);
+        setError(friendly);
       } else {
         const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
         setErrorState(message);
         setError(message);
       }
+      return [];
     } finally {
       setIsLoading(false);
     }

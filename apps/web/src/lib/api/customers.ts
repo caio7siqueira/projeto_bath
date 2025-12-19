@@ -104,8 +104,8 @@ export interface CreatePetDto {
 
 export interface UpdatePetDto extends Partial<CreatePetDto> {}
 
-export async function listPets(): Promise<Pet[]> {
-  return apiFetch('/pets', {
+export async function listPets(customerId: string): Promise<Pet[]> {
+  return apiFetch(`/customers/${customerId}/pets`, {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }

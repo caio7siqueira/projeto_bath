@@ -70,12 +70,12 @@ export function Sidebar() {
             <NavLink href="/admin/appointments" label="Agenda" onClick={() => setIsOpen(false)} />
             <NavLink href="/admin/customers" label="Clientes" onClick={() => setIsOpen(false)} />
             <NavLink href="/admin/pets" label="Pets" onClick={() => setIsOpen(false)} />
+            <NavLink href="/admin/services" label="Serviços" onClick={() => setIsOpen(false)} />
             <NavLink href="/admin/locations" label="Locais" onClick={() => setIsOpen(false)} />
             {/* Administrativo */}
             <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administrativo</div>
             <NavLink href="/dashboard/reports" label="Relatórios" onClick={() => setIsOpen(false)} />
             <NavLink href="/admin/notifications" label="Notificações" onClick={() => setIsOpen(false)} />
-            <NavLink href="/admin/billing" label="Financeiro" onClick={() => setIsOpen(false)} />
             {/* Configurações */}
             <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>
             <NavLink href="/admin/settings" label="Configurações" onClick={() => setIsOpen(false)} />
@@ -83,7 +83,7 @@ export function Sidebar() {
             {isSuperAdmin && (
               <>
                 <div className="mb-2 mt-4 text-xs font-semibold text-blue-400 uppercase tracking-wider">Super Admin</div>
-                <NavLink href="/super-admin/users" label="Usuários da Plataforma" onClick={() => setIsOpen(false)} />
+                <NavLink href="/admin/platform-users" label="Usuários da Plataforma" onClick={() => setIsOpen(false)} />
               </>
             )}
           </nav>

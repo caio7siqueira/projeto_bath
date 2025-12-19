@@ -3,13 +3,7 @@
 import { apiFetch } from '../api';
 import { getAuthToken } from './client';
 
-export type AppointmentStatus =
-  | 'SCHEDULED'
-  | 'CANCELLED'
-  | 'COMPLETED'
-  | 'DONE'
-  | 'RESCHEDULED'
-  | 'NO_SHOW';
+export type AppointmentStatus = 'SCHEDULED' | 'CANCELLED' | 'DONE';
 
 export interface Appointment {
   id: string;
