@@ -17,6 +17,11 @@ describe('Reports (E2E)', () => {
   let customerId: string;
   let todayKey: string;
   let tomorrowKey: string;
+  let base: number;
+  let todayStart: Date;
+  let todayEnd: Date;
+  let tomorrowStart: Date;
+  let tomorrowEnd: Date;
 
   beforeAll(async () => {
     const env = await startEnv();
@@ -56,11 +61,11 @@ describe('Reports (E2E)', () => {
       .expect(201);
     customerId = custRes.body.id;
 
-    const base = Date.now() + 60 * 60 * 1000; // +1h
-    const todayStart = new Date(base);
-    const todayEnd = new Date(base + 60 * 60 * 1000);
-    const tomorrowStart = new Date(base + 24 * 60 * 60 * 1000);
-    const tomorrowEnd = new Date(base + 25 * 60 * 60 * 1000);
+    base = Date.now() + 60 * 60 * 1000; // +1h
+    todayStart = new Date(base);
+    todayEnd = new Date(base + 60 * 60 * 1000);
+    tomorrowStart = new Date(base + 24 * 60 * 60 * 1000);
+    tomorrowEnd = new Date(base + 25 * 60 * 60 * 1000);
 
     todayKey = todayStart.toISOString().slice(0, 10);
     tomorrowKey = tomorrowStart.toISOString().slice(0, 10);
@@ -102,11 +107,14 @@ describe('Reports (E2E)', () => {
   });
 
   it('GET /v1/reports/appointments/summary deve retornar contagens por status', async () => {
-    const from = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-    const to = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Use datas base para garantir que o filtro cobre todos os agendamentos criados
+
+    const from = todayStart.toISOString();
+    const to = new Date(base + 3 * 24 * 60 * 60 * 1000).toISOString();
 
     const res = await request(app.getHttpServer())
-      .get(`/v1/reports/appointments/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+      .get(`/v1/reports/appointments/summary?from=${from}&to=${to}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
@@ -119,11 +127,13 @@ describe('Reports (E2E)', () => {
   });
 
   it('GET /v1/reports/appointments/timeseries deve agrupar por dia', async () => {
-    const from = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-    const to = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+
+    const from = todayStart.toISOString();
+    const to = new Date(base + 3 * 24 * 60 * 60 * 1000).toISOString();
 
     const res = await request(app.getHttpServer())
-      .get(`/v1/reports/appointments/timeseries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&granularity=day`)
+      .get(`/v1/reports/appointments/timeseries?from=${from}&to=${to}&granularity=day`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
