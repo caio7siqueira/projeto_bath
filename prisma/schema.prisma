@@ -1,25 +1,27 @@
 model MessageCreditsWallet {
   id         String   @id @default(uuid())
-  tenant_id  String
+  tenantId   String  @map("tenant_id")
   channel    Channel
   balance    Int      @default(0)
-  updated_at DateTime @updatedAt
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   transactions MessageCreditTransaction[]
-  @@unique([tenant_id, channel])
+  @@unique([tenantId, channel])
+  @@map("message_credits_wallet")
 }
 
 model MessageCreditTransaction {
   id         String   @id @default(uuid())
-  tenant_id  String
+  tenantId   String  @map("tenant_id")
   channel    Channel
   type       TransactionType
   amount     Int
   reason     String
-  created_at DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
   walletId   String
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   wallet     MessageCreditsWallet @relation(fields: [walletId], references: [id])
+  @@map("message_credit_transaction")
 }
 
 enum Channel {
@@ -37,24 +39,26 @@ model BillingPlan {
   code        String   @id
   name        String
   limits      Json
-  price_cents Int
+  priceCents  Int      @map("price_cents")
   active      Boolean  @default(true)
   subscriptions BillingSubscription[]
+  @@map("billing_plan")
 }
 
 model BillingSubscription {
   id                      String   @id @default(uuid())
-  tenant_id               String
-  plan_code               String
+  tenantId                String  @map("tenant_id")
+  planCode                String  @map("plan_code")
   status                  SubscriptionStatus @default(TRIAL)
-  trial_ends_at           DateTime?
-  current_period_end      DateTime?
+  trialEndsAt             DateTime? @map("trial_ends_at")
+  currentPeriodEnd        DateTime? @map("current_period_end")
   provider                String?
-  provider_subscription_id String?
-  created_at              DateTime @default(now())
-  updated_at              DateTime @updatedAt
-  tenant                  Tenant   @relation(fields: [tenant_id], references: [id])
-  plan                    BillingPlan @relation(fields: [plan_code], references: [code])
+  providerSubscriptionId  String? @map("provider_subscription_id")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id])
+  plan                    BillingPlan @relation(fields: [planCode], references: [code])
+  @@map("billing_subscription")
 }
 
 enum SubscriptionStatus {
@@ -144,8 +148,8 @@ model Customer {
   optInGlobal  Boolean            @default(true)
   isActive     Boolean            @default(true)
   status       CustomerStatus     @default(ACTIVE)
-  deleted_at   DateTime?
-  lastLoginAt  DateTime?
+  deletedAt    DateTime?          @map("deleted_at")
+  lastLoginAt  DateTime?          @map("lastLoginAt")
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
   tenant       Tenant             @relation(fields: [tenantId], references: [id])
@@ -159,6 +163,7 @@ model Customer {
 
   @@unique([tenantId, phone])
   @@index([tenantId, cpf])
+  @@map("customer")
 }
 
 enum CustomerStatus {
@@ -174,13 +179,14 @@ model Pet {
   species      Species
   lifeStatus   LifeStatus    @default(ALIVE)
   allowNotifications Boolean @default(true)
-  is_deceased  Boolean       @default(false)
-  deceased_at  DateTime?
+  isDeceased   Boolean       @default(false) @map("is_deceased")
+  deceasedAt   DateTime?     @map("deceased_at")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   customer     Customer      @relation(fields: [customerId], references: [id])
   appointments Appointment[]
+  @@map("pet")
 }
 
 enum LifeStatus {
@@ -240,6 +246,7 @@ model Appointment {
   startsAt    DateTime
   endsAt      DateTime
   status      AppointmentStatus   @default(SCHEDULED)
+  statusReason AppointmentStatusReason?
   notes       String?
   cancelledAt DateTime?
   recurrenceSeriesId String?
@@ -258,6 +265,7 @@ model Appointment {
   @@index([tenantId, locationId, startsAt])
   @@index([tenantId, customerId, startsAt])
   @@index([recurrenceSeriesId])
+  @@map("appointment")
 }
 
 enum AppointmentStatus {
@@ -267,6 +275,14 @@ enum AppointmentStatus {
   DONE
   RESCHEDULED
   NO_SHOW
+}
+
+enum AppointmentStatusReason {
+  CUSTOMER_DELETED
+  CANCELED_BY_ADMIN
+  CANCELED_BY_CUSTOMER
+  CANCELED_BY_SYSTEM
+  OTHER
 }
 
 model AppointmentResource {
@@ -280,17 +296,17 @@ model AppointmentResource {
 model RecurrenceSeries {
   id        String   @id @default(uuid())
   tenantId  String
-  rule      RecurrenceRule
-  interval  Int? // para CUSTOM_INTERVAL
-  startDate DateTime
-  endDate   DateTime
+  frequency RecurrenceFrequency
+  interval  Int?
+  startAt   DateTime
+  endAt     DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   appointments Appointment[]
+  @@map("recurrence_series")
 }
-
-enum RecurrenceRule {
+enum RecurrenceFrequency {
   WEEKLY
   BIWEEKLY
   MONTHLY
@@ -337,9 +353,9 @@ model NotificationJob {
   id               String   @id @default(uuid())
   tenantId         String
   appointmentId    String?
-  type             String   @default("SMS") // SMS, EMAIL, WHATSAPP
+  channel          Channel
   payload          Json
-  status           String   @default("SCHEDULED") // SCHEDULED, SENT, ERROR, CANCELLED
+  status           NotificationJobStatus @default(SCHEDULED)
   errorMessage     String?
   providerMessageId String?
   queueJobId       String?
@@ -348,6 +364,14 @@ model NotificationJob {
   updatedAt        DateTime @updatedAt
   tenant           Tenant   @relation(fields: [tenantId], references: [id])
   appointment      Appointment? @relation(fields: [appointmentId], references: [id])
+  @@map("notification_job")
+}
+
+enum NotificationJobStatus {
+  SCHEDULED
+  SENT
+  ERROR
+  CANCELLED
 }
 
 model AuditLog {
