@@ -39,17 +39,26 @@ export class PetsService {
     if (pet.tenantId !== tenantId) {
       throw new ForbiddenException('Cross-tenant access denied');
     }
-    if (pet.isDeceased && (dto.lifeStatus || dto.allowNotifications)) {
-      // Permitir editar apenas nome, porte, foto (não desmarcar falecimento)
-      // Se tentar editar status, bloquear
+    // Se pet já está falecido, não permitir editar status/notificações
+    if (pet.isDeceased && (dto.lifeStatus || dto.allowNotifications !== undefined)) {
       throw new ForbiddenException('Não é permitido editar status ou notificações de pet falecido');
     }
+    // Atualiza campos permitidos
+    const updateData: any = {};
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.lifeStatus !== undefined) {
+      updateData.lifeStatus = dto.lifeStatus;
+      // Se marcar como DECEASED, seta isDeceased true
+      if (dto.lifeStatus === 'DECEASED') {
+        updateData.isDeceased = true;
+      } else if (dto.lifeStatus === 'ALIVE') {
+        updateData.isDeceased = false;
+      }
+    }
+    if (dto.allowNotifications !== undefined) updateData.allowNotifications = dto.allowNotifications;
     await this.prisma.pet.update({
       where: { id: petId },
-      data: {
-        name: dto.name,
-        // Permitir editar apenas nome, porte, foto
-      },
+      data: updateData,
     });
     return this.prisma.pet.findUnique({ where: { id: petId } });
   }

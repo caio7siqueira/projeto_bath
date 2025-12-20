@@ -100,34 +100,32 @@ export class CustomersService {
     return paginatedResponse(data, total, query.page!, query.pageSize!);
   }
 
-  async findOne(tenantId: string, id: string) {
-    const customer = await this.prisma.customer.findFirst({
-      where: {
-        id,
-        tenantId,
-        isActive: true,
-      },
-    });
-
+  async findOne(id: string, user: any) {
+    const where = user.role === 'SUPER_ADMIN'
+      ? { id, deletedAt: null }
+      : { id, tenantId: user.tenantId, deletedAt: null };
+    const customer = await this.prisma.customer.findFirst({ where });
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-
     return customer;
   }
 
-  async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
-    // Check existence scoped by tenant
-    await this.findOne(tenantId, id);
-
+  async update(id: string, dto: UpdateCustomerDto, user: any) {
+    const where = user.role === 'SUPER_ADMIN'
+      ? { id, deletedAt: null }
+      : { id, tenantId: user.tenantId, deletedAt: null };
+    const customer = await this.prisma.customer.findFirst({ where });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
     const phone = dto.phone ? normalizePhone(dto.phone) ?? undefined : undefined;
     if (dto.phone && !phone) {
       throw new ConflictException('Telefone inválido');
     }
-
     try {
-      const updated = await this.prisma.customer.updateMany({
-        where: { id, tenantId },
+      const updated = await this.prisma.customer.update({
+        where: { id },
         data: {
           name: dto.name,
           phone,
@@ -136,10 +134,7 @@ export class CustomersService {
           optInGlobal: dto.optInGlobal,
         },
       });
-      if (updated.count === 0) {
-        throw new NotFoundException('Customer not found');
-      }
-      return this.findOne(tenantId, id);
+      return updated;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -151,19 +146,12 @@ export class CustomersService {
     }
   }
 
-  async softDelete(tenantId: string, id: string, user: any) {
-    // Permitir apenas SUPERADMIN
-    if (user.role !== 'SUPER_ADMIN') {
-      throw new ForbiddenException('Apenas SUPERADMIN pode deletar clientes');
-    }
-    // Buscar cliente
-    const customer = await this.prisma.customer.findFirst({
-      where: { id, tenantId },
-    });
-    if (!customer) {
+  async softDelete(id: string, user: any) {
+    // Contrato: SUPER_ADMIN pode deletar qualquer, outros só do próprio tenant
+    const customer = await this.findOne(id, user);
+    if (user.role !== 'SUPER_ADMIN' && customer.tenantId !== user.tenantId) {
       throw new NotFoundException('Customer not found');
     }
-    // Soft delete
     await this.prisma.customer.update({
       where: { id },
       data: {
@@ -171,10 +159,8 @@ export class CustomersService {
         isActive: false,
       },
     });
-    // Cancelar agendamentos futuros
     await this.prisma.appointment.updateMany({
       where: {
-        tenantId,
         customerId: id,
         status: 'SCHEDULED',
         startsAt: { gt: new Date() },
@@ -183,40 +169,38 @@ export class CustomersService {
         status: 'CANCELLED',
         notes: 'Cancelado por remoção do cliente',
         cancelledAt: new Date(),
-        // status_reason removido, não existe no Prisma Client
       },
     });
-    // Auditoria mínima
     await this.prisma.auditLog.create({
       data: {
-        tenantId,
+        tenantId: customer.tenantId,
         actorId: user.id,
         action: 'CUSTOMER_SOFT_DELETE',
         payload: { customerId: id },
       },
     });
-    return { message: 'Customer soft deleted' };
+    return { message: 'Customer deleted (soft)' };
   }
 
   // Contacts
-  async listContacts(tenantId: string, customerId: string) {
-    await this.findOne(tenantId, customerId);
+  async listContacts(customer: any) {
+    // O controller já garante isolamento e existência do customer
     return this.prisma.customerContact.findMany({
-      where: { tenantId, customerId },
+      where: { customerId: customer.id },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async createContact(tenantId: string, customerId: string, dto: CreateContactDto) {
-    await this.findOne(tenantId, customerId);
+  async createContact(customer: any, dto: CreateContactDto) {
+    // O controller já garante que o customer existe e o tenantId está correto
     const phone = dto.phone ? normalizePhone(dto.phone) : null;
     if (dto.phone && !phone) {
       throw new ConflictException('Telefone inválido');
     }
     return this.prisma.customerContact.create({
       data: {
-        tenantId,
-        customerId,
+        tenantId: customer.tenantId,
+        customerId: customer.id,
         name: dto.name,
         email: dto.email,
         phone,
@@ -226,24 +210,21 @@ export class CustomersService {
   }
 
   async updateContact(
-    tenantId: string,
-    customerId: string,
+    customer: any,
     contactId: string,
     dto: UpdateContactDto,
   ) {
-    // Ensure contact belongs to tenant & customer
+    // O controller já garante que o customer existe e o ID é confiável
     const contact = await this.prisma.customerContact.findFirst({
-      where: { id: contactId, tenantId, customerId },
+      where: { id: contactId, customerId: customer.id },
     });
     if (!contact) {
       throw new NotFoundException('Contact not found');
     }
-
     const phone = dto.phone ? normalizePhone(dto.phone) : undefined;
     if (dto.phone && !phone) {
       throw new ConflictException('Telefone inválido');
     }
-
     return this.prisma.customerContact.update({
       where: { id: contactId },
       data: {
@@ -255,14 +236,14 @@ export class CustomersService {
     });
   }
 
-  async deleteContact(tenantId: string, customerId: string, contactId: string) {
+  async deleteContact(customer: any, contactId: string) {
+    // O controller já garante que o customer existe e o ID é confiável
     const contact = await this.prisma.customerContact.findFirst({
-      where: { id: contactId, tenantId, customerId },
+      where: { id: contactId, customerId: customer.id },
     });
     if (!contact) {
       throw new NotFoundException('Contact not found');
     }
-
     await this.prisma.customerContact.delete({ where: { id: contactId } });
     return { message: 'Contact deleted successfully' };
   }

@@ -59,27 +59,27 @@ export class CustomersController {
   @ApiResponse({ status: 200, description: 'Customer retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'STAFF')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   findOne(
     @CurrentUser() user: any,
     @Param('id') id: string,
   ) {
-    return this.customersService.findOne(user.tenantId, id);
+    return this.customersService.findOne(id, user);
   }
 
   @Delete(':id')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Soft delete customer (SUPERADMIN only)' })
+  @ApiOperation({ summary: 'Soft delete customer (ADMIN/SUPERADMIN)' })
   @ApiResponse({ status: 200, description: 'Customer deleted (soft)' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   @ApiResponse({ status: 409, description: 'Customer already deleted' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @RequireRole('SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async softDelete(
     @CurrentUser() user: any,
     @Param('id') id: string,
   ) {
-    return this.customersService.softDelete(user.tenantId, id, user);
+    return this.customersService.softDelete(id, user);
   }
 
   @Patch(':id')
@@ -87,63 +87,67 @@ export class CustomersController {
   @ApiResponse({ status: 200, description: 'Customer updated successfully' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   @ApiResponse({ status: 409, description: 'Customer with this phone already exists' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
   update(
     @CurrentUser() user: any,
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
   ) {
-    return this.customersService.update(user.tenantId, id, updateCustomerDto);
+    return this.customersService.update(id, updateCustomerDto, user);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a customer (soft delete)' })
-  @ApiResponse({ status: 200, description: 'Customer deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Customer not found' })
-  remove(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-  ) {
-    // Método remove não existe em CustomersService
-    throw new Error('Método remove não implementado em CustomersService');
-  }
+  // ...existing code...
 
   @Get(':customerId/contacts')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN', 'STAFF', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Listar contatos relacionados ao customer' })
-  findContacts(
+  async findContacts(
     @CurrentUser() user: any,
     @Param('customerId') customerId: string,
   ) {
-    return this.customersService.listContacts(user.tenantId, customerId);
+    const customer = await this.customersService.findOne(customerId, user);
+    return this.customersService.listContacts(customer);
   }
 
   @Post(':customerId/contacts')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN', 'STAFF', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Criar contato relacionado ao customer' })
-  createContact(
+  async createContact(
     @CurrentUser() user: any,
     @Param('customerId') customerId: string,
     @Body() dto: CreateContactDto,
   ) {
-    return this.customersService.createContact(user.tenantId, customerId, dto);
+    const customer = await this.customersService.findOne(customerId, user);
+    return this.customersService.createContact(customer, dto);
   }
 
   @Patch(':customerId/contacts/:contactId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN', 'STAFF', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Atualizar contato de customer' })
-  updateContact(
+  async updateContact(
     @CurrentUser() user: any,
     @Param('customerId') customerId: string,
     @Param('contactId') contactId: string,
     @Body() dto: UpdateContactDto,
   ) {
-    return this.customersService.updateContact(user.tenantId, customerId, contactId, dto);
+    const customer = await this.customersService.findOne(customerId, user);
+    return this.customersService.updateContact(customer, contactId, dto);
   }
 
   @Delete(':customerId/contacts/:contactId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN', 'STAFF', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Remover contato de customer' })
-  deleteContact(
+  async deleteContact(
     @CurrentUser() user: any,
     @Param('customerId') customerId: string,
     @Param('contactId') contactId: string,
   ) {
-    return this.customersService.deleteContact(user.tenantId, customerId, contactId);
+    const customer = await this.customersService.findOne(customerId, user);
+    return this.customersService.deleteContact(customer, contactId);
   }
 }

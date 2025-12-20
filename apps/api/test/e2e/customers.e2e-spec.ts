@@ -6,6 +6,7 @@ describe('Customers CRUD E2E', () => {
   let stopEnv: () => Promise<void>;
   let app: any;
   let adminToken: string;
+  let superAdminToken: string;
   let secondTenantToken: string;
 
   beforeAll(async () => {
@@ -16,6 +17,7 @@ describe('Customers CRUD E2E', () => {
       redisUrl: env.redisUrl 
     });
     app = boot.app;
+
 
     // Create admin user for testing
     const adminEmail = `admin_${Date.now()}@example.com`;
@@ -40,6 +42,30 @@ describe('Customers CRUD E2E', () => {
       .expect(200);
 
     adminToken = loginRes.body.accessToken;
+
+    // Create SUPER_ADMIN user for testing delete
+    const superAdminEmail = `superadmin_${Date.now()}@example.com`;
+    await request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({
+        email: superAdminEmail,
+        password: 'StrongPass123!',
+        name: 'Super Admin User',
+        role: 'SUPER_ADMIN',
+        tenantSlug: 'efizion-bath-demo',
+      })
+      .expect(201);
+
+    const superAdminLoginRes = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({
+        email: superAdminEmail,
+        password: 'StrongPass123!',
+        tenantSlug: 'efizion-bath-demo',
+      })
+      .expect(200);
+
+    superAdminToken = superAdminLoginRes.body.accessToken;
 
     // Create second tenant and user for isolation testing
     const secondTenantRes = await request(app.getHttpServer())
@@ -190,10 +216,10 @@ describe('Customers CRUD E2E', () => {
       });
     });
 
-    it('DELETE /v1/customers/:id - soft delete customer', async () => {
+    it('DELETE /v1/customers/:id - soft delete customer (SUPER_ADMIN)', async () => {
       const res = await request(app.getHttpServer())
         .delete(`/v1/customers/${customerId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${superAdminToken}`)
         .expect(200);
 
       expect(res.body.message).toBeDefined();
