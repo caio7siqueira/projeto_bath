@@ -69,11 +69,15 @@ export async function fetchAppointment(id: string): Promise<Appointment> {
 
 
 export async function createAppointment(dto: CreateAppointmentDto): Promise<Appointment> {
-  return apiFetch('/appointments', {
+  const url = '/appointments';
+  console.log('[createAppointment] POST', getApiUrl(url), dto);
+  const response = await apiFetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify(dto),
   });
+  console.log('[createAppointment] Resposta', response);
+  return response;
 }
 
 export async function updateAppointment(id: string, dto: UpdateAppointmentDto): Promise<Appointment> {

@@ -1,0 +1,181 @@
+
+> @efizion/api@0.1.0 dev /root/desenvolvimento-vscode/projeto_bath/apps/api
+> ts-node-dev --respawn --transpile-only src/main.ts
+
+[INFO] 11:17:43 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +23ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +0ms[39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [33m   WARN[39m [38;5;3m[OmieService] [39m[33mOmie credentials not configured. Integration disabled.[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mProtectedModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSuperadminModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCustomerAuthModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCustomersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mOmieModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mNotificationsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mReportsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPetsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDashboardModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTenantConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mServicesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mRecurrenceSeriesModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTenantsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLocationsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBillingModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppointmentsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mHealthController {/v1}:[39m[38;5;3m +36ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/v1/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/auth/register, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/auth/login, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/auth/refresh, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/auth/logout, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCustomerAuthController {/v1/customer-auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customer-auth/request-otp, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customer-auth/verify-otp, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mProtectedController {/v1/protected}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/protected/ping, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/protected/admin-only, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/protected/tenant/:tenantId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTenantsController {/v1/tenants}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/tenants, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/tenants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/tenants/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/tenants/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mLocationsController {/v1/locations}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/locations, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/locations, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/locations/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/locations/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mCustomersController {/v1/customers}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:customerId/contacts, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:customerId/contacts, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:customerId/contacts/:contactId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:customerId/contacts/:contactId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppointmentsController {/v1/appointments}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/appointments, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/appointments, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/appointments/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/appointments/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/appointments/:id/cancel, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/appointments/:id/mark-done, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mOmieController {/v1/integrations/omie}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/integrations/omie/reprocess/:eventId, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/integrations/omie/internal/process/:eventId, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNotificationsController {/v1/integrations/notifications}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/integrations/notifications/internal/mark/:id, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/integrations/notifications/admin/jobs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mNotificationJobController {/v1/v1/notification-job}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/v1/notification-job, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mBillingController {/v1/admin/billing/subscription}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/admin/billing/subscription, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/admin/billing/subscription, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mReportsController {/v1/reports}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/reports/appointments/summary, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/reports/appointments/timeseries, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mPetsController {/v1}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/pets, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:customerId/pets, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/customers/:customerId/pets, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/pets/:petId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/pets/:petId/mark-deceased, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mDashboardController {/v1/dashboard}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/dashboard/reports, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTenantConfigController {/v1/admin/tenant-config}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/admin/tenant-config, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/admin/tenant-config, PUT} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mServicesController {/v1/services}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/services, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/services, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mRecurrenceSeriesController {/v1/recurrence-series}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/recurrence-series, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/recurrence-series/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSuperadminController {/v1/superadmin}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/superadmin/tenants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/superadmin/tenants/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/superadmin/tenants/:id/suspend, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/superadmin/tenants/:id/activate, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:45 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/v1/superadmin/audit-logs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:17:47 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1358ms[39m
+API running on http://localhost:3000
+[33m[Nest] 366853  - [39m12/30/2025, 11:17:56 AM [33m   WARN[39m [38;5;3m[PrismaExceptionFilter] [39m[33mGET /v1/pets?page=1&pageSize=10 - 401 - Unauthorized [no-request-id][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:35 AM [33m   WARN[39m [38;5;3m[PrismaExceptionFilter] [39m[33mPOST /v1/auth/login - 401 - Invalid credentials [763098a3-2441-4bf0-9297-f3fa9b82327b][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:35 AM [33m   WARN[39m [38;5;3m[HTTP] [39m[33mPOST /v1/auth/login 401 - 1524ms [763098a3-2441-4bf0-9297-f3fa9b82327b][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:35 AM [33m   WARN[39m [38;5;3m[HTTP] [39m[33m{"method":"POST","url":"/v1/auth/login","statusCode":401,"durationMs":1524,"requestId":"763098a3-2441-4bf0-9297-f3fa9b82327b","userAgent":"curl/8.5.0"}[39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:39 AM [33m   WARN[39m [38;5;3m[PrismaExceptionFilter] [39m[33mPOST /v1/auth/login - 401 - Invalid credentials [59de71ef-727d-45d1-aa49-8839ac4669a9][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:39 AM [33m   WARN[39m [38;5;3m[HTTP] [39m[33mPOST /v1/auth/login 401 - 189ms [59de71ef-727d-45d1-aa49-8839ac4669a9][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:39 AM [33m   WARN[39m [38;5;3m[HTTP] [39m[33m{"method":"POST","url":"/v1/auth/login","statusCode":401,"durationMs":189,"requestId":"59de71ef-727d-45d1-aa49-8839ac4669a9","userAgent":"curl/8.5.0"}[39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:48 AM [33m   WARN[39m [38;5;3m[PrismaExceptionFilter] [39m[33mPOST /v1/auth/login - 401 - Invalid credentials [1c795c92-28fd-4645-b49d-5125633a3238][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:48 AM [33m   WARN[39m [38;5;3m[HTTP] [39m[33mPOST /v1/auth/login 401 - 187ms [1c795c92-28fd-4645-b49d-5125633a3238][39m
+[33m[Nest] 366853  - [39m12/30/2025, 11:18:48 AM [33m   WARN[39m [38;5;3m[HTTP] [39m[33m{"method":"POST","url":"/v1/auth/login","statusCode":401,"durationMs":187,"requestId":"1c795c92-28fd-4645-b49d-5125633a3238","userAgent":"curl/8.5.0"}[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:19:17 AM [32m    LOG[39m [38;5;3m[AuthService] [39m[32mUser logged in: admin@demo.com[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:19:17 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mPOST /v1/auth/login 200 - 1775ms [8393529f-ee78-42b6-8e99-711218d6e7d4][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:19:23 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/pets?page=1&pageSize=10 200 - 1739ms [586c0121-db49-434d-a948-9fd1bd6a38a9][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:31 AM [32m    LOG[39m [38;5;3m[AuthService] [39m[32mUser logged in: admin@demo.com[39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:31 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mPOST /v1/auth/login 200 - 2227ms [6690d7ca-2c06-4e57-a093-6e74bfb88d2f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:33 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/dashboard/reports 200 - 1790ms [3e4d4833-2ee4-4b98-8739-3abf5ca4b33b][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:34 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/dashboard/reports 304 - 387ms [f3612818-bbce-4792-9454-03f8db5ea9ef][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:45 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/appointments 200 - 388ms [b938fcfc-2a39-44e7-adc3-b7e8097496b1][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:45 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 200 - 371ms [5da5dbc4-4613-40cd-a307-d8ede6d767e1][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:45 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/appointments 304 - 195ms [a0f3defd-ca76-4d92-ae64-6446eb33185c][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:45 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 200 - 370ms [161063db-8fe3-48c3-8958-6befc435b684][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:45 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 200 - 385ms [61a2af1c-0c91-40a6-9a73-05f3922946b5][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:45 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 187ms [f99f1c4a-2916-4a62-8e05-4a39051c8de1][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:46 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 188ms [05c14d5b-ed18-4c7b-b3ac-c227ea14b6ce][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:20:46 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 194ms [bab92ea0-4ab8-4790-8ff2-ee24394de769][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:27 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/dashboard/reports 304 - 383ms [ce656454-36e9-4a15-b26f-faa05227fb95][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:27 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/dashboard/reports 304 - 194ms [2a5edb7c-2668-4418-b5a3-cd70452e1462][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:29 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 193ms [da302196-6c23-4370-a46f-5df2b0dc1052][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:29 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 194ms [c6134930-e21f-4f47-b1c1-f04daf3b8ad6][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:32 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 194ms [fec94387-2d92-466b-a939-29d9226d3d89][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:32 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/pets?page=1&pageSize=20 200 - 387ms [aa8d2a4f-0d2c-4c06-839b-1820c0140f11][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:32 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 193ms [9000ab60-5197-45e5-8018-f8d9aebf80a2][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:32 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/pets?page=1&pageSize=20 304 - 194ms [fca80ab4-10e8-4008-a8bf-685efc68c14b][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:33 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/pets?page=1&pageSize=20 304 - 195ms [e4b270a6-064a-4b6d-89a5-9d45bc14ae5f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:36 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 384ms [79d25f1f-91b1-4d10-9121-8091f51ccca4][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:36 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 193ms [091c8f1f-6dc9-47ab-9c6d-e39f5a6bd0d0][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:38 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 386ms [d379eceb-0c89-4377-ae95-4c440ffecd8a][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:39 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 193ms [f9393136-7499-4c55-9757-8c49547d27dd][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:41 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/reports/appointments/summary?from=2025-12-23T14%3A21%3A30.640Z&to=2025-12-30T14%3A21%3A30.640Z 200 - 388ms [5f3579d3-78bf-4715-878b-119661811eab][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:42 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/reports/appointments/timeseries?from=2025-12-23T14%3A21%3A30.640Z&to=2025-12-30T14%3A21%3A30.640Z&granularity=day 200 - 369ms [7a22e48b-9c7c-4086-95e2-86df5f20c203][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:42 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/reports/appointments/summary?from=2025-12-23T14%3A21%3A30.642Z&to=2025-12-30T14%3A21%3A30.642Z 200 - 386ms [852c5a1e-9101-412e-908e-7c0c21773144][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:42 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/reports/appointments/timeseries?from=2025-12-23T14%3A21%3A30.642Z&to=2025-12-30T14%3A21%3A30.642Z&granularity=day 200 - 369ms [5bfea241-8ae2-4286-9114-0b4f094d82bd][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:46 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 370ms [238d4f35-437e-42f3-a477-7213d8f1698f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:47 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 186ms [0c276405-9f87-4c95-9d4a-43733c1a959f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:50 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/integrations/notifications/admin/jobs?page=1&pageSize=20 200 - 385ms [2e81e9ea-55fe-453e-b219-db76758bbb52][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/integrations/notifications/admin/jobs?page=1&pageSize=20 304 - 387ms [ae6b7bb2-175b-4bec-8a5f-96ac22510a5d][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:52 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 386ms [171319b8-8b7e-480a-b535-65e22443111e][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:53 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 196ms [efac4fa9-6572-44bb-a292-079b361fd93f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:55 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/admin/tenant-config 200 - 393ms [0114cbeb-7316-41ab-af28-6f157509af51][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:21:55 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/admin/tenant-config 304 - 193ms [d6a82c81-274f-4dcb-963b-afdb62bc438f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:48 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/dashboard/reports 304 - 1744ms [5c45f7d5-eccf-4c05-92cf-aa7fee4bec54][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:48 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/dashboard/reports 304 - 385ms [ba934cff-a092-49a5-86d2-41dcc4bca4d1][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:50 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/appointments 304 - 386ms [a6acdb01-5da1-4eb2-9218-c33378f9a16f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 369ms [071b9bed-7010-45cd-8b13-32cbaa95e957][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/appointments 304 - 193ms [078b75f1-4d2c-454d-b74e-0faea3c5d275][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 370ms [453c91a9-3de2-41ad-aa6a-4d2b9d11a9cb][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 186ms [8ccf004f-e36f-418a-83a5-0eaea91c1841][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 369ms [91c223b2-cb5f-4229-927a-eccf80b0387f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 186ms [04982ead-af8e-43a8-8599-8659805a0515][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:51 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 187ms [052dc966-148a-4779-ab00-1d8975830811][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:56 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 185ms [e8ffb471-5424-4d8a-8082-275815b76f33][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/appointments 304 - 370ms [e405e56d-5ba6-4362-b72d-b4fe92e29fa5][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 369ms [06846b4f-9ab2-4e2f-90b9-ff7af0ff36d0][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 385ms [2bb33a97-dc57-496c-ae02-5b0d77bca1e3][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/services 304 - 185ms [cf9dd989-83e0-45d1-84a9-b77da8aa192f][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/locations 304 - 385ms [8e0b1f7f-f7a3-44c9-8294-7582be8f67a5][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/appointments 304 - 369ms [cfbd7365-0f31-4101-8c87-41c6de70c6ce][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:29:57 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /v1/customers 304 - 369ms [ccc1dbc0-5206-4cdb-b2a9-cab0efd5727a][39m
+[32m[Nest] 366853  - [39m12/30/2025, 11:52:32 AM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET / 200 - 27ms [62da6938-1259-420e-891b-ad717030d9ae][39m

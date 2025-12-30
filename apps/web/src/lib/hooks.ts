@@ -52,12 +52,14 @@ import {
   deleteCustomer,
   listPets,
   createPet,
+  listAllPets,
   type Customer,
   type CreateCustomerDto,
   type UpdateCustomerDto,
   type Pet,
   type CreatePetDto,
   type UpdatePetDto,
+  type ListAllPetsResult,
 } from './api/customers';
 import {
   listAppointments,
@@ -203,11 +205,15 @@ export function useAppointments() {
   };
 
   const createNewAppointment = async (dto: CreateAppointmentDto) => {
+    console.log('[useAppointments] createNewAppointment chamado!');
+    console.log('[useAppointments] Enviando para backend:', dto);
     try {
       const appointment = await createAppointment(dto);
+      console.log('[useAppointments] Resposta backend:', appointment);
       addAppointment(appointment);
       return appointment;
     } catch (err) {
+      console.error('[useAppointments] Erro ao criar:', err);
       const message = err instanceof Error ? err.message : 'Unknown error';
       setErrorState(message);
       setError(message);
@@ -301,45 +307,52 @@ export function useLocations() {
   };
 }
 
-export function usePets() {
-  const { pets, setPets, addPet, updatePetInStore, removePet, setError } =
-    useAppStore();
+import { useAuth } from './auth-context';
 
+export function usePets() {
+  const { pets, setPets, addPet, setError } = useAppStore();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number }>({ page: 1, pageSize: 20, total: 0, totalPages: 0 });
 
+  // Busca global (ADMIN/SUPER_ADMIN)
+  const fetchAllPets = async (opts?: { page?: number; pageSize?: number; q?: string }) => {
+    setIsLoading(true);
+    setErrorState(null);
+    try {
+      const result: ListAllPetsResult = await listAllPets(opts);
+      setPets(result.items);
+      setPagination({ page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages });
+      return result.items;
+    } catch (err: any) {
+      setPets([]);
+      const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
+      setErrorState(message);
+      setError(message);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Busca por cliente (STAFF)
   const fetchPets = async (customerId: string, opts?: { append?: boolean }) => {
     if (!customerId) {
       setErrorState('Selecione um cliente para listar os pets.');
       return [];
     }
-
     setIsLoading(true);
     setErrorState(null);
     try {
       const data = await listPets(customerId);
-      if (opts?.append) {
-        setPets((prev) => {
-          const map = new Map(prev.map((p) => [p.id, p]));
-          data.forEach((p) => map.set(p.id, p));
-          return Array.from(map.values());
-        });
-      } else {
-        setPets(data);
-      }
+      setPets(data);
       return data;
     } catch (err: any) {
-      // Se 404, retorna array vazio e mensagem amigável
-      if (err?.status === 404) {
-        if (!opts?.append) setPets([]);
-        const friendly = 'Nenhum pet cadastrado para este cliente ainda.';
-        setErrorState(friendly);
-        setError(friendly);
-      } else {
-        const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
-        setErrorState(message);
-        setError(message);
-      }
+      setPets([]);
+      const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
+      setErrorState(message);
+      setError(message);
       return [];
     } finally {
       setIsLoading(false);
@@ -359,13 +372,14 @@ export function usePets() {
     }
   };
 
-  // updateExistingPet e deleteExistingPet removidos pois dependiam de endpoints inexistentes
-
   return {
     pets,
     isLoading,
     error,
+    fetchAllPets,
     fetchPets,
     createNewPet,
+    pagination,
+    user,
   };
 }

@@ -1,3 +1,22 @@
+// Listar todos os pets do tenant (global, paginado)
+export interface ListAllPetsResult {
+  items: Pet[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function listAllPets(params?: { page?: number; pageSize?: number; q?: string }): Promise<ListAllPetsResult> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+  if (params?.q) query.set('q', params.q);
+  const qs = query.toString() ? `?${query.toString()}` : '';
+  return apiFetch(`/pets${qs}`, {
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
+  });
+}
 
 import { apiFetch } from '../api';
 import { getAuthToken } from './client';

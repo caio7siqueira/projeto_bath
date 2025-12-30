@@ -69,10 +69,33 @@ export class PetsService {
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-
     return this.prisma.pet.findMany({
       where: { tenantId, customerId },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async listAll(tenantId: string, opts: { page?: number; pageSize?: number; q?: string }) {
+    const { page = 1, pageSize = 20, q } = opts || {};
+    const where: any = { tenantId };
+    if (q) {
+      where.name = { contains: q, mode: 'insensitive' };
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.pet.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.pet.count({ where }),
+    ]);
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 }

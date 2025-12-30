@@ -15,7 +15,7 @@ export function Button({
   children,
   disabled,
   ...props
-}: ButtonProps) {
+  }: ButtonProps & { type?: 'button' | 'submit' }) {
   const baseClass =
     'font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
@@ -34,6 +34,7 @@ export function Button({
 
   return (
     <button
+            type={props.type || 'button'}
       {...props}
       disabled={disabled || isLoading}
       className={`${baseClass} ${variantClass} ${sizeClass} ${className}`}

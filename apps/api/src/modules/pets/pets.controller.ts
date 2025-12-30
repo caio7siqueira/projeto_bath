@@ -8,6 +8,7 @@ import { PetsService } from './pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 
+
 @ApiTags('pets')
 @ApiBearerAuth()
 @Controller()
@@ -15,6 +16,24 @@ import { UpdatePetDto } from './dto/update-pet.dto';
 @Roles('ADMIN', 'STAFF')
 export class PetsController {
   constructor(private readonly service: PetsService) {}
+
+  @Get('pets')
+  @ApiOperation({ summary: 'Listar todos os pets do tenant (paginado)' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de pets' })
+  async listAll(
+    @TenantUser('tenantId') tenantId: string,
+    @Param() _params: any,
+    @Body() _body: any,
+    // Query params
+    @Param('page') page?: number,
+    @Param('pageSize') pageSize?: number,
+    @Param('q') q?: string,
+  ) {
+    // Fallbacks
+    const pageNum = Number(page) > 0 ? Number(page) : 1;
+    const pageSizeNum = Number(pageSize) > 0 ? Math.min(Number(pageSize), 100) : 20;
+    return this.service.listAll(tenantId, { page: pageNum, pageSize: pageSizeNum, q });
+  }
 
   @Get('customers/:customerId/pets')
   @ApiOperation({ summary: 'Listar pets de um customer' })
