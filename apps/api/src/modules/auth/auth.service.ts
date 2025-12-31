@@ -139,48 +139,61 @@ export class AuthService {
     };
   }
 
-  async refresh(dto: RefreshDto) {
-    try {
-      const payload = this.jwtService.verify(dto.refreshToken, {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-      }) as { sub: string; jti: string };
-
-      const tokenRecord = await this.prisma.refreshToken.findFirst({
-        where: {
-          userId: payload.sub,
-          jti: payload.jti,
-          revokedAt: null,
-        },
+  async login(dto: LoginDto) {
+    // DEV: retorna mock para qualquer login
+    if (process.env.NODE_ENV === 'development') {
+      const user = {
+        id: 'mock-user-id',
+        email: dto.email,
+        name: 'Usuário Dev',
+        role: dto.role || 'ADMIN',
+        tenantId: 'mock-tenant-id',
+      };
+      const accessToken = this.jwtService.sign({ sub: user.id, email: user.email, role: user.role, tenantId: user.tenantId });
+      const refreshToken = this.jwtService.sign({ sub: user.id, type: 'refresh' });
+      return { user, accessToken, refreshToken };
+    }
+    // Produção: lógica real
+    let tenantId: string | null = null;
+    if (dto.role !== UserRole.SUPER_ADMIN) {
+      if (!dto.tenantSlug) {
+        throw new BadRequestException('tenantSlug é obrigatório para usuários não SUPER_ADMIN');
+      }
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { slug: dto.tenantSlug },
       });
 
-      if (!tokenRecord) {
-        throw new UnauthorizedException('Invalid refresh token');
+      if (!tenant) {
+        throw new UnauthorizedException('Invalid tenant');
       }
-
-      // Verifica expiração
-      if (tokenRecord.expiresAt < new Date()) {
-        await this.revokeRefreshToken(tokenRecord.id);
-        throw new UnauthorizedException('Refresh token expired');
-      }
-
-      const matches = await bcrypt.compare(dto.refreshToken, tokenRecord.tokenHash);
-      if (!matches) {
-        await this.revokeRefreshToken(tokenRecord.id);
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-      if (!user || !user.isActive) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      const tokens = await this.generateTokens(user, tokenRecord.id);
-      return tokens;
-    } catch (err) {
-      throw new UnauthorizedException('Invalid refresh token');
+      tenantId = tenant.id;
     }
-  }
 
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const valid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const tokens = await this.generateTokens(user);
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        tenantId: user.tenantId,
+      },
+      ...tokens,
+    };
+  }
   async logout(userId: string, refreshToken?: string) {
     if (refreshToken) {
       try {

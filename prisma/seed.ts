@@ -82,6 +82,22 @@ async function run() {
 
   await seedBillingPlans();
 
+  // 4) Assinatura de teste para o tenant
+  const existingSub = await prisma.billingSubscription.findFirst({
+    where: { tenantId: tenant.id },
+  });
+  if (!existingSub) {
+    await prisma.billingSubscription.create({
+      data: {
+        tenantId: tenant.id,
+        planCode: 'STARTER',
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 dias
+      },
+    });
+    console.log('Assinatura de teste criada para tenant:', tenant.id);
+  }
+
   console.log('Seed complete');
   console.log({
     tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },

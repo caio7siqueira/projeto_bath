@@ -31,6 +31,11 @@ export const appointmentSchema = z.object({
   status: z
     .enum(['SCHEDULED', 'CANCELLED', 'DONE'])
     .optional(),
+  // Campos de recorrência (opcionais)
+  recurrence: z.boolean().optional(),
+  recurrenceRule: z.string().optional(),
+  recurrenceInterval: z.number().optional(),
+  recurrenceEndDate: z.string().optional(),
 }).strict();
 
 // Types for form data (with all fields being required for form submission)

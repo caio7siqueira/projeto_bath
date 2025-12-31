@@ -14,7 +14,23 @@ export class BillingService {
   ) {}
 
   async getCurrentSubscription(tenantId: string) {
-    return this.repo.findLatestByTenant(tenantId);
+    const sub = await this.repo.findLatestByTenant(tenantId);
+    if (!sub) {
+      const err: any = new Error('Tenant sem assinatura');
+      err.status = 404;
+      err.response = { message: 'Tenant sem assinatura' };
+      throw err;
+    }
+    // Retornar apenas os campos esperados pelo frontend
+    return {
+      plan: sub.planCode,
+      status: sub.status,
+      next_invoice_date: sub.currentPeriodEnd,
+      trial_ends_at: sub.trialEndsAt,
+      created_at: sub.createdAt,
+      updated_at: sub.updatedAt,
+      // outros campos se necessário
+    };
   }
 
   async upsertSubscription(tenantId: string, dto: UpsertBillingSubscriptionDto) {

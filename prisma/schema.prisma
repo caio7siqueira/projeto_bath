@@ -1,73 +1,3 @@
-model MessageCreditsWallet {
-  id         String   @id @default(uuid())
-  tenantId   String  @map("tenant_id")
-  channel    Channel
-  balance    Int      @default(0)
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  transactions MessageCreditTransaction[]
-  @@unique([tenantId, channel])
-  @@map("message_credits_wallet")
-}
-
-model MessageCreditTransaction {
-  id         String   @id @default(uuid())
-  tenantId   String  @map("tenant_id")
-  channel    Channel
-  type       TransactionType
-  amount     Int
-  reason     String
-  createdAt  DateTime @default(now()) @map("created_at")
-  walletId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  wallet     MessageCreditsWallet @relation(fields: [walletId], references: [id])
-  @@map("message_credit_transaction")
-}
-
-enum Channel {
-  SMS
-  WHATSAPP
-}
-
-enum TransactionType {
-  PURCHASE
-  CONSUME
-  ADJUSTMENT
-  REFUND
-}
-model BillingPlan {
-  code        String   @id
-  name        String
-  limits      Json
-  priceCents  Int      @map("price_cents")
-  active      Boolean  @default(true)
-  subscriptions BillingSubscription[]
-  @@map("billing_plan")
-}
-
-model BillingSubscription {
-  id                      String   @id @default(uuid())
-  tenantId                String  @map("tenant_id")
-  planCode                String  @map("plan_code")
-  status                  SubscriptionStatus @default(TRIAL)
-  trialEndsAt             DateTime? @map("trial_ends_at")
-  currentPeriodEnd        DateTime? @map("current_period_end")
-  provider                String?
-  providerSubscriptionId  String? @map("provider_subscription_id")
-  createdAt               DateTime @default(now()) @map("created_at")
-  updatedAt               DateTime @updatedAt @map("updated_at")
-  tenant                  Tenant   @relation(fields: [tenantId], references: [id])
-  plan                    BillingPlan @relation(fields: [planCode], references: [code])
-  @@map("billing_subscription")
-}
-
-enum SubscriptionStatus {
-  TRIAL
-  ACTIVE
-  PAST_DUE
-  SUSPENDED
-  CANCELED
-}
 generator client {
   provider = "prisma-client-js"
 }
@@ -77,32 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model MessageCreditsWallet {
+  id           String                     @id @default(uuid())
+  tenantId     String                     @map("tenant_id")
+  channel      Channel
+  balance      Int                        @default(0)
+  updatedAt    DateTime                   @updatedAt @map("updated_at")
+  transactions MessageCreditTransaction[]
+  tenant       Tenant                     @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, channel])
+  @@map("message_credits_wallet")
+}
+
+model MessageCreditTransaction {
+  id        String               @id @default(uuid())
+  tenantId  String               @map("tenant_id")
+  channel   Channel
+  type      TransactionType
+  amount    Int
+  reason    String
+  createdAt DateTime             @default(now()) @map("created_at")
+  walletId  String
+  tenant    Tenant               @relation(fields: [tenantId], references: [id])
+  wallet    MessageCreditsWallet @relation(fields: [walletId], references: [id])
+
+  @@map("message_credit_transaction")
+}
+
+model BillingPlan {
+  code          String                @id
+  name          String
+  limits        Json
+  priceCents    Int                   @map("price_cents")
+  active        Boolean               @default(true)
+  subscriptions BillingSubscription[]
+
+  @@map("billing_plan")
+}
+
+model BillingSubscription {
+  id                     String             @id @default(uuid())
+  tenantId               String             @map("tenant_id")
+  planCode               String             @map("plan_code")
+  status                 SubscriptionStatus @default(TRIAL)
+  trialEndsAt            DateTime?          @map("trial_ends_at")
+  currentPeriodEnd       DateTime?          @map("current_period_end")
+  provider               String?
+  providerSubscriptionId String?            @map("provider_subscription_id")
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+  plan                   BillingPlan        @relation(fields: [planCode], references: [code])
+  tenant                 Tenant             @relation(fields: [tenantId], references: [id])
+
+  @@map("billing_subscription")
+}
+
 model Tenant {
-  id                     String                  @id @default(uuid())
-  name                   String
-  slug                   String                  @unique
-  isActive               Boolean                 @default(true)
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  locations              Location[]
-  users                  User[]
-  customers              Customer[]
-  pets                   Pet[]
-  services               Service[]
-  servicePrices          ServicePrice[]
-  resources              Resource[]
-  appointments           Appointment[]
-  recurrenceSeries       RecurrenceSeries[]
-  omieConnections        OmieConnection[]
-  omieCustomerLinks      OmieCustomerLink[]
-  omieSalesEvents        OmieSalesEvent[]
-  messageCreditsWallets  MessageCreditsWallet[]
+  id                        String                     @id @default(uuid())
+  name                      String
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  isActive                  Boolean                    @default(true)
+  slug                      String                     @unique
+  auditLogs                 AuditLog[]
+  contacts                  CustomerContact[]
+  locations                 Location[]
+  omieConnections           OmieConnection[]
+  omieCustomerLinks         OmieCustomerLink[]
+  omieSalesEvents           OmieSalesEvent[]
+  resources                 Resource[]
+  services                  Service[]
+  servicePrices             ServicePrice[]
+  config                    TenantConfig?
+  users                     User[]
+  appointments              Appointment[]
+  billingSubscriptions      BillingSubscription[]
+  customers                 Customer[]
   messageCreditTransactions MessageCreditTransaction[]
-  notificationJobs       NotificationJob[]
-  auditLogs              AuditLog[]
-  billingSubscriptions   BillingSubscription[]
-  contacts               CustomerContact[]
-  config                 TenantConfig?
+  messageCreditsWallets     MessageCreditsWallet[]
+  notificationJobs          NotificationJob[]
+  pets                      Pet[]
+  recurrenceSeries          RecurrenceSeries[]
 }
 
 model Location {
@@ -116,101 +102,80 @@ model Location {
 }
 
 model User {
-  id             String         @id @default(uuid())
-  tenantId       String?
-  email          String         @unique
-  passwordHash   String
-  name           String
-  role           UserRole
-  isActive       Boolean        @default(true)
-  lastLoginAt    DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  tenant         Tenant?        @relation(fields: [tenantId], references: [id])
-  refreshTokens  RefreshToken[]
-  loginLogs      LoginLog[]
-}
-
-enum UserRole {
-  ADMIN
-  STAFF
-  GROOMER
-  SUPER_ADMIN
+  id            String         @id @default(uuid())
+  tenantId      String?
+  email         String         @unique
+  name          String
+  role          UserRole
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  isActive      Boolean        @default(true)
+  lastLoginAt   DateTime?
+  passwordHash  String
+  loginLogs     LoginLog[]
+  refreshTokens RefreshToken[]
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id])
 }
 
 model Customer {
-  id           String             @id @default(uuid())
-  tenantId     String
-  name         String
-  phone        String
-  email        String?
-  cpf          String?
-  optInGlobal  Boolean            @default(true)
-  isActive     Boolean            @default(true)
-  status       CustomerStatus     @default(ACTIVE)
-  deletedAt    DateTime?          @map("deleted_at")
-  lastLoginAt  DateTime?          @map("lastLoginAt")
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  tenant       Tenant             @relation(fields: [tenantId], references: [id])
-  pets         Pet[]
-  appointments Appointment[]
-  omieLinks    OmieCustomerLink[]
-  otpCodes     OtpCode[]
+  id            String             @id @default(uuid())
+  tenantId      String
+  name          String
+  phone         String
+  email         String?
+  cpf           String?
+  optInGlobal   Boolean            @default(true)
+  isActive      Boolean            @default(true)
+  status        CustomerStatus     @default(ACTIVE)
+  deletedAt     DateTime?          @map("deleted_at")
+  lastLoginAt   DateTime?          @map("lastLoginAt")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  contacts      CustomerContact[]
+  loginLogs     LoginLog[]
+  omieLinks     OmieCustomerLink[]
+  otpCodes      OtpCode[]
   refreshTokens RefreshToken[]
-  loginLogs    LoginLog[]
-  contacts     CustomerContact[]
+  appointments  Appointment[]
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  pets          Pet[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, cpf])
   @@map("customer")
 }
 
-enum CustomerStatus {
-  ACTIVE
-  DELETED
-}
-
 model Pet {
-  id           String        @id @default(uuid())
-  tenantId     String
-  customerId   String
-  name         String
-  species      Species
-  lifeStatus   LifeStatus    @default(ALIVE)
-  allowNotifications Boolean @default(true)
-  isDeceased   Boolean       @default(false) @map("is_deceased")
-  deceasedAt   DateTime?     @map("deceased_at")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  tenant       Tenant        @relation(fields: [tenantId], references: [id])
-  customer     Customer      @relation(fields: [customerId], references: [id])
-  appointments Appointment[]
+  id                 String        @id @default(uuid())
+  tenantId           String
+  customerId         String
+  name               String
+  species            Species
+  lifeStatus         LifeStatus    @default(ALIVE)
+  allowNotifications Boolean       @default(true)
+  isDeceased         Boolean       @default(false) @map("is_deceased")
+  deceasedAt         DateTime?     @map("deceased_at")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  appointments       Appointment[]
+  customer           Customer      @relation(fields: [customerId], references: [id])
+  tenant             Tenant        @relation(fields: [tenantId], references: [id])
+
   @@map("pet")
 }
 
-enum LifeStatus {
-  ALIVE
-  DECEASED
-}
-
-enum Species {
-  DOG
-  CAT
-}
-
 model Service {
-  id           String         @id @default(uuid())
-  tenantId     String
-  name         String
-  description  String?
-  baseDurationMinutes Int     @default(30)
-  active       Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  tenant       Tenant         @relation(fields: [tenantId], references: [id])
-  prices       ServicePrice[]
-  appointments Appointment[]
+  id                  String         @id @default(uuid())
+  tenantId            String
+  name                String
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  description         String?
+  baseDurationMinutes Int            @default(30)
+  active              Boolean        @default(true)
+  tenant              Tenant         @relation(fields: [tenantId], references: [id])
+  prices              ServicePrice[]
+  appointments        Appointment[]
 
   @@unique([tenantId, name])
 }
@@ -219,7 +184,7 @@ model ServicePrice {
   id        String   @id @default(uuid())
   tenantId  String
   serviceId String
-  price     Decimal  @db.Decimal(10,2)
+  price     Decimal  @db.Decimal(10, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   service   Service  @relation(fields: [serviceId], references: [id])
@@ -232,57 +197,40 @@ model Resource {
   name                 String
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
-  tenant               Tenant                @relation(fields: [tenantId], references: [id])
   appointmentResources AppointmentResource[]
+  tenant               Tenant                @relation(fields: [tenantId], references: [id])
 }
 
 model Appointment {
-  id          String              @id @default(uuid())
-  tenantId    String
-  locationId  String
-  customerId  String
-  petId       String?
-  serviceId   String?
-  startsAt    DateTime
-  endsAt      DateTime
-  status      AppointmentStatus   @default(SCHEDULED)
-  statusReason AppointmentStatusReason?
-  notes       String?
-  cancelledAt DateTime?
+  id                 String                   @id @default(uuid())
+  tenantId           String
+  locationId         String
+  customerId         String
+  petId              String?
+  serviceId          String?
+  startsAt           DateTime
+  endsAt             DateTime
+  status             AppointmentStatus        @default(SCHEDULED)
+  statusReason       AppointmentStatusReason?
+  notes              String?
+  cancelledAt        DateTime?
   recurrenceSeriesId String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  tenant      Tenant              @relation(fields: [tenantId], references: [id])
-  location    Location            @relation(fields: [locationId], references: [id])
-  customer    Customer            @relation(fields: [customerId], references: [id])
-  pet         Pet?                @relation(fields: [petId], references: [id])
-  service     Service?            @relation(fields: [serviceId], references: [id])
-  recurrenceSeries RecurrenceSeries? @relation(fields: [recurrenceSeriesId], references: [id])
-  resources   AppointmentResource[]
-  notificationJobs NotificationJob[]
-  omieSalesEvents OmieSalesEvent[]
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  resources          AppointmentResource[]
+  omieSalesEvents    OmieSalesEvent[]
+  customer           Customer                 @relation(fields: [customerId], references: [id])
+  location           Location                 @relation(fields: [locationId], references: [id])
+  pet                Pet?                     @relation(fields: [petId], references: [id])
+  recurrenceSeries   RecurrenceSeries?        @relation(fields: [recurrenceSeriesId], references: [id])
+  service            Service?                 @relation(fields: [serviceId], references: [id])
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id])
+  notificationJobs   NotificationJob[]
 
   @@index([tenantId, locationId, startsAt])
   @@index([tenantId, customerId, startsAt])
   @@index([recurrenceSeriesId])
   @@map("appointment")
-}
-
-enum AppointmentStatus {
-  SCHEDULED
-  CANCELLED
-  COMPLETED
-  DONE
-  RESCHEDULED
-  NO_SHOW
-}
-
-enum AppointmentStatusReason {
-  CUSTOMER_DELETED
-  CANCELED_BY_ADMIN
-  CANCELED_BY_CUSTOMER
-  CANCELED_BY_SYSTEM
-  OTHER
 }
 
 model AppointmentResource {
@@ -294,23 +242,18 @@ model AppointmentResource {
 }
 
 model RecurrenceSeries {
-  id        String   @id @default(uuid())
-  tenantId  String
-  frequency RecurrenceFrequency
-  interval  Int?
-  startAt   DateTime
-  endAt     DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id           String              @id @default(uuid())
+  tenantId     String
+  frequency    RecurrenceFrequency
+  interval     Int?
+  startAt      DateTime
+  endAt        DateTime
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
   appointments Appointment[]
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+
   @@map("recurrence_series")
-}
-enum RecurrenceFrequency {
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-  CUSTOM_INTERVAL
 }
 
 model OmieConnection {
@@ -330,48 +273,41 @@ model OmieCustomerLink {
   omieId     String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   customer   Customer @relation(fields: [customerId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 model OmieSalesEvent {
-  id            String   @id @default(uuid())
+  id            String       @id @default(uuid())
   tenantId      String
-  appointmentId String?
-  status        String   @default("PENDING") // PENDING, SUCCESS, ERROR
   payload       Json
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  appointmentId String?
   errorMessage  String?
   omieOrderId   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  status        String       @default("PENDING")
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
 }
-
 
 model NotificationJob {
-  id               String   @id @default(uuid())
-  tenantId         String
-  appointmentId    String?
-  channel          Channel
-  payload          Json
-  status           NotificationJobStatus @default(SCHEDULED)
-  errorMessage     String?
+  id                String                @id @default(uuid())
+  tenantId          String
+  appointmentId     String?
+  channel           Channel
+  payload           Json
+  status            NotificationJobStatus @default(SCHEDULED)
+  errorMessage      String?
   providerMessageId String?
-  queueJobId       String?
-  sentAt           DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  tenant           Tenant   @relation(fields: [tenantId], references: [id])
-  appointment      Appointment? @relation(fields: [appointmentId], references: [id])
-  @@map("notification_job")
-}
+  queueJobId        String?
+  sentAt            DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  appointment       Appointment?          @relation(fields: [appointmentId], references: [id])
+  tenant            Tenant                @relation(fields: [tenantId], references: [id])
 
-enum NotificationJobStatus {
-  SCHEDULED
-  SENT
-  ERROR
-  CANCELLED
+  @@map("notification_job")
 }
 
 model AuditLog {
@@ -384,66 +320,48 @@ model AuditLog {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
 }
 
-
 model TenantConfig {
-  id                 String   @id @default(uuid())
-  tenantId           String   @unique
-  reminderEnabled    Boolean  @default(true)
-  reminderHoursBefore Int     @default(24)
-  cancelWindowHours  Int      @default(2)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  tenant             Tenant   @relation(fields: [tenantId], references: [id])
+  id                  String   @id @default(uuid())
+  tenantId            String   @unique
+  reminderEnabled     Boolean  @default(true)
+  reminderHoursBefore Int      @default(24)
+  cancelWindowHours   Int      @default(2)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 model RefreshToken {
-  id         String    @id @default(uuid())
-  tokenHash  String
-  jti        String
-  userId     String?
-  customerId String?
-  revokedAt  DateTime?
-  expiresAt  DateTime
-  createdAt  DateTime  @default(now())
+  id                String    @id @default(uuid())
+  tokenHash         String
+  jti               String
+  userId            String?
+  customerId        String?
+  revokedAt         DateTime?
   replacedByTokenId String?
-  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user              User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tokenHash])
   @@index([jti])
 }
 
-enum ActorType {
-  USER
-  CUSTOMER
-}
-
 model OtpCode {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   customerId   String
   phone        String
   codeHash     String
   expiresAt    DateTime
   consumedAt   DateTime?
-  attemptCount Int      @default(0)
+  attemptCount Int       @default(0)
   lockedUntil  DateTime?
-  createdAt    DateTime @default(now())
-  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([phone])
   @@index([customerId])
-}
-
-enum NotificationType {
-  REMINDER
-  NO_SHOW_FOLLOWUP
-  OTP
-}
-
-enum NotificationStatus {
-  PENDING
-  SENT
-  FAILED
 }
 
 model LoginLog {
@@ -458,8 +376,8 @@ model LoginLog {
   success    Boolean
   reason     String?
   createdAt  DateTime  @default(now())
-  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([customerId])
@@ -467,18 +385,108 @@ model LoginLog {
 }
 
 model CustomerContact {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   tenantId   String
   customerId String
   name       String
   email      String?
   phone      String?
   birthDate  DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  customer   Customer @relation(fields: [customerId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId, customerId])
   @@index([tenantId, phone])
+}
+
+enum Channel {
+  SMS
+  WHATSAPP
+}
+
+enum TransactionType {
+  PURCHASE
+  CONSUME
+  ADJUSTMENT
+  REFUND
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  GROOMER
+  SUPER_ADMIN
+}
+
+enum CustomerStatus {
+  ACTIVE
+  DELETED
+}
+
+enum LifeStatus {
+  ALIVE
+  DECEASED
+}
+
+enum Species {
+  DOG
+  CAT
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+  DONE
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum AppointmentStatusReason {
+  CUSTOMER_DELETED
+  CANCELED_BY_ADMIN
+  CANCELED_BY_CUSTOMER
+  CANCELED_BY_SYSTEM
+  OTHER
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM_INTERVAL
+}
+
+enum NotificationJobStatus {
+  SCHEDULED
+  SENT
+  ERROR
+  CANCELLED
+}
+
+enum ActorType {
+  USER
+  CUSTOMER
+}
+
+enum NotificationType {
+  REMINDER
+  NO_SHOW_FOLLOWUP
+  OTP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }

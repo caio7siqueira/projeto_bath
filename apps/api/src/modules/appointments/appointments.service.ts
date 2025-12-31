@@ -72,6 +72,7 @@ export class AppointmentsService {
       throw new NotFoundException('Serviço não encontrado ou inativo.');
     }
 
+
     // Verificação de conflito: overlap com outros appointments SCHEDULED
     const overlapping = await this.repository.findOverlapping(
       tenantId,
@@ -81,9 +82,14 @@ export class AppointmentsService {
     );
 
     if (overlapping.length > 0) {
-      throw new ConflictException(
-        `Conflito: já existe agendamento na mesma localização entre ${overlapping[0].startsAt.toISOString()} e ${overlapping[0].endsAt.toISOString()}`,
+      // Buscar detalhes essenciais dos agendamentos conflitantes
+      const conflictingIds = overlapping.map(a => a.id);
+      const conflictingAppointments = await this.repository.findAppointmentsWithDetails(conflictingIds);
+      const err: any = new ConflictException(
+        `Já existe agendamento na mesma localização e horário.`
       );
+      err.conflictingAppointments = conflictingAppointments;
+      throw err;
     }
 
     const created = await this.repository.create(tenantId, dto);

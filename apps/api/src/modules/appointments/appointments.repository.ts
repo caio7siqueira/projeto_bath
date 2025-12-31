@@ -1,3 +1,4 @@
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from './dto';
@@ -5,6 +6,25 @@ import { CreateAppointmentDto, UpdateAppointmentDto, ListAppointmentsDto } from 
 @Injectable()
 export class AppointmentsRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Busca detalhes essenciais dos agendamentos por id (pet, cliente, serviço, localização)
+   */
+  async findAppointmentsWithDetails(ids: string[]) {
+    if (!ids.length) return [];
+    return this.prisma.appointment.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        startsAt: true,
+        endsAt: true,
+        pet: { select: { id: true, name: true } },
+        customer: { select: { id: true, name: true } },
+        service: { select: { id: true, name: true } },
+        location: { select: { id: true, name: true } },
+      },
+    });
+  }
 
   async create(tenantId: string, dto: CreateAppointmentDto) {
     return this.prisma.appointment.create({

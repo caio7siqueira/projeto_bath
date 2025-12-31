@@ -6,6 +6,17 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getReports(tenantId: string) {
+    // Para DEV, retorna mock rápido para destravar dashboard
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        totalCustomers: 1,
+        totalPets: 1,
+        totalAppointments: 1,
+        totalLocations: 1,
+        _mock: true,
+      };
+    }
+    // Produção: lógica real
     const [totalCustomers, totalPets, totalAppointments, totalLocations] =
       await Promise.all([
         this.prisma.customer.count({

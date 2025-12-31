@@ -2,6 +2,7 @@
 
 import { apiFetch } from '../api';
 import { getAuthToken } from './client';
+import { getApiUrl } from './getApiUrl';
 
 export type AppointmentStatus = 'SCHEDULED' | 'CANCELLED' | 'DONE';
 

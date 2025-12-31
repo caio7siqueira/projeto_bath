@@ -92,6 +92,7 @@ export default function NewAppointmentPage() {
     }
   }, [selectedServiceId, startsAt, services, setValue]);
   const [error, setError] = useState('');
+  const [conflictingAppointments, setConflictingAppointments] = useState<any[]>([]);
   const [success, setSuccess] = useState('');
   const [dateError, setDateError] = useState('');
   const [showSummary, setShowSummary] = useState(false);
@@ -110,6 +111,7 @@ export default function NewAppointmentPage() {
     setError('');
     setSuccess('');
     setDateError('');
+    setConflictingAppointments([]);
     console.log('[Novo Agendamento] onSubmit chamado!');
     console.log('[Novo Agendamento] Dados enviados:', data);
     // Validação dos campos obrigatórios
@@ -143,7 +145,7 @@ export default function NewAppointmentPage() {
       setError('');
       let result;
       if (data.recurrence) {
-        console.log('[Novo Agendamento] Enviando série recorrente...');
+        // ...existing code...
         result = await fetch('/v1/recurrence-series', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -158,12 +160,22 @@ export default function NewAppointmentPage() {
             serviceId: data.serviceId,
           }),
         });
-        console.log('[Novo Agendamento] Resposta recorrente:', result);
+        // ...existing code...
       } else {
-        console.log('[Novo Agendamento] Enviando agendamento único...');
-        console.log('[Novo Agendamento] Chamando createNewAppointment...');
-        result = await createNewAppointment(data);
-        console.log('[Novo Agendamento] Resposta agendamento:', result);
+        // ...existing code...
+        try {
+          result = await createNewAppointment(data);
+        } catch (err: any) {
+          // Tenta extrair conflitos do erro
+          if (err && err.status === 409 && err.conflictingAppointments) {
+            setConflictingAppointments(err.conflictingAppointments);
+            setError('Já existe agendamento conflitante neste horário/local. Veja detalhes abaixo.');
+            return;
+          }
+          setError(err.message ? `Erro ao criar agendamento: ${err.message}` : JSON.stringify(err));
+          return;
+        }
+        // ...existing code...
         if (!result || !result.id) {
           setError('O backend não retornou o ID do agendamento. Verifique a API.');
           return;
@@ -174,7 +186,12 @@ export default function NewAppointmentPage() {
         window.location.href = '/admin/appointments';
       }, 1200);
     } catch (err: any) {
-      console.error('[Novo Agendamento] Erro ao criar:', err);
+      // Tenta extrair conflitos do erro (recorrente ou fallback)
+      if (err && err.status === 409 && err.conflictingAppointments) {
+        setConflictingAppointments(err.conflictingAppointments);
+        setError('Já existe agendamento conflitante neste horário/local. Veja detalhes abaixo.');
+        return;
+      }
       setError(err.message ? `Erro ao criar agendamento: ${err.message}` : JSON.stringify(err));
     }
   };
@@ -209,7 +226,7 @@ export default function NewAppointmentPage() {
       setError(err.message || 'Erro ao criar agendamento');
     }
   };
-
+  console.log('[DEBUG] errors', errors);
   return (
     <>
       {/* Resumo antes de salvar */}
@@ -234,7 +251,7 @@ export default function NewAppointmentPage() {
           </div>
         </div>
       )}
-      <form className="max-w-2xl mx-auto p-6 md:p-10 bg-white rounded-lg shadow space-y-8" onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto p-6 md:p-10 bg-white rounded-lg shadow space-y-8">
         <h2 className="text-2xl font-bold mb-4">Novo Agendamento</h2>
         {/* Agrupamento de campos: Cliente/Pet, Serviço/Local, Datas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -368,6 +385,35 @@ export default function NewAppointmentPage() {
 
         {/* Mensagens de erro e botão de ação */}
         {error && <div className="text-red-600 text-center">{error}</div>}
+        {conflictingAppointments.length > 0 && (
+          <div className="my-4 p-4 border-2 border-red-400 bg-red-50 rounded-lg">
+            <div className="font-semibold text-red-700 mb-2">Agendamentos em conflito:</div>
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-red-100">
+                  <th className="p-1 border">Início</th>
+                  <th className="p-1 border">Fim</th>
+                  <th className="p-1 border">Cliente</th>
+                  <th className="p-1 border">Pet</th>
+                  <th className="p-1 border">Serviço</th>
+                  <th className="p-1 border">Local</th>
+                </tr>
+              </thead>
+              <tbody>
+                {conflictingAppointments.map((a, i) => (
+                  <tr key={a.id || i} className="bg-white">
+                    <td className="border p-1">{a.startsAt ? new Date(a.startsAt).toLocaleString() : '-'}</td>
+                    <td className="border p-1">{a.endsAt ? new Date(a.endsAt).toLocaleString() : '-'}</td>
+                    <td className="border p-1">{a.customer?.name || '-'}</td>
+                    <td className="border p-1">{a.pet?.name || '-'}</td>
+                    <td className="border p-1">{a.service?.name || '-'}</td>
+                    <td className="border p-1">{a.location?.name || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {success && <div className="text-green-600 text-center">{success}</div>}
         {customersError && <div className="text-red-600 text-center">{customersError}</div>}
         {petsError && <div className="text-red-600 text-center">{petsError}</div>}
@@ -380,6 +426,7 @@ export default function NewAppointmentPage() {
         <div className="flex flex-col md:flex-row md:justify-end mt-6">
           <Button
             type="submit"
+            onClick={() => { console.log('[Button] Cliquei no botão!'); }}
             className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2"
             disabled={
               isSubmitting ||
