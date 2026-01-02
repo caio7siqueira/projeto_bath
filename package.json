@@ -9,6 +9,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
+    "postinstall": "pnpm --filter @efizion/contracts build",
     "format": "prettier -w .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",

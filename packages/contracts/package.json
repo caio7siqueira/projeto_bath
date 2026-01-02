@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "codegen:client": "openapi --input ../../docs/openapi/openapi.json --output src/sdk --client fetch --useUnionTypes --useOptions",
     "codegen:types": "openapi-typescript ../../docs/openapi/openapi.json --output src/types.ts",
     "sdk:generate": "pnpm run codegen:client && pnpm run codegen:types && pnpm run build"
