@@ -92,7 +92,7 @@ export function useCustomers() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setErrorState] = useState<string | null>(null);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     setIsLoading(true);
     setErrorState(null);
     try {
@@ -103,12 +103,13 @@ export function useCustomers() {
       const parsed = normalizeApiError(err, 'Não conseguimos carregar os clientes.');
       setErrorState(parsed.message);
       setError(parsed.message);
+      return null;
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setCustomers, setError]);
 
-  const createNewCustomer = async (dto: CreateCustomerDto) => {
+  const createNewCustomer = useCallback(async (dto: CreateCustomerDto) => {
     try {
       const customer = await createCustomer(dto);
       addCustomer(customer);
@@ -119,35 +120,38 @@ export function useCustomers() {
       setError(parsed.message);
       throw parsed;
     }
-  };
+  }, [addCustomer, setError]);
 
-  const updateExistingCustomer = async (
-    id: string,
-    dto: UpdateCustomerDto
-  ) => {
-    try {
-      const customer = await updateCustomer(id, dto);
-      updateCustomerInStore(id, customer);
-      return customer;
-    } catch (err) {
-      const parsed = normalizeApiError(err, 'Não foi possível atualizar o cliente.');
-      setErrorState(parsed.message);
-      setError(parsed.message);
-      throw parsed;
-    }
-  };
+  const updateExistingCustomer = useCallback(
+    async (id: string, dto: UpdateCustomerDto) => {
+      try {
+        const customer = await updateCustomer(id, dto);
+        updateCustomerInStore(id, customer);
+        return customer;
+      } catch (err) {
+        const parsed = normalizeApiError(err, 'Não foi possível atualizar o cliente.');
+        setErrorState(parsed.message);
+        setError(parsed.message);
+        throw parsed;
+      }
+    },
+    [setError, updateCustomerInStore],
+  );
 
-  const deleteExistingCustomer = async (id: string) => {
-    try {
-      await deleteCustomer(id);
-      removeCustomer(id);
-    } catch (err) {
-      const parsed = normalizeApiError(err, 'Não foi possível remover o cliente.');
-      setErrorState(parsed.message);
-      setError(parsed.message);
-      throw parsed;
-    }
-  };
+  const deleteExistingCustomer = useCallback(
+    async (id: string) => {
+      try {
+        await deleteCustomer(id);
+        removeCustomer(id);
+      } catch (err) {
+        const parsed = normalizeApiError(err, 'Não foi possível remover o cliente.');
+        setErrorState(parsed.message);
+        setError(parsed.message);
+        throw parsed;
+      }
+    },
+    [removeCustomer, setError],
+  );
 
   return {
     customers,
@@ -316,17 +320,29 @@ export function usePets() {
   const [error, setErrorState] = useState<string | null>(null);
   const [pagination, setPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number }>({ page: 1, pageSize: 20, total: 0, totalPages: 0 });
 
+  const mergePetsList = useCallback((incoming: Pet[], append?: boolean) => {
+    setPets((prev) => {
+      if (!append) {
+        return incoming;
+      }
+      const deduped = new Map<string, Pet>();
+      prev.forEach((pet) => deduped.set(pet.id, pet));
+      incoming.forEach((pet) => deduped.set(pet.id, pet));
+      return Array.from(deduped.values());
+    });
+  }, [setPets]);
+
   // Busca global (ADMIN/SUPER_ADMIN)
-  const fetchAllPets = async (opts?: { page?: number; pageSize?: number; q?: string }) => {
+  const fetchAllPets = useCallback(async (opts?: { page?: number; pageSize?: number; q?: string }) => {
     setIsLoading(true);
     setErrorState(null);
     try {
       const result: ListAllPetsResult = await listAllPets(opts);
-      setPets(result.items);
+      mergePetsList(result.items, false);
       setPagination({ page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages });
       return result.items;
     } catch (err) {
-      setPets([]);
+      mergePetsList([], false);
       const parsed = normalizeApiError(err, 'Não foi possível carregar os pets.');
       setErrorState(parsed.message);
       setError(parsed.message);
@@ -334,10 +350,10 @@ export function usePets() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [mergePetsList, setError]);
 
   // Busca por cliente (STAFF)
-  const fetchPets = async (customerId: string, opts?: { append?: boolean }) => {
+  const fetchPets = useCallback(async (customerId: string, opts?: { append?: boolean }) => {
     if (!customerId) {
       setErrorState('Selecione um cliente para listar os pets.');
       return [];
@@ -346,10 +362,10 @@ export function usePets() {
     setErrorState(null);
     try {
       const data = await listPets(customerId);
-      setPets(data);
+      mergePetsList(data, opts?.append);
       return data;
     } catch (err) {
-      setPets([]);
+      mergePetsList([], false);
       const parsed = normalizeApiError(err, 'Não foi possível carregar os pets.');
       setErrorState(parsed.message);
       setError(parsed.message);
@@ -357,9 +373,9 @@ export function usePets() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [mergePetsList, setError]);
 
-  const createNewPet = async (customerId: string, dto: CreatePetDto) => {
+  const createNewPet = useCallback(async (customerId: string, dto: CreatePetDto) => {
     try {
       const pet = await createPet(customerId, dto);
       addPet(pet);
@@ -370,7 +386,7 @@ export function usePets() {
       setError(parsed.message);
       throw parsed;
     }
-  };
+  }, [addPet, setError]);
 
   return {
     pets,

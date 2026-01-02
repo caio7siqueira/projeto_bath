@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useEffect, useState } from 'react';
 import { useCustomers, usePets } from '@/lib/hooks';
 import { Card } from '@/components/Card';
@@ -19,8 +18,7 @@ export default function PetsPage() {
   useEffect(() => {
     setMounted(true);
     fetchCustomers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchCustomers]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -32,8 +30,7 @@ export default function PetsPage() {
     } else if (selectedCustomerId) {
       fetchPets(selectedCustomerId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCustomerId, customers, mounted, user, search]);
+  }, [customers, fetchAllPets, fetchPets, mounted, search, selectedCustomerId, user]);
 
   const isAdminUser = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 

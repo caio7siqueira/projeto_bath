@@ -2,12 +2,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { ErrorBanner } from '@/components/feedback/VisualStates';
 import { activateBillingPlan } from '@/lib/api/billing';
 import { normalizeApiError } from '@/lib/api/errors';
+import { useRole } from '@/lib/use-role';
 
 export default function BillingCheckout() {
   const router = useRouter();
+  const { isAdmin } = useRole();
   const [plan, setPlan] = useState('STARTER');
   const [loading, setLoading] = useState(false);
   const [bannerError, setBannerError] = useState<{ title?: string; message: string; details?: string[] } | null>(null);
@@ -32,6 +35,14 @@ export default function BillingCheckout() {
       setLoading(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <Card className="my-8 max-w-md mx-auto">
+        <p className="text-sm text-red-700">Somente administradores podem alterar o plano de assinaturas.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="my-8 max-w-md mx-auto p-4 border rounded-lg bg-white">

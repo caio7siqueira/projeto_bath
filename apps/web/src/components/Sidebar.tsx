@@ -37,7 +37,7 @@ function LogoutButton() {
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { isSuperAdmin } = useRole();
+  const { isSuperAdmin, isAdmin } = useRole();
   const pathname = usePathname();
 
   return (
@@ -79,6 +79,9 @@ export function Sidebar() {
             {/* Administrativo */}
             <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Administrativo</div>
             <NavLink href="/admin/reports" label="Relatórios" isActive={pathname?.startsWith('/admin/reports') || pathname?.startsWith('/dashboard/reports')} onClick={() => setIsOpen(false)} />
+            {isAdmin && (
+              <NavLink href="/admin/billing" label="Billing" isActive={pathname?.startsWith('/admin/billing')} onClick={() => setIsOpen(false)} />
+            )}
             <NavLink href="/admin/notifications" label="Notificações" isActive={pathname?.startsWith('/admin/notifications')} onClick={() => setIsOpen(false)} />
             {/* Configurações */}
             <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>

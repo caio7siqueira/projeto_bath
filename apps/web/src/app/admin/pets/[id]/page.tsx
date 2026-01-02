@@ -79,9 +79,11 @@ export default function PetFormPage() {
       return;
     }
 
+    let cancelled = false;
     const loadPet = async () => {
       for (const customer of customers) {
         const loaded = await fetchPets(customer.id, { append: true });
+        if (cancelled) return;
         const match = loaded.find((p) => p.id === petId);
         if (match) {
           reset({
@@ -97,8 +99,10 @@ export default function PetFormPage() {
     };
 
     loadPet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditing, petId, customers, pets]);
+    return () => {
+      cancelled = true;
+    };
+  }, [customers, fetchPets, isEditing, petId, pets, reset]);
 
   const onSubmit = async (data: PetFormData & { customerId: string }) => {
     setIsSaving(true);

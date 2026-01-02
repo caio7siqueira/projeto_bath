@@ -1,21 +1,24 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { ErrorBanner } from '@/components/feedback/VisualStates';
 import { cancelBillingPlan, fetchBillingSubscription } from '@/lib/api/billing';
 import type { BillingSubscription } from '@/lib/api/billing';
 import { normalizeApiError } from '@/lib/api/errors';
+import { useRole } from '@/lib/use-role';
 
 export default function BillingCancel() {
   const router = useRouter();
+  const { isAdmin } = useRole();
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [bannerError, setBannerError] = useState<{ title?: string; message: string; details?: string[] } | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const loadSubscription = async () => {
+  const loadSubscription = useCallback(async () => {
     setLoadingSubscription(true);
     setBannerError(null);
     try {
@@ -27,11 +30,12 @@ export default function BillingCancel() {
     } finally {
       setLoadingSubscription(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    if (!isAdmin) return;
     loadSubscription();
-  }, []);
+  }, [isAdmin, loadSubscription]);
 
   const handleCancel = async () => {
     if (!subscription?.plan) {
@@ -57,6 +61,14 @@ export default function BillingCancel() {
       setLoading(false);
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <Card className="my-8 max-w-md mx-auto">
+        <p className="text-sm text-red-700">Somente administradores podem cancelar planos de assinatura.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="my-8 max-w-md mx-auto p-4 border rounded-lg bg-white">

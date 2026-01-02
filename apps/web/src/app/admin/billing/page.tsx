@@ -1,6 +1,4 @@
 "use client";
-"use client";
-
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,6 +8,7 @@ import { EmptyState, HeroSkeleton, SkeletonBlock } from '@/components/feedback/V
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { useRole } from '@/lib/use-role';
 import { fetchBillingSubscription, BillingSubscription } from '@/lib/api/billing';
+import { normalizeApiError } from '@/lib/api/errors';
 
 function getTrialDaysLeft(trialEndsAt?: string) {
   if (!trialEndsAt) return null;
@@ -27,18 +26,32 @@ export default function BillingAdminPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
     setLoading(true);
+    setError(null);
     fetchBillingSubscription()
       .then((data) => {
+        if (!active) return;
         setSubscription(data);
         setError(null);
       })
       .catch((err) => {
-        setError(err.message || 'Erro ao carregar assinatura');
+        if (!active) return;
+        const parsed = normalizeApiError(err, 'Não conseguimos carregar sua assinatura.');
+        setError(parsed.message);
         setSubscription(null);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAdmin]);
 
   if (!isAdmin) {
     return (
