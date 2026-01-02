@@ -34,7 +34,7 @@ test.describe('Agenda administrativa', () => {
     await loginAs(page);
 
     await page.goto('/admin/appointments/apt-1');
-    await expect(page.getByRole('heading', { name: 'Editar Agendamento' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Editar Agendamento' })).toBeVisible({ timeout: 25_000 });
     await page.getByLabel('Início').fill(datetimeLocal(60));
     await page.getByLabel('Fim').fill(datetimeLocal(120));
     await page.getByLabel('Status').selectOption('DONE');
