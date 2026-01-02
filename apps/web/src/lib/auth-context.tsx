@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { login as apiLogin, logout as apiLogout, refresh as apiRefresh, type LoginRequest } from './api/auth';
-import { normalizeApiError } from './api/errors';
+import { normalizeApiError } from '@/lib/api/errors';
 
 interface User {
   id: string;
