@@ -45,7 +45,7 @@ test.describe('Agenda administrativa', () => {
     await page.goto('/admin/appointments/apt-1');
     await page.getByRole('button', { name: 'Cancelar agendamento' }).click();
     await page.waitForURL('**/admin/appointments');
-    await expect(page.getByText('Agenda')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Agenda' })).toBeVisible();
   });
 
   test('exibe erro de conflito quando há duplicidade de horário', async ({ page }) => {

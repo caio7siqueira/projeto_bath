@@ -18,6 +18,9 @@ test.describe('Cadastros de clientes, pets e serviços', () => {
 
     await expect(page.getByText('Cliente criado com sucesso!')).toBeVisible();
     await page.waitForURL('**/admin/customers');
+    await page.waitForResponse((response) => {
+      return response.url().includes('/v1/customers') && response.request().method() === 'GET';
+    });
     await expect(page.getByText('Mariana Souza')).toBeVisible();
   });
 
