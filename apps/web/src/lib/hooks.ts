@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { normalizeApiError } from './api/errors';
 import { listServices, createService, type Service, type CreateServiceDto } from './api/services';
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
@@ -11,14 +12,12 @@ export function useServices() {
     try {
       const data = await listServices();
       setServices(data);
-    } catch (err: any) {
-      if (err?.status === 404) {
+    } catch (err) {
+      const parsed = normalizeApiError(err, 'Não conseguimos carregar os serviços.');
+      if (parsed.status === 404) {
         setServices([]);
-        setErrorState('Nenhum serviço cadastrado ainda.');
-      } else {
-        const message = err instanceof Error ? err.message : 'Erro ao carregar serviços';
-        setErrorState(message);
       }
+      setErrorState(parsed.message);
     } finally {
       setIsLoading(false);
     }
@@ -30,9 +29,9 @@ export function useServices() {
       setServices((prev) => [service, ...prev]);
       return service;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao criar serviço';
-      setErrorState(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível criar o serviço.');
+      setErrorState(parsed.message);
+      throw parsed;
     }
   }, []);
 
@@ -97,12 +96,13 @@ export function useCustomers() {
     setIsLoading(true);
     setErrorState(null);
     try {
-      const data = await listCustomers();
-      setCustomers(data);
+      const result = await listCustomers();
+      setCustomers(result.data);
+      return result;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não conseguimos carregar os clientes.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
     } finally {
       setIsLoading(false);
     }
@@ -114,10 +114,10 @@ export function useCustomers() {
       addCustomer(customer);
       return customer;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível criar o cliente.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -130,10 +130,10 @@ export function useCustomers() {
       updateCustomerInStore(id, customer);
       return customer;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível atualizar o cliente.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -142,10 +142,10 @@ export function useCustomers() {
       await deleteCustomer(id);
       removeCustomer(id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível remover o cliente.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -180,9 +180,9 @@ export function useAppointments() {
       const data = await listAppointments(filters);
       setAppointments(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não conseguimos carregar os agendamentos.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
     } finally {
       setIsLoading(false);
     }
@@ -197,10 +197,10 @@ export function useAppointments() {
       updateAppointmentInStore(id, appointment);
       return appointment;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não conseguimos carregar o agendamento.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -214,10 +214,10 @@ export function useAppointments() {
       return appointment;
     } catch (err) {
       console.error('[useAppointments] Erro ao criar:', err);
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível criar o agendamento.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -230,10 +230,10 @@ export function useAppointments() {
       updateAppointmentInStore(id, appointment);
       return appointment;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível atualizar o agendamento.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -243,10 +243,10 @@ export function useAppointments() {
       updateAppointmentInStore(id, appointment);
       return appointment;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível cancelar o agendamento.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 
@@ -279,8 +279,8 @@ export function useLocations() {
       const data = await listLocations();
       setLocations(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
+      const parsed = normalizeApiError(err, 'Não foi possível carregar os locais.');
+      setErrorState(parsed.message);
     } finally {
       setIsLoading(false);
     }
@@ -292,9 +292,9 @@ export function useLocations() {
       setLocations((prev) => [...prev, location]);
       return location;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível criar o local.');
+      setErrorState(parsed.message);
+      throw parsed;
     }
   };
 
@@ -325,11 +325,11 @@ export function usePets() {
       setPets(result.items);
       setPagination({ page: result.page, pageSize: result.pageSize, total: result.total, totalPages: result.totalPages });
       return result.items;
-    } catch (err: any) {
+    } catch (err) {
       setPets([]);
-      const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
-      setErrorState(message);
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível carregar os pets.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
       return [];
     } finally {
       setIsLoading(false);
@@ -348,11 +348,11 @@ export function usePets() {
       const data = await listPets(customerId);
       setPets(data);
       return data;
-    } catch (err: any) {
+    } catch (err) {
       setPets([]);
-      const message = err instanceof Error ? err.message : 'Erro ao carregar pets';
-      setErrorState(message);
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível carregar os pets.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
       return [];
     } finally {
       setIsLoading(false);
@@ -365,10 +365,10 @@ export function usePets() {
       addPet(pet);
       return pet;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setErrorState(message);
-      setError(message);
-      throw err;
+      const parsed = normalizeApiError(err, 'Não foi possível criar o pet.');
+      setErrorState(parsed.message);
+      setError(parsed.message);
+      throw parsed;
     }
   };
 

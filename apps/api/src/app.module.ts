@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as path from 'path';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
@@ -44,6 +46,12 @@ const envFilePath = Array.from(
         return config;
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 120,
+      },
+    ]),
     PrismaModule,
     AuthModule,
     CustomerAuthModule,
@@ -64,5 +72,11 @@ const envFilePath = Array.from(
     SuperadminModule,
   ],
   controllers: [HealthController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

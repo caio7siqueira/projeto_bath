@@ -8,6 +8,8 @@ import { usePets, useCustomers } from '@/lib/hooks';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormField, SelectField } from '@/components/FormField';
+import { ErrorBanner } from '@/components/feedback/VisualStates';
+import { createFieldErrorMap, normalizeApiError } from '@/lib/api/errors';
 import { petSchema, type PetFormData } from '@/lib/schemas';
 import { z } from 'zod';
 
@@ -16,6 +18,14 @@ export default function PetFormPage() {
   const params = useParams();
   const petId = params?.id as string | undefined;
   const isEditing = !!petId && petId !== 'new';
+  const navigateToPets = () => router.push('/admin/pets');
+  const handleGoBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      navigateToPets();
+    }
+  };
 
   const {
     register,
@@ -24,6 +34,7 @@ export default function PetFormPage() {
     reset,
     watch,
     setValue,
+    setError: setFormError,
   } = useForm<PetFormData & { customerId: string }>({
     resolver: zodResolver(
       petSchema.extend({
@@ -45,7 +56,7 @@ export default function PetFormPage() {
   const { pets, createNewPet, fetchPets, isLoading } = usePets();
   const { customers, fetchCustomers } = useCustomers();
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorBanner, setErrorBanner] = useState<{ title: string; message: string; details?: string[] } | null>(null);
   // Removido selectedCustomer, usar customerId do useForm
   const [mounted, setMounted] = useState(false);
 
@@ -91,7 +102,7 @@ export default function PetFormPage() {
 
   const onSubmit = async (data: PetFormData & { customerId: string }) => {
     setIsSaving(true);
-    setError(null);
+    setErrorBanner(null);
 
     try {
       // Filter out empty optional fields
@@ -104,16 +115,30 @@ export default function PetFormPage() {
 
       if (isEditing) {
         // Atualização de pet não suportada pois não há endpoint
-        setError('Atualização de pet não suportada.');
+        setErrorBanner({
+          title: 'Edição não disponível',
+          message: 'Ainda não é possível atualizar um pet existente. Crie um novo cadastro.',
+        });
         setIsSaving(false);
         return;
       } else {
         await createNewPet(data.customerId, submitData);
       }
-      router.push('/admin/pets');
+      navigateToPets();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao salvar';
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível salvar o pet.');
+      const nonFieldMessages = parsed.details
+        .filter((detail) => !detail.field)
+        .map((detail) => detail.message);
+      setErrorBanner({
+        title: parsed.title,
+        message: parsed.message,
+        details: nonFieldMessages.length ? nonFieldMessages : undefined,
+      });
+      const fieldErrors = createFieldErrorMap(parsed.details);
+      Object.entries(fieldErrors).forEach(([field, message]) => {
+        setFormError(field as keyof (PetFormData & { customerId: string }), { type: 'server', message });
+      });
     } finally {
       setIsSaving(false);
     }
@@ -123,16 +148,22 @@ export default function PetFormPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-8 space-y-2">
           <h1 className="text-3xl font-bold text-gray-900">
             {isEditing ? 'Editar Pet' : 'Novo Pet'}
           </h1>
+          <p className="text-xs text-gray-500 italic">
+            Experiência guiada: o botão &ldquo;Voltar&rdquo; respeita o caminho percorrido antes de abrir este formulário.
+          </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">
-            {error}
-          </div>
+        {errorBanner && (
+          <ErrorBanner
+            title={errorBanner.title}
+            message={errorBanner.message}
+            details={errorBanner.details}
+            scenario="pets-create-validation"
+          />
         )}
 
         <Card>
@@ -201,9 +232,9 @@ export default function PetFormPage() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => router.push('/admin/pets')}
+                onClick={handleGoBack}
               >
-                Cancelar
+                Voltar
               </Button>
             </div>
           </form>

@@ -1,11 +1,9 @@
-
+import { AuthService, type LoginDto, type RefreshDto } from '@efizion/contracts';
 import { apiFetch } from '../api';
+import { safeSdkCall } from './errors';
+import { unwrapData } from './sdk';
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-  tenantSlug?: string;
-}
+export type LoginRequest = LoginDto;
 
 export interface LoginResponse {
   accessToken: string;
@@ -19,9 +17,7 @@ export interface LoginResponse {
   };
 }
 
-export interface RefreshRequest {
-  refreshToken: string;
-}
+export type RefreshRequest = RefreshDto;
 
 export interface RefreshResponse {
   accessToken: string;
@@ -29,22 +25,25 @@ export interface RefreshResponse {
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return apiFetch('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await safeSdkCall(
+    AuthService.authControllerLogin({ requestBody: data }),
+    'Email ou senha inválidos.',
+  );
+  return unwrapData<LoginResponse>(response as any);
 }
 
 
 export async function refresh(data: RefreshRequest): Promise<RefreshResponse> {
-  return apiFetch('/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  const response = await safeSdkCall(
+    AuthService.authControllerRefresh({ requestBody: data }),
+    'Não foi possível renovar a sessão.',
+  );
+  return unwrapData<RefreshResponse>(response as any);
 }
 
 
 export async function logout(accessToken: string, refreshToken: string): Promise<void> {
+  // API do SDK ainda não suporta enviar body no logout; mantemos fetch direto aqui.
   await apiFetch('/auth/logout', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },

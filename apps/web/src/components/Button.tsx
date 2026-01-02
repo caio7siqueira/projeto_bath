@@ -1,10 +1,10 @@
 'use client';
 
-interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  icon?: React.ReactNode;
 }
 
 export function Button({
@@ -14,16 +14,17 @@ export function Button({
   className = '',
   children,
   disabled,
+  icon,
   ...props
-  }: ButtonProps & { type?: 'button' | 'submit' }) {
+}: ButtonProps & { type?: 'button' | 'submit' }) {
   const baseClass =
-    'font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
   const variantClass = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-    secondary:
-      'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    primary: 'bg-brand-600 text-white shadow-soft hover:bg-brand-500 focus-visible:ring-brand-300',
+    secondary: 'bg-white text-brand-700 border border-surface-divider hover:bg-brand-50 focus-visible:ring-brand-300',
+    danger: 'bg-rose-600 text-white shadow-soft hover:bg-rose-500 focus-visible:ring-rose-200',
+    ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-300',
   }[variant];
 
   const sizeClass = {
@@ -34,12 +35,22 @@ export function Button({
 
   return (
     <button
-            type={props.type || 'button'}
+      type={props.type || 'button'}
       {...props}
       disabled={disabled || isLoading}
       className={`${baseClass} ${variantClass} ${sizeClass} ${className}`}
     >
-      {isLoading ? '...' : children}
+      {isLoading ? (
+        <>
+          <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />
+          <span className="text-sm">Carregando</span>
+        </>
+      ) : (
+        <>
+          {icon && <span aria-hidden>{icon}</span>}
+          {children}
+        </>
+      )}
     </button>
   );
 }

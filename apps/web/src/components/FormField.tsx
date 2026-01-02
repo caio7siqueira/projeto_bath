@@ -14,7 +14,7 @@ interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
   ({ label, id, type = 'text', placeholder, error, required, touched, ...props }, ref) => {
-    const showError = !!error && touched;
+    const showError = !!error && (touched ?? true);
     return (
       <div className="mb-4">
         <label htmlFor={id} className="block text-sm font-medium text-gray-700">

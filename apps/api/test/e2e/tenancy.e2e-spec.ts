@@ -2,6 +2,7 @@ import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
 import { PrismaClient } from '@prisma/client';
+import { expectData, expectError } from './support/http-assertions';
 
 describe('Multi-tenant guard', () => {
   let stopEnv: () => Promise<void>;
@@ -43,13 +44,13 @@ describe('Multi-tenant guard', () => {
       .post('/v1/auth/login')
       .send({ email, password: 'StrongPass123!' })
       .expect(200);
-
-    const token = loginRes.body.accessToken;
+    const token = expectData(loginRes).accessToken;
 
     // Accessing tenant B should 403
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .get(`/v1/protected/tenant/${tenantB.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
+    expectError(res, 'ERR_FORBIDDEN');
   });
 });

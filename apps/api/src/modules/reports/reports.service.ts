@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppointmentsSummaryDto } from './dto/appointments-summary.dto';
 import { AppointmentsTimeseriesDto } from './dto/appointments-timeseries.dto';
+import { createApiCollectionResponse } from '../../common/dto/api-response.dto';
 
 @Injectable()
 export class ReportsService {
@@ -65,6 +66,7 @@ export class ReportsService {
       if (appointment.status === 'CANCELLED') bucket.cancelled += 1;
     }
 
-    return Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period));
+    const series = Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period));
+    return createApiCollectionResponse(series);
   }
 }

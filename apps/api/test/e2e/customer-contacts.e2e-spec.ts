@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { bootstrapApp } from './support/bootstrap-app';
 import { startEnv } from './support/test-env';
+import { expectData, expectList } from './support/http-assertions';
 
 describe('Customer Contacts (E2E)', () => {
   let stopEnv: () => Promise<void>;
@@ -25,8 +26,7 @@ describe('Customer Contacts (E2E)', () => {
         tenantSlug: 'efizion-bath-demo',
       })
       .expect(201);
-
-    adminToken = registerRes.body.accessToken;
+    adminToken = expectData(registerRes).accessToken;
 
     // Cria customer
     const custRes = await request(app.getHttpServer())
@@ -34,7 +34,7 @@ describe('Customer Contacts (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'John Contact', phone: `+55119${Date.now().toString().slice(-8)}` })
       .expect(201);
-    customerId = custRes.body.id;
+    customerId = expectData(custRes).id;
   });
 
   afterAll(async () => {
@@ -49,16 +49,16 @@ describe('Customer Contacts (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Maria', phone: '+5511999999999' })
       .expect(201);
-
-    const contactId = createRes.body.id;
+    const contactId = expectData(createRes).id;
 
     // List
     const listRes = await request(app.getHttpServer())
       .get(`/v1/customers/${customerId}/contacts`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-    expect(Array.isArray(listRes.body)).toBe(true);
-    expect(listRes.body.find((c: any) => c.id === contactId)).toBeTruthy();
+    const contacts = expectList(listRes);
+    expect(Array.isArray(contacts)).toBe(true);
+    expect(contacts.find(c => c.id === contactId)).toBeTruthy();
 
     // Update
     const updateRes = await request(app.getHttpServer())
@@ -66,7 +66,7 @@ describe('Customer Contacts (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Maria Souza' })
       .expect(200);
-    expect(updateRes.body.name).toBe('Maria Souza');
+    expect(expectData(updateRes).name).toBe('Maria Souza');
 
     // Delete
     await request(app.getHttpServer())

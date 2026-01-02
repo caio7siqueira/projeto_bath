@@ -1,10 +1,17 @@
 import React from 'react';
 
-export function ExportCSVButton({ data, filename }: { data: any[], filename: string }) {
+interface ExportCSVButtonProps {
+  data: any[];
+  filename: string;
+  disabled?: boolean;
+}
+
+export function ExportCSVButton({ data, filename, disabled }: ExportCSVButtonProps) {
   const handleExport = () => {
-    const csv = [Object.keys(data[0] || {}).join(',')].concat(
-      data.map(row => Object.values(row).join(','))
-    ).join('\n');
+    if (!data?.length || disabled) return;
+    const csv = [Object.keys(data[0] || {}).join(',')]
+      .concat(data.map((row) => Object.values(row).join(',')))
+      .join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -13,5 +20,14 @@ export function ExportCSVButton({ data, filename }: { data: any[], filename: str
     a.click();
     URL.revokeObjectURL(url);
   };
-  return <button className="btn btn-outline" onClick={handleExport}>Exportar CSV</button>;
+
+  return (
+    <button
+      className={`btn btn-outline ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+      onClick={handleExport}
+      disabled={disabled || !data?.length}
+    >
+      Exportar CSV
+    </button>
+  );
 }

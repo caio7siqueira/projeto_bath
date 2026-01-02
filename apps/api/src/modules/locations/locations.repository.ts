@@ -22,7 +22,7 @@ export class LocationsRepository {
     });
   }
 
-  async findByTenant(tenantId: string) {
+  async findByTenant(tenantId: string, skip?: number, take?: number, orderBy?: Record<string, 'asc' | 'desc'>) {
     return this.prisma.location.findMany({
       where: { tenantId },
       select: {
@@ -32,8 +32,14 @@ export class LocationsRepository {
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: orderBy ?? { createdAt: 'desc' },
+      skip,
+      take,
     });
+  }
+
+  async countByTenant(tenantId: string) {
+    return this.prisma.location.count({ where: { tenantId } });
   }
 
   async findById(id: string, tenantId: string) {

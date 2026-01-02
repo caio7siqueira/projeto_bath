@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { FormField } from '@/components/FormField';
+import { ErrorBanner } from '@/components/feedback/VisualStates';
+import { createFieldErrorMap, normalizeApiError } from '@/lib/api/errors';
 import { useCustomers } from '@/lib/hooks';
 import { customerSchema, type CustomerFormData } from '@/lib/schemas';
 
@@ -15,7 +17,7 @@ export default function NewCustomerPage() {
   const router = useRouter();
   const { createNewCustomer } = useCustomers();
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorBanner, setErrorBanner] = useState<{ title: string; message: string; details?: string[] } | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const {
@@ -24,6 +26,7 @@ export default function NewCustomerPage() {
     handleSubmit,
     formState: { errors, touchedFields, isSubmitted },
     reset,
+    setError: setFormError,
   } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -57,7 +60,7 @@ export default function NewCustomerPage() {
 
   const onSubmit = async (data: CustomerFormData) => {
     setIsSaving(true);
-    setError(null);
+    setErrorBanner(null);
     setSuccess(null);
 
     try {
@@ -80,20 +83,47 @@ export default function NewCustomerPage() {
       });
       setTimeout(() => router.push('/admin/customers'), 1200);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao salvar';
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível salvar o cliente.');
+      const nonFieldMessages = parsed.details
+        .filter((detail) => !detail.field)
+        .map((detail) => detail.message);
+      setErrorBanner({
+        title: parsed.title,
+        message: parsed.message,
+        details: nonFieldMessages.length ? nonFieldMessages : undefined,
+      });
+      const fieldErrors = createFieldErrorMap(parsed.details);
+      Object.entries(fieldErrors).forEach(([field, message]) => {
+        setFormError(field as keyof CustomerFormData, { type: 'server', message });
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleGoBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/admin/customers');
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
-      <div className="mb-8">
+      <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">Novo Cliente</h1>
+        <p className="text-xs text-gray-500 italic">
+          Navegação orientada: o botão &ldquo;Voltar&rdquo; respeita seu histórico e retorna ao ponto exato da jornada.
+        </p>
       </div>
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
+      {errorBanner && (
+        <ErrorBanner
+          title={errorBanner.title}
+          message={errorBanner.message}
+          scenario="customers-create-invalid-data"
+          details={errorBanner.details}
+        />
       )}
       {success && (
         <div className="mb-4 rounded-lg bg-green-50 p-4 text-green-800 animate-fade-in">
@@ -162,9 +192,9 @@ export default function NewCustomerPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push('/admin/customers')}
+              onClick={handleGoBack}
             >
-              Cancelar
+              Voltar
             </Button>
           </div>
         </form>

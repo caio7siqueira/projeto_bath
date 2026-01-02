@@ -1,5 +1,6 @@
-
-import { apiFetch } from '../api';
+import { NotificationsService } from '@efizion/contracts';
+import { safeSdkCall } from './errors';
+import { ensureMeta, unwrapCollection } from './sdk';
 
 export type NotificationStatus = 'SCHEDULED' | 'SENT' | 'ERROR' | 'CANCELLED';
 export type NotificationChannel = 'SMS' | 'EMAIL' | 'WHATSAPP';
@@ -33,20 +34,25 @@ export interface NotificationJobsFilters {
   to?: string;   // ISO
   page?: number;
   pageSize?: number;
+  sort?: string;
 }
 
-import { getAuthToken } from './client';
-
 export async function listNotificationJobs(filters: NotificationJobsFilters = {}) {
-  const params = new URLSearchParams();
-  if (filters.status) params.set('status', filters.status);
-  if (filters.type) params.set('type', filters.type);
-  if (filters.from) params.set('from', filters.from);
-  if (filters.to) params.set('to', filters.to);
-  if (filters.page) params.set('page', String(filters.page));
-  if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
-  const qs = params.toString();
-  return apiFetch(`/integrations/notifications/admin/jobs${qs ? `?${qs}` : ''}`, {
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-  }) as Promise<ListNotificationJobsResponse>;
+  const response = await safeSdkCall(
+    NotificationsService.notificationsControllerListJobs({
+      status: filters.status,
+      page: filters.page,
+      pageSize: filters.pageSize,
+      sort: filters.sort ?? 'createdAt:desc',
+    }),
+    'Não foi possível carregar os envios de notificação.',
+  );
+  const collection = unwrapCollection<NotificationJob>(response as any);
+  const meta = ensureMeta(collection.meta, collection.data.length);
+  return {
+    data: collection.data,
+    total: meta.total,
+    page: meta.page,
+    pageSize: meta.pageSize,
+  } satisfies ListNotificationJobsResponse;
 }

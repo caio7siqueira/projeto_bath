@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { bootstrapApp } from './support/bootstrap-app';
 import { startEnv } from './support/test-env';
+import { expectData, expectError } from './support/http-assertions';
 
 describe('Pets (E2E)', () => {
   let stopEnv: () => Promise<void>;
@@ -26,8 +27,7 @@ describe('Pets (E2E)', () => {
         tenantSlug: 'efizion-bath-demo',
       })
       .expect(201);
-
-    adminToken = registerRes.body.accessToken;
+    adminToken = expectData(registerRes).accessToken;
 
     // Cria customer base
     const custRes = await request(app.getHttpServer())
@@ -35,7 +35,7 @@ describe('Pets (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Tutor Pets', phone: `+55119${Date.now().toString().slice(-8)}` })
       .expect(201);
-    customerId = custRes.body.id;
+    customerId = expectData(custRes).id;
 
     // Cria outro tenant e admin para teste de isolamento
     const tenantSlug = `tenant-${Date.now()}`;
@@ -55,7 +55,7 @@ describe('Pets (E2E)', () => {
         tenantSlug,
       })
       .expect(201);
-    otherAdminToken = otherRes.body.accessToken;
+    otherAdminToken = expectData(otherRes).accessToken;
   });
 
   afterAll(async () => {
@@ -69,24 +69,24 @@ describe('Pets (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Rex', species: 'DOG', allowNotifications: true })
       .expect(201);
-
-    expect(create.body).toMatchObject({
+    const created = expectData(create);
+    expect(created).toMatchObject({
       name: 'Rex',
       species: 'DOG',
       allowNotifications: true,
       lifeStatus: 'ALIVE',
     });
 
-    const petId = create.body.id;
+    const petId = created.id;
 
     const updated = await request(app.getHttpServer())
       .patch(`/v1/pets/${petId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ lifeStatus: 'DECEASED', allowNotifications: false })
       .expect(200);
-
-    expect(updated.body.lifeStatus).toBe('DECEASED');
-    expect(updated.body.allowNotifications).toBe(false);
+    const updatedPet = expectData(updated);
+    expect(updatedPet.lifeStatus).toBe('DECEASED');
+    expect(updatedPet.allowNotifications).toBe(false);
   });
 
   it('não deve permitir acessar pet de outro tenant', async () => {
@@ -95,11 +95,13 @@ describe('Pets (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Bolt', species: 'DOG' })
       .expect(201);
+    const created = expectData(create);
 
-    await request(app.getHttpServer())
-      .patch(`/v1/pets/${create.body.id}`)
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/pets/${created.id}`)
       .set('Authorization', `Bearer ${otherAdminToken}`)
       .send({ name: 'Hack' })
       .expect(403);
+    expectError(res, 'ERR_FORBIDDEN');
   });
 });

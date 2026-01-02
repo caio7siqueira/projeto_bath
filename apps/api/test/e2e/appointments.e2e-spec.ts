@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
+import { expectData, expectError, expectList, expectMeta } from './support/http-assertions';
 
 /**
  * Appointments E2E
@@ -34,9 +35,9 @@ describe('Appointments (E2E)', () => {
         tenantSlug: 'efizion-bath-demo',
       })
       .expect(201);
-
-    adminToken = registerRes.body.accessToken;
-    tenantId = registerRes.body.user.tenantId;
+    const registerData = expectData(registerRes);
+    adminToken = registerData.accessToken;
+    tenantId = registerData.user.tenantId;
 
     // Cria location
     const locRes = await request(app.getHttpServer())
@@ -44,7 +45,7 @@ describe('Appointments (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Sala A' })
       .expect(201);
-    locationId = locRes.body.id;
+    locationId = expectData(locRes).id;
 
     // Cria customer
     const custRes = await request(app.getHttpServer())
@@ -52,7 +53,7 @@ describe('Appointments (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'John Doe', phone: `+55119${Date.now().toString().slice(-8)}` })
       .expect(201);
-    customerId = custRes.body.id;
+    customerId = expectData(custRes).id;
   });
 
   afterAll(async () => {
@@ -70,8 +71,8 @@ describe('Appointments (E2E)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ customerId, locationId, startsAt, endsAt, notes: 'Primeiro agendamento' })
         .expect(201);
-
-      expect(res.body).toMatchObject({
+      const appointment = expectData(res);
+      expect(appointment).toMatchObject({
         id: expect.any(String),
         tenantId,
         customerId,
@@ -85,22 +86,24 @@ describe('Appointments (E2E)', () => {
       const startsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       const endsAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/v1/appointments')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ customerId, locationId, startsAt, endsAt })
         .expect(400);
+      expectError(res, 'ERR_BAD_REQUEST');
     });
 
     it('deve retornar 400 se duração < 5 minutos', async () => {
       const startsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       const endsAt = new Date(Date.now() + 60 * 60 * 1000 + 4 * 60 * 1000).toISOString();
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/v1/appointments')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ customerId, locationId, startsAt, endsAt })
         .expect(400);
+      expectError(res, 'ERR_BAD_REQUEST');
     });
 
     it('deve retornar 409 em caso de overlap', async () => {
@@ -115,11 +118,12 @@ describe('Appointments (E2E)', () => {
 
       const overlapStart = new Date(base + 30 * 60 * 1000).toISOString();
       const overlapEnd = new Date(base + 90 * 60 * 1000).toISOString();
-      await request(app.getHttpServer())
+      const overlapRes = await request(app.getHttpServer())
         .post('/v1/appointments')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ customerId, locationId, startsAt: overlapStart, endsAt: overlapEnd })
         .expect(409);
+      expectError(overlapRes, 'ERR_CONFLICT');
     });
   });
 
@@ -129,11 +133,11 @@ describe('Appointments (E2E)', () => {
         .get('/v1/appointments')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-      if (res.body.length > 0) {
-        expect(res.body[0]).toHaveProperty('id');
-        expect(res.body[0]).toHaveProperty('status');
+      const items = expectList(res);
+      expect(Array.isArray(items)).toBe(true);
+      if (items.length > 0) {
+        expect(items[0]).toHaveProperty('id');
+        expect(items[0]).toHaveProperty('status');
       }
     });
 
@@ -142,12 +146,12 @@ describe('Appointments (E2E)', () => {
         .get('/v1/appointments?page=1&pageSize=5')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-
-      expect(res.body).toHaveProperty('data');
-      expect(res.body).toHaveProperty('total');
-      expect(res.body).toHaveProperty('page', 1);
-      expect(res.body).toHaveProperty('pageSize', 5);
-      expect(Array.isArray(res.body.data)).toBe(true);
+      const items = expectList(res);
+      const meta = expectMeta(res);
+      expect(meta.page).toBe(1);
+      expect(meta.pageSize).toBe(5);
+      expect(meta.total).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(items)).toBe(true);
     });
 
     it('deve filtrar por locationId e período', async () => {
@@ -158,9 +162,8 @@ describe('Appointments (E2E)', () => {
         .get(`/v1/appointments?locationId=${locationId}&from=${from}&to=${to}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-      res.body.forEach((item: any) => expect(item.locationId).toBe(locationId));
+      const items = expectList(res);
+      items.forEach(item => expect(item.locationId).toBe(locationId));
     });
   });
 
@@ -173,34 +176,36 @@ describe('Appointments (E2E)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ customerId, locationId, startsAt, endsAt })
         .expect(201);
-
-      const id = create.body.id;
+      const created = expectData(create);
+      const id = created.id;
 
       const byId = await request(app.getHttpServer())
         .get(`/v1/appointments/${id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      expect(byId.body.id).toBe(id);
+      expect(expectData(byId).id).toBe(id);
 
       const updated = await request(app.getHttpServer())
         .patch(`/v1/appointments/${id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ notes: 'Atualizado via teste' })
         .expect(200);
-      expect(updated.body.notes).toBe('Atualizado via teste');
+      expect(expectData(updated).notes).toBe('Atualizado via teste');
 
       const cancelled1 = await request(app.getHttpServer())
         .post(`/v1/appointments/${id}/cancel`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      expect(cancelled1.body.status).toBe('CANCELLED');
+      const cancelledData1 = expectData(cancelled1);
+      expect(cancelledData1.status).toBe('CANCELLED');
 
       const cancelled2 = await request(app.getHttpServer())
         .post(`/v1/appointments/${id}/cancel`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      expect(cancelled2.body.status).toBe('CANCELLED');
-      expect(cancelled2.body.cancelledAt).toBe(cancelled1.body.cancelledAt);
+      const cancelledData2 = expectData(cancelled2);
+      expect(cancelledData2.status).toBe('CANCELLED');
+      expect(cancelledData2.cancelledAt).toBe(cancelledData1.cancelledAt);
     });
   });
 
@@ -225,8 +230,8 @@ describe('Appointments (E2E)', () => {
           tenantSlug,
         })
         .expect(201);
-
-      const token2 = reg2.body.accessToken;
+      const reg2Data = expectData(reg2);
+      const token2 = reg2Data.accessToken;
 
       // Cria appointment no tenant 1
       const startsAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
@@ -236,12 +241,14 @@ describe('Appointments (E2E)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ customerId, locationId, startsAt, endsAt })
         .expect(201);
+      const created = expectData(create);
 
       // Tenta buscar no outro tenant
-      await request(app.getHttpServer())
-        .get(`/v1/appointments/${create.body.id}`)
+      const forbiddenRes = await request(app.getHttpServer())
+        .get(`/v1/appointments/${created.id}`)
         .set('Authorization', `Bearer ${token2}`)
         .expect(404);
+      expectError(forbiddenRes, 'ERR_NOT_FOUND');
     });
   });
 });

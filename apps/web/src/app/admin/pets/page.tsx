@@ -3,9 +3,10 @@
 
 import { useEffect, useState } from 'react';
 import { useCustomers, usePets } from '@/lib/hooks';
-import { Card, CardHeader } from '@/components/Card';
+import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import Link from 'next/link';
+import { EmptyState, HeroSkeleton, ListSkeleton } from '@/components/feedback/VisualStates';
 
 
 export default function PetsPage() {
@@ -34,7 +35,16 @@ export default function PetsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCustomerId, customers, mounted, user, search]);
 
-  if (!mounted) return null;
+  const isAdminUser = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  if (!mounted) {
+    return (
+      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
+        <HeroSkeleton />
+        <ListSkeleton rows={4} hasActions />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
@@ -43,14 +53,14 @@ export default function PetsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Pets</h1>
           <p className="mt-2 text-gray-600">Gerencie os animais de estimação dos seus clientes.</p>
         </div>
-        {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || customers.length > 0) && (
+        {(isAdminUser || customers.length > 0) && (
           <Link href="/admin/pets/new">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">+ Novo Pet</Button>
           </Link>
         )}
       </div>
 
-      {user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+      {isAdminUser ? (
         <div className="mb-6 flex flex-col md:flex-row md:items-end gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Buscar por nome</label>
@@ -79,17 +89,45 @@ export default function PetsPage() {
         </div>
       )}
 
+      {customersError && (
+        <EmptyState
+          variant="inline"
+          mood="warning"
+          icon="📇"
+          title="Problema ao carregar clientes"
+          description={customersError}
+          action={<Button variant="secondary" onClick={fetchCustomers}>Recarregar clientes</Button>}
+        />
+      )}
+
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
+        <EmptyState
+          variant="inline"
+          mood="warning"
+          icon="🐾"
+          title="Não foi possível carregar os pets"
+          description={error}
+          action={<Button variant="secondary" onClick={() => (isAdminUser ? fetchAllPets({ page: 1, pageSize: 20, q: search }) : selectedCustomerId ? fetchPets(selectedCustomerId) : undefined)}>Tentar novamente</Button>}
+        />
       )}
 
       {isLoading ? (
-        <div className="text-center text-gray-600">Carregando...</div>
+        <ListSkeleton rows={4} hasActions />
       ) : pets.length === 0 ? (
-        <Card>
-          <CardHeader title="Nenhum pet encontrado" />
-          <p className="text-gray-600">{user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? 'Nenhum pet cadastrado ainda.' : 'Selecione um cliente ou cadastre o primeiro pet.'}</p>
-        </Card>
+        <EmptyState
+          icon="🐕"
+          title="Nenhum pet encontrado"
+          description={
+            isAdminUser ? 'Cadastre o primeiro pet para liberar histórico e agendamentos.' : 'Selecione um cliente ou cadastre um pet para começar.'
+          }
+          action={
+            (isAdminUser || customers.length > 0) && (
+              <Link href="/admin/pets/new">
+                <Button>Novo Pet</Button>
+              </Link>
+            )
+          }
+        />
       ) : (
         <div className="grid gap-4 md:gap-6">
           {pets.map((pet) => (

@@ -3,6 +3,9 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+import { ListPetsQueryDto } from './dto/list-pets.dto';
+import { PaginationQueryDto, paginatedResponse } from '../../common/dto/pagination.dto';
+import { createApiCollectionResponse } from '../../common/dto/api-response.dto';
 
 @Injectable()
 export class PetsService {
@@ -63,39 +66,55 @@ export class PetsService {
     return this.prisma.pet.findUnique({ where: { id: petId } });
   }
 
-  async listByCustomer(tenantId: string, customerId: string) {
-    // Garantir que o customer pertence ao tenant
+  async listByCustomer(tenantId: string, customerId: string, query?: PaginationQueryDto) {
     const customer = await this.prisma.customer.findFirst({ where: { id: customerId, tenantId, isActive: true } });
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
-    return this.prisma.pet.findMany({
-      where: { tenantId, customerId },
-      orderBy: { createdAt: 'desc' },
-    });
+
+    const pagination = (query ?? new PaginationQueryDto()).toPrisma();
+    const shouldPaginate = Boolean(query?.page || query?.pageSize || query?.sort);
+    const skip = shouldPaginate ? pagination.skip : undefined;
+    const take = shouldPaginate ? pagination.take : undefined;
+    const orderBy = pagination.orderBy ?? { createdAt: 'desc' };
+
+    const where = { tenantId, customerId };
+    const [items, total] = await Promise.all([
+      this.prisma.pet.findMany({ where, orderBy, skip, take }),
+      this.prisma.pet.count({ where }),
+    ]);
+
+    if (!shouldPaginate) {
+      return createApiCollectionResponse(items, {
+        total,
+        page: 1,
+        pageSize: total,
+        totalPages: 1,
+      });
+    }
+
+    return paginatedResponse(items, total, pagination.page, pagination.pageSize);
   }
 
-  async listAll(tenantId: string, opts: { page?: number; pageSize?: number; q?: string }) {
-    const { page = 1, pageSize = 20, q } = opts || {};
+  async listAll(tenantId: string, query?: ListPetsQueryDto) {
+    const pagination = (query ?? new ListPetsQueryDto()).toPrisma();
     const where: any = { tenantId };
-    if (q) {
-      where.name = { contains: q, mode: 'insensitive' };
+
+    if (query?.q) {
+      where.name = { contains: query.q, mode: 'insensitive' };
     }
+
+    const orderBy = pagination.orderBy ?? { createdAt: 'desc' };
     const [items, total] = await Promise.all([
       this.prisma.pet.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        orderBy,
+        skip: pagination.skip,
+        take: pagination.take,
       }),
       this.prisma.pet.count({ where }),
     ]);
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+
+    return paginatedResponse(items, total, pagination.page, pagination.pageSize);
   }
 }

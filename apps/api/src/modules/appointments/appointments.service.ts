@@ -105,28 +105,13 @@ export class AppointmentsService {
   }
 
   async findAll(tenantId: string, filters: ListAppointmentsDto) {
-    // Backward compatibility: se não tem paginação, retorna array
-    if (filters.page === undefined && filters.pageSize === undefined && filters.sort === undefined) {
-      return this.repository.findByTenant(tenantId, filters);
-    }
-
-    // Paginação
     const { skip, take, orderBy, page, pageSize } = filters.toPrisma();
     const [data, total] = await Promise.all([
       this.repository.findByTenantPaginated(tenantId, filters, skip, take, orderBy),
       this.repository.count(tenantId, filters),
     ]);
 
-    const paginated = paginatedResponse(data, total, page, pageSize);
-    // Retrocompatibilidade: expõe campos no topo além do meta
-    return {
-      data: paginated.data,
-      total: paginated.meta.total,
-      page: paginated.meta.page,
-      pageSize: paginated.meta.pageSize,
-      totalPages: paginated.meta.totalPages,
-      meta: paginated.meta,
-    };
+    return paginatedResponse(data, total, page, pageSize);
   }
 
   async findOne(id: string, tenantId: string) {

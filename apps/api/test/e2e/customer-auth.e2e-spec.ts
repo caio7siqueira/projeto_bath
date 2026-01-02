@@ -2,6 +2,7 @@ import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
 import { InMemorySmsProvider } from './support/in-memory-sms';
+import { expectData, expectError } from './support/http-assertions';
 
 describe('Customer OTP E2E', () => {
   let stopEnv: () => Promise<void>;
@@ -38,9 +39,9 @@ describe('Customer OTP E2E', () => {
       .post('/v1/customer-auth/verify-otp')
       .send({ phone, tenantSlug, code })
       .expect(200);
-
-    expect(verifyRes.body.accessToken).toBeDefined();
-    expect(verifyRes.body.refreshToken).toBeDefined();
+    const tokens = expectData(verifyRes);
+    expect(tokens.accessToken).toBeDefined();
+    expect(tokens.refreshToken).toBeDefined();
   });
 
   it('verify-otp fails 5x then lockout', async () => {
@@ -53,15 +54,17 @@ describe('Customer OTP E2E', () => {
       .expect(200);
 
     for (let i = 0; i < 5; i++) {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/v1/customer-auth/verify-otp')
         .send({ phone, tenantSlug, code: '000000' })
         .expect(400);
+      expectError(res, 'ERR_BAD_REQUEST');
     }
 
-    await request(app.getHttpServer())
+    const lockoutRes = await request(app.getHttpServer())
       .post('/v1/customer-auth/verify-otp')
       .send({ phone, tenantSlug, code: '000000' })
       .expect(400);
+    expectError(lockoutRes, 'ERR_BAD_REQUEST');
   });
 });

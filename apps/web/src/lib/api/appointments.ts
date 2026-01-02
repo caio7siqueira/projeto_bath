@@ -1,8 +1,13 @@
+import {
+  AppointmentsService,
+  type CreateAppointmentDto as ContractsCreateAppointmentDto,
+  type UpdateAppointmentDto as ContractsUpdateAppointmentDto,
+} from '@efizion/contracts';
+import { safeSdkCall } from './errors';
+import { unwrapCollection, unwrapData } from './sdk';
 
-
-import { apiFetch } from '../api';
-import { getAuthToken } from './client';
-import { getApiUrl } from './getApiUrl';
+export type CreateAppointmentDto = ContractsCreateAppointmentDto;
+export type UpdateAppointmentDto = ContractsUpdateAppointmentDto;
 
 export type AppointmentStatus = 'SCHEDULED' | 'CANCELLED' | 'DONE';
 
@@ -22,75 +27,69 @@ export interface Appointment {
   recurrenceSeriesId?: string | null;
 }
 
-export interface CreateAppointmentDto {
-  customerId: string;
-  locationId: string;
-  petId?: string;
-  serviceId?: string;
-  startsAt: string; // ISO 8601
-  endsAt: string;   // ISO 8601
-  notes?: string;
-}
-
-export interface UpdateAppointmentDto {
-  startsAt?: string;
-  endsAt?: string;
-  notes?: string;
-  status?: AppointmentStatus;
-}
-
 export interface ListAppointmentsQuery {
   locationId?: string;
   customerId?: string;
   from?: string; // ISO 8601
   to?: string;   // ISO 8601
   status?: AppointmentStatus;
+  page?: number;
+  pageSize?: number;
+  sort?: string;
 }
 
-
 export async function listAppointments(filters?: ListAppointmentsQuery): Promise<Appointment[]> {
-  const search = new URLSearchParams();
-  if (filters?.locationId) search.set('locationId', filters.locationId);
-  if (filters?.customerId) search.set('customerId', filters.customerId);
-  if (filters?.from) search.set('from', filters.from);
-  if (filters?.to) search.set('to', filters.to);
-  if (filters?.status) search.set('status', filters.status);
-  const qs = search.toString();
-  return apiFetch(`/appointments${qs ? `?${qs}` : ''}`, {
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-  });
+  const response = await safeSdkCall(
+    AppointmentsService.appointmentsControllerFindAll({
+      locationId: filters?.locationId,
+      customerId: filters?.customerId,
+      from: filters?.from,
+      to: filters?.to,
+      status: filters?.status,
+      page: filters?.page,
+      pageSize: filters?.pageSize,
+      sort: filters?.sort,
+    }),
+    'Não foi possível carregar os agendamentos.',
+  );
+  const { data } = unwrapCollection<Appointment>(response as any);
+  return data;
 }
 
 
 export async function fetchAppointment(id: string): Promise<Appointment> {
-  return apiFetch(`/appointments/${id}`, {
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-  });
+  const response = await safeSdkCall(
+    AppointmentsService.appointmentsControllerFindOne({ id }),
+    'Não encontramos o agendamento solicitado.',
+  );
+  return unwrapData<Appointment>(response as any);
 }
 
 
 export async function createAppointment(dto: CreateAppointmentDto): Promise<Appointment> {
-  const url = '/appointments';
-  console.log('[createAppointment] POST', getApiUrl(url), dto);
-  const response = await apiFetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-    body: JSON.stringify(dto),
-  });
-  console.log('[createAppointment] Resposta', response);
-  return response;
+  const response = await safeSdkCall(
+    AppointmentsService.appointmentsControllerCreate({
+      requestBody: dto,
+    }),
+    'Não foi possível criar o agendamento.',
+  );
+  return unwrapData<Appointment>(response as any);
 }
 
 export async function updateAppointment(id: string, dto: UpdateAppointmentDto): Promise<Appointment> {
-  return apiFetch(`/appointments/${id}`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-    body: JSON.stringify(dto),
-  });
+  const response = await safeSdkCall(
+    AppointmentsService.appointmentsControllerUpdate({
+      id,
+      requestBody: dto,
+    }),
+    'Não foi possível atualizar o agendamento.',
+  );
+  return unwrapData<Appointment>(response as any);
 }
 export async function cancelAppointment(id: string): Promise<Appointment> {
-  return apiFetch(`/appointments/${id}/cancel`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-  });
+  const response = await safeSdkCall(
+    AppointmentsService.appointmentsControllerCancel({ id }),
+    'Não foi possível cancelar o agendamento.',
+  );
+  return unwrapData<Appointment>(response as any);
 }

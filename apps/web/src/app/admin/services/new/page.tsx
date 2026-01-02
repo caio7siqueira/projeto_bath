@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -9,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardHeader } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormField } from '@/components/FormField';
+import { ErrorBanner } from '@/components/feedback/VisualStates';
+import { createFieldErrorMap, normalizeApiError } from '@/lib/api/errors';
 import { useServices } from '@/lib/hooks';
 
 const serviceSchema = z.object({
@@ -23,13 +24,14 @@ type ServiceFormData = z.infer<typeof serviceSchema>;
 export default function NewServicePage() {
   const router = useRouter();
   const { createNewService } = useServices();
-  const [error, setError] = useState<string | null>(null);
+  const [errorBanner, setErrorBanner] = useState<{ title?: string; message: string; details?: string[] } | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setError: setFormError,
   } = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
     defaultValues: {
@@ -41,7 +43,7 @@ export default function NewServicePage() {
   });
 
   const onSubmit = async (data: ServiceFormData) => {
-    setError(null);
+    setErrorBanner(null);
     setSuccess(null);
     try {
       await createNewService({
@@ -53,26 +55,55 @@ export default function NewServicePage() {
       setSuccess('Serviço criado com sucesso!');
       setTimeout(() => router.push('/admin/services'), 800);
     } catch (err: any) {
-      const message = err?.message || 'Erro ao criar serviço';
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível criar o serviço.');
+      const nonFieldMessages = parsed.details
+        .filter((detail) => !detail.field)
+        .map((detail) => detail.message);
+      setErrorBanner({
+        title: parsed.title,
+        message: parsed.message,
+        details: nonFieldMessages.length ? nonFieldMessages : undefined,
+      });
+      const fieldErrors = createFieldErrorMap(parsed.details);
+      Object.entries(fieldErrors).forEach(([field, message]) => {
+        setFormError(field as keyof ServiceFormData, { type: 'server', message });
+      });
+    }
+  };
+
+  const handleGoBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/admin/services');
     }
   };
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="space-y-2">
           <h1 className="text-3xl font-bold text-gray-900">Novo Serviço</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="text-gray-600">
             Cadastre banhos, tosas ou consultas para usar nos agendamentos.
           </p>
+          <p className="text-xs text-gray-500 italic">
+            Registro da experiência: mantenha o fluxo com o botão &ldquo;Voltar&rdquo; sem perder campos preenchidos.
+          </p>
         </div>
-        <Link href="/admin/services">
-          <Button variant="secondary">Voltar</Button>
-        </Link>
+        <Button variant="secondary" type="button" onClick={handleGoBack}>
+          Voltar
+        </Button>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-4 text-red-800">{error}</div>}
+      {errorBanner && (
+        <ErrorBanner
+          title={errorBanner.title}
+          message={errorBanner.message}
+          details={errorBanner.details}
+          scenario="services-create-validation"
+        />
+      )}
       {success && <div className="rounded-lg bg-green-50 p-4 text-green-800">{success}</div>}
 
       <Card>
@@ -112,8 +143,8 @@ export default function NewServicePage() {
             <Button type="submit" isLoading={isSubmitting}>
               Criar Serviço
             </Button>
-            <Button type="button" variant="secondary" onClick={() => router.push('/admin/services')}>
-              Cancelar
+            <Button type="button" variant="secondary" onClick={handleGoBack}>
+              Voltar
             </Button>
           </div>
         </form>

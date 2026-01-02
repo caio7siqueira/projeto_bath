@@ -1,9 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/Button';
+import { ErrorBanner } from '@/components/feedback/VisualStates';
+import { apiFetch } from '@/lib/api';
+import { createFieldErrorMap, normalizeApiError } from '@/lib/api/errors';
+import type { NormalizedApiError } from '@/lib/api/errors';
 import { useCustomers, usePets, useLocations, useServices, useAppointments } from '@/lib/hooks';
 import { appointmentSchema, AppointmentFormData } from '@/lib/schemas';
 
@@ -11,6 +16,14 @@ export default function NewAppointmentPage() {
   // =============================
   // Hooks e variáveis SEMPRE antes do return!
   // =============================
+
+  type ExtendedAppointmentForm = AppointmentFormData & {
+    recurrence: boolean;
+    recurrenceRule: string;
+    recurrenceInterval: number;
+    recurrenceEndDate: string;
+  };
+  const router = useRouter();
   const { customers, isLoading: customersLoading, fetchCustomers, error: customersError } = useCustomers();
   const { pets, isLoading: petsLoading, fetchPets, error: petsError } = usePets();
   const { locations, isLoading: locationsLoading, fetchLocations, error: locationsError } = useLocations();
@@ -39,12 +52,8 @@ export default function NewAppointmentPage() {
     watch,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<AppointmentFormData & {
-    recurrence: boolean;
-    recurrenceRule: string;
-    recurrenceInterval: number;
-    recurrenceEndDate: string;
-  }>({
+    setError: setFormError,
+  } = useForm<ExtendedAppointmentForm>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       customerId: '',
@@ -77,6 +86,42 @@ export default function NewAppointmentPage() {
   const recurrenceRule = watch('recurrenceRule');
   const selectedServiceId = watch('serviceId');
   const startsAt = watch('startsAt');
+  const navigateToAppointments = () => router.push('/admin/appointments');
+  const handleGoBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      navigateToAppointments();
+    }
+  };
+
+  const applyServerFieldErrors = (details: NormalizedApiError['details']) => {
+    const fieldErrors = createFieldErrorMap(details);
+    Object.entries(fieldErrors).forEach(([field, message]) => {
+      setFormError(field as keyof ExtendedAppointmentForm, { type: 'server', message });
+    });
+  };
+
+  const extractConflictingAppointments = (error: NormalizedApiError): any[] | undefined => {
+    const untypedContext =
+      error.context?.conflictingAppointments ??
+      (typeof error.raw === 'object' && error.raw && 'conflictingAppointments' in (error.raw as Record<string, unknown>)
+        ? (error.raw as Record<string, unknown>).conflictingAppointments
+        : undefined);
+    return Array.isArray(untypedContext) && untypedContext.length ? (untypedContext as any[]) : undefined;
+  };
+
+  const presentBackendError = (error: NormalizedApiError, overrideMessage?: string) => {
+    const nonFieldMessages = error.details
+      .filter((detail) => !detail.field)
+      .map((detail) => detail.message);
+    setActionError({
+      title: error.title,
+      message: overrideMessage ?? error.message,
+      details: nonFieldMessages.length ? nonFieldMessages : undefined,
+    });
+    applyServerFieldErrors(error.details);
+  };
 
   // Preenche automaticamente o campo de término ao selecionar serviço
   useEffect(() => {
@@ -91,7 +136,7 @@ export default function NewAppointmentPage() {
       }
     }
   }, [selectedServiceId, startsAt, services, setValue]);
-  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState<{ title?: string; message: string; details?: string[] } | null>(null);
   const [conflictingAppointments, setConflictingAppointments] = useState<any[]>([]);
   const [success, setSuccess] = useState('');
   const [dateError, setDateError] = useState('');
@@ -108,7 +153,7 @@ export default function NewAppointmentPage() {
   const watched = watch();
 
   const onSubmit = async (data: any) => {
-    setError('');
+    setActionError(null);
     setSuccess('');
     setDateError('');
     setConflictingAppointments([]);
@@ -116,19 +161,19 @@ export default function NewAppointmentPage() {
     console.log('[Novo Agendamento] Dados enviados:', data);
     // Validação dos campos obrigatórios
     if (!data.customerId) {
-      setError('Selecione um cliente.');
+      setActionError({ title: 'Campos obrigatórios', message: 'Selecione um cliente.' });
       return;
     }
     if (!data.petId) {
-      setError('Selecione um pet.');
+      setActionError({ title: 'Campos obrigatórios', message: 'Selecione um pet.' });
       return;
     }
     if (!data.serviceId) {
-      setError('Selecione um serviço.');
+      setActionError({ title: 'Campos obrigatórios', message: 'Selecione um serviço.' });
       return;
     }
     if (!data.locationId) {
-      setError('Selecione um local.');
+      setActionError({ title: 'Campos obrigatórios', message: 'Selecione um local.' });
       return;
     }
     if (!data.startsAt || !data.endsAt) {
@@ -142,13 +187,10 @@ export default function NewAppointmentPage() {
     // Criação direta do agendamento
     try {
       setSuccess('');
-      setError('');
-      let result;
+      setActionError(null);
       if (data.recurrence) {
-        // ...existing code...
-        result = await fetch('/v1/recurrence-series', {
+        await apiFetch('/recurrence-series', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             rule: data.recurrenceRule,
             interval: data.recurrenceRule === 'CUSTOM_INTERVAL' ? Number(data.recurrenceInterval) : undefined,
@@ -160,50 +202,61 @@ export default function NewAppointmentPage() {
             serviceId: data.serviceId,
           }),
         });
-        // ...existing code...
       } else {
-        // ...existing code...
+        let result;
         try {
           result = await createNewAppointment(data);
-        } catch (err: any) {
-          // Tenta extrair conflitos do erro
-          if (err && err.status === 409 && err.conflictingAppointments) {
-            setConflictingAppointments(err.conflictingAppointments);
-            setError('Já existe agendamento conflitante neste horário/local. Veja detalhes abaixo.');
+        } catch (err) {
+          const parsed = normalizeApiError(err, 'Não foi possível criar o agendamento.');
+          const conflicts = extractConflictingAppointments(parsed);
+          if (parsed.status === 409 && conflicts) {
+            setConflictingAppointments(conflicts);
+            setActionError({
+              title: parsed.title,
+              message: 'Já existe agendamento conflitante neste horário/local.',
+              details: ['Ajuste o horário, local ou serviço para continuar.'],
+            });
             return;
           }
-          setError(err.message ? `Erro ao criar agendamento: ${err.message}` : JSON.stringify(err));
+          presentBackendError(parsed);
           return;
         }
-        // ...existing code...
+
         if (!result || !result.id) {
-          setError('O backend não retornou o ID do agendamento. Verifique a API.');
+          setActionError({
+            title: 'Resposta inesperada',
+            message: 'O backend não retornou o ID do agendamento. Verifique a API.',
+          });
           return;
         }
       }
       setSuccess('Agendamento criado com sucesso! Redirecionando...');
       setTimeout(() => {
-        window.location.href = '/admin/appointments';
+        navigateToAppointments();
       }, 1200);
-    } catch (err: any) {
-      // Tenta extrair conflitos do erro (recorrente ou fallback)
-      if (err && err.status === 409 && err.conflictingAppointments) {
-        setConflictingAppointments(err.conflictingAppointments);
-        setError('Já existe agendamento conflitante neste horário/local. Veja detalhes abaixo.');
+    } catch (err) {
+      const parsed = normalizeApiError(err, 'Não foi possível criar o agendamento.');
+      const conflicts = extractConflictingAppointments(parsed);
+      if (parsed.status === 409 && conflicts) {
+        setConflictingAppointments(conflicts);
+        setActionError({
+          title: parsed.title,
+          message: 'Já existe agendamento conflitante neste horário/local.',
+          details: ['Ajuste o horário, local ou serviço para continuar.'],
+        });
         return;
       }
-      setError(err.message ? `Erro ao criar agendamento: ${err.message}` : JSON.stringify(err));
+      presentBackendError(parsed);
     }
   };
 
   const handleConfirm = async (data: any) => {
-    setError('');
+    setActionError(null);
     setSuccess('');
     try {
       if (data.recurrence) {
-        await fetch('/v1/recurrence-series', {
+        await apiFetch('/recurrence-series', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             rule: data.recurrenceRule,
             interval: data.recurrenceRule === 'CUSTOM_INTERVAL' ? Number(data.recurrenceInterval) : undefined,
@@ -220,10 +273,21 @@ export default function NewAppointmentPage() {
       }
       setSuccess('Agendamento criado com sucesso! Redirecionando...');
       setTimeout(() => {
-        window.location.href = '/admin/appointments';
+        navigateToAppointments();
       }, 1200);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar agendamento');
+    } catch (err) {
+      const parsed = normalizeApiError(err, 'Não foi possível criar o agendamento.');
+      const conflicts = extractConflictingAppointments(parsed);
+      if (parsed.status === 409 && conflicts) {
+        setConflictingAppointments(conflicts);
+        setActionError({
+          title: parsed.title,
+          message: 'Já existe agendamento conflitante neste horário/local.',
+          details: ['Ajuste o horário, local ou serviço para continuar.'],
+        });
+        return;
+      }
+      presentBackendError(parsed);
     }
   };
   console.log('[DEBUG] errors', errors);
@@ -252,7 +316,12 @@ export default function NewAppointmentPage() {
         </div>
       )}
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto p-6 md:p-10 bg-white rounded-lg shadow space-y-8">
-        <h2 className="text-2xl font-bold mb-4">Novo Agendamento</h2>
+        <div className="mb-2 space-y-1">
+          <h2 className="text-2xl font-bold">Novo Agendamento</h2>
+          <p className="text-xs text-gray-500 italic">
+            Registro da experiência: o botão &ldquo;Voltar&rdquo; leva você ao contexto anterior sem recarregar a agenda.
+          </p>
+        </div>
         {/* Agrupamento de campos: Cliente/Pet, Serviço/Local, Datas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Bloco Cliente/Pet */}
@@ -384,7 +453,14 @@ export default function NewAppointmentPage() {
         </div>
 
         {/* Mensagens de erro e botão de ação */}
-        {error && <div className="text-red-600 text-center">{error}</div>}
+        {actionError && (
+          <ErrorBanner
+            scenario="appointments:create"
+            title={actionError.title}
+            message={actionError.message}
+            details={actionError.details}
+          />
+        )}
         {conflictingAppointments.length > 0 && (
           <div className="my-4 p-4 border-2 border-red-400 bg-red-50 rounded-lg">
             <div className="font-semibold text-red-700 mb-2">Agendamentos em conflito:</div>
@@ -423,7 +499,15 @@ export default function NewAppointmentPage() {
           UX: O botão de salvar fica destacado, alinhado à direita em telas médias+ e centralizado no mobile.
           O botão é desabilitado se não houver opções obrigatórias disponíveis.
         */}
-        <div className="flex flex-col md:flex-row md:justify-end mt-6">
+        <div className="flex flex-col md:flex-row md:justify-end mt-6 gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full md:w-auto"
+            onClick={handleGoBack}
+          >
+            Voltar
+          </Button>
           <Button
             type="submit"
             onClick={() => { console.log('[Button] Cliquei no botão!'); }}

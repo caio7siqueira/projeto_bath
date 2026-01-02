@@ -2,6 +2,7 @@ import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
 import { PrismaClient } from '@prisma/client';
+import { expectData, expectList, expectError } from './support/http-assertions';
 
 describe('Tenants & Locations E2E', () => {
   let stopEnv: () => Promise<void>;
@@ -34,15 +35,15 @@ describe('Tenants & Locations E2E', () => {
         tenantSlug: 'efizion-bath-demo',
       });
 
-    if (registerRes.status !== 201 || !registerRes.body?.accessToken) {
+    if (registerRes.status !== 201) {
       // If already exists, perform login to obtain token
       const loginRes = await request(app.getHttpServer())
         .post('/v1/auth/login')
         .send({ email: adminEmail, password: adminPassword, tenantSlug: 'efizion-bath-demo' })
         .expect(200);
-      adminToken = loginRes.body.accessToken;
+      adminToken = expectData(loginRes).accessToken;
     } else {
-      adminToken = registerRes.body.accessToken;
+      adminToken = expectData(registerRes).accessToken;
     }
   });
 
@@ -63,10 +64,11 @@ describe('Tenants & Locations E2E', () => {
         })
         .expect(201);
 
-      expect(res.body).toHaveProperty('id');
-      expect(res.body.name).toBe('Petshop Central');
-      expect(res.body.slug).toBe('petshop-central');
-      tenantId = res.body.id;
+      const tenant = expectData(res);
+      expect(tenant).toHaveProperty('id');
+      expect(tenant.name).toBe('Petshop Central');
+      expect(tenant.slug).toBe('petshop-central');
+      tenantId = tenant.id;
     });
 
     it('deve rejeitar slug duplicado', async () => {
@@ -79,8 +81,8 @@ describe('Tenants & Locations E2E', () => {
         })
         .expect(409);
 
-      expect(res.body).toHaveProperty('statusCode', 409);
-      expect(res.body).toHaveProperty('message');
+      const error = expectError(res, 'ERR_DUPLICATE_VALUE');
+      expect(error.message).toContain('registro');
     });
   });
 
@@ -91,8 +93,8 @@ describe('Tenants & Locations E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBeGreaterThan(0);
+      const tenants = expectList(res);
+      expect(tenants.length).toBeGreaterThan(0);
     });
   });
 
@@ -103,15 +105,17 @@ describe('Tenants & Locations E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(res.body.id).toBe(tenantId);
-      expect(res.body.slug).toBe('petshop-central');
+      const tenant = expectData(res);
+      expect(tenant.id).toBe(tenantId);
+      expect(tenant.slug).toBe('petshop-central');
     });
 
     it('deve retornar 404 para ID inválido', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get('/v1/tenants/invalid-id')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
+      expectError(res, 'ERR_NOT_FOUND');
     });
   });
 
@@ -125,7 +129,7 @@ describe('Tenants & Locations E2E', () => {
         })
         .expect(200);
 
-      expect(res.body.name).toBe('Petshop Central Updated');
+      expect(expectData(res).name).toBe('Petshop Central Updated');
     });
 
     it('deve desativar tenant', async () => {
@@ -137,7 +141,7 @@ describe('Tenants & Locations E2E', () => {
         })
         .expect(200);
 
-      expect(res.body.isActive).toBe(false);
+      expect(expectData(res).isActive).toBe(false);
     });
   });
 
@@ -161,9 +165,10 @@ describe('Tenants & Locations E2E', () => {
           name: 'Staff User',
           role: 'STAFF',
           tenantSlug: 'petshop-central',
-        });
+        })
+        .expect(201);
 
-      const staffToken = staffRes.body.accessToken;
+      const staffToken = expectData(staffRes).accessToken;
 
       const res = await request(app.getHttpServer())
         .post('/v1/locations')
@@ -172,10 +177,10 @@ describe('Tenants & Locations E2E', () => {
           name: 'Sala de Banho A',
         })
         .expect(201);
-
-      expect(res.body).toHaveProperty('id');
-      expect(res.body.name).toBe('Sala de Banho A');
-      expect(res.body.tenantId).toBeDefined();
+      const location = expectData(res);
+      expect(location).toHaveProperty('id');
+      expect(location.name).toBe('Sala de Banho A');
+      expect(location.tenantId).toBeDefined();
     });
   });
 
@@ -189,16 +194,17 @@ describe('Tenants & Locations E2E', () => {
           name: 'Staff List',
           role: 'STAFF',
           tenantSlug: 'petshop-central',
-        });
+        })
+        .expect(201);
 
-      const staffToken = staffRes.body.accessToken;
+      const staffToken = expectData(staffRes).accessToken;
 
       const res = await request(app.getHttpServer())
         .get('/v1/locations')
         .set('Authorization', `Bearer ${staffToken}`)
         .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
+      const locations = expectList(res);
+      expect(Array.isArray(locations)).toBe(true);
     });
   });
 
@@ -213,9 +219,10 @@ describe('Tenants & Locations E2E', () => {
           name: 'Staff A',
           role: 'STAFF',
           tenantSlug: 'petshop-central',
-        });
+        })
+        .expect(201);
 
-      const staffAToken = staffARes.body.accessToken;
+      const staffAToken = expectData(staffARes).accessToken;
 
       // Criar location em tenant A
       const locRes = await request(app.getHttpServer())
@@ -224,7 +231,7 @@ describe('Tenants & Locations E2E', () => {
         .send({ name: 'Sala Protegida' })
         .expect(201);
 
-      const locationId = locRes.body.id;
+      const locationId = expectData(locRes).id;
 
       // Staff do tenant B
       const staffBRes = await request(app.getHttpServer())
@@ -235,15 +242,17 @@ describe('Tenants & Locations E2E', () => {
           name: 'Staff B',
           role: 'STAFF',
           tenantSlug: 'efizion-bath-demo',
-        });
+        })
+        .expect(201);
 
-      const staffBToken = staffBRes.body.accessToken;
+      const staffBToken = expectData(staffBRes).accessToken;
 
       // Staff B não consegue acessar location de A
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/v1/locations/${locationId}`)
         .set('Authorization', `Bearer ${staffBToken}`)
         .expect(404);
+      expectError(res, 'ERR_NOT_FOUND');
     });
   });
 });

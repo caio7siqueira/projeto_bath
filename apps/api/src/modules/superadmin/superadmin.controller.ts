@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { SuperadminService } from './superadmin.service';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('superadmin')
 @ApiBearerAuth()
@@ -11,8 +12,8 @@ export class SuperadminController {
   constructor(private readonly service: SuperadminService) {}
 
   @Get('tenants')
-  async listTenants() {
-    return this.service.listTenants();
+  async listTenants(@Query() query: PaginationQueryDto) {
+    return this.service.listTenants(query);
   }
 
   @Get('tenants/:id')
@@ -31,7 +32,7 @@ export class SuperadminController {
   }
 
   @Get('audit-logs')
-  async getAuditLogs() {
-    return this.service.getAuditLogs();
+  async getAuditLogs(@Query() query: PaginationQueryDto) {
+    return this.service.getAuditLogs(query);
   }
 }

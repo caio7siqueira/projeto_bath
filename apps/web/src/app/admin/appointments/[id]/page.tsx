@@ -7,8 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { FormField, SelectField } from '@/components/FormField';
+import { ErrorBanner } from '@/components/feedback/VisualStates';
 import { useAppointments, useCustomers, usePets, useLocations } from '@/lib/hooks';
 import { appointmentSchema, type AppointmentFormData } from '@/lib/schemas';
+import { normalizeApiError } from '@/lib/api/errors';
+import { cancelAppointmentSeries } from '@/lib/api/appointments-actions';
 
 function toDatetimeLocal(iso: string) {
   const date = new Date(iso);
@@ -28,6 +31,14 @@ export default function AppointmentFormPage() {
   const params = useParams();
   const appointmentId = params?.id as string | undefined;
   const isEditing = !!appointmentId && appointmentId !== 'new';
+  const navigateToAppointments = () => router.push('/admin/appointments');
+  const handleGoBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      navigateToAppointments();
+    }
+  };
 
   const {
     fetchAppointmentById,
@@ -60,9 +71,10 @@ export default function AppointmentFormPage() {
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [bannerError, setBannerError] = useState<{ title?: string; message: string; details?: string[] } | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isSeriesCanceling, setIsSeriesCanceling] = useState(false);
   const [appointment, setAppointment] = useState<any>(null);
 
   const selectedCustomerId = watch('customerId');
@@ -80,6 +92,7 @@ export default function AppointmentFormPage() {
     const loadAppointment = async () => {
       if (!isEditing || !appointmentId) return;
       try {
+        setBannerError(null);
         const appointment = await fetchAppointmentById(appointmentId);
         setAppointment(appointment);
         reset({
@@ -96,8 +109,8 @@ export default function AppointmentFormPage() {
           fetchPets(appointment.customerId, { append: true });
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Erro ao carregar agendamento';
-        setError(message);
+        const parsed = normalizeApiError(err, 'Não foi possível carregar o agendamento.');
+        setBannerError({ title: parsed.title, message: parsed.message });
       }
     };
 
@@ -113,7 +126,7 @@ export default function AppointmentFormPage() {
 
   const onSubmit = async (data: AppointmentFormData) => {
     setIsSaving(true);
-    setError(null);
+    setBannerError(null);
 
     try {
       const payload = {
@@ -137,10 +150,15 @@ export default function AppointmentFormPage() {
         });
       }
 
-      router.push('/admin/appointments');
+      navigateToAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao salvar agendamento';
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível salvar o agendamento.');
+      const details = parsed.details.filter((detail) => !detail.field).map((detail) => detail.message);
+      setBannerError({
+        title: parsed.title,
+        message: parsed.message,
+        details: details.length ? details : undefined,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -149,14 +167,30 @@ export default function AppointmentFormPage() {
   const handleCancel = async () => {
     if (!appointmentId) return;
     setIsCanceling(true);
+    setBannerError(null);
     try {
       await cancelExistingAppointment(appointmentId);
-      router.push('/admin/appointments');
+      navigateToAppointments();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao cancelar agendamento';
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível cancelar o agendamento.');
+      setBannerError({ title: parsed.title, message: parsed.message });
     } finally {
       setIsCanceling(false);
+    }
+  };
+
+  const handleCancelSeries = async () => {
+    if (!appointmentId) return;
+    setIsSeriesCanceling(true);
+    setBannerError(null);
+    try {
+      await cancelAppointmentSeries(appointmentId);
+      navigateToAppointments();
+    } catch (err) {
+      const parsed = normalizeApiError(err, 'Não foi possível cancelar os próximos horários da série.');
+      setBannerError({ title: parsed.title, message: parsed.message });
+    } finally {
+      setIsSeriesCanceling(false);
     }
   };
 
@@ -164,15 +198,25 @@ export default function AppointmentFormPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
-      <div className="mb-8">
+      <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">
           {isEditing ? 'Editar Agendamento' : 'Novo Agendamento'}
         </h1>
-        <p className="mt-2 text-gray-600">Preencha as informações do agendamento.</p>
+        <p className="text-gray-600">Preencha as informações do agendamento.</p>
+        <p className="text-xs text-gray-500 italic">
+          Navegação descrita: o retorno respeita seu histórico e mantém alterações locais intactas.
+        </p>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
+      {bannerError && (
+        <div className="mb-6">
+          <ErrorBanner
+            scenario="appointments-edit"
+            title={bannerError.title}
+            message={bannerError.message}
+            details={bannerError.details}
+          />
+        </div>
       )}
 
       <Card>
@@ -288,7 +332,7 @@ export default function AppointmentFormPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => router.push('/admin/appointments')}
+              onClick={handleGoBack}
             >
               Voltar
             </Button>
@@ -306,13 +350,11 @@ export default function AppointmentFormPage() {
               <Button
                 type="button"
                 variant="danger"
+                isLoading={isSeriesCanceling}
+                disabled={isSeriesCanceling}
                 onClick={() => {
                   if (window.confirm('Deseja cancelar toda a série recorrente? Isso afetará todos os agendamentos futuros.')) {
-                    fetch(`/v1/appointments/${appointmentId}/cancel`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ scope: 'SERIES' }),
-                    }).then(() => router.push('/admin/appointments'));
+                    handleCancelSeries();
                   }
                 }}
               >

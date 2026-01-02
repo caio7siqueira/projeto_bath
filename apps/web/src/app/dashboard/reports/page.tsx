@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { fetchReportsSummary, fetchReportsTimeseries, ReportsSummary, ReportsTimeseriesItem } from '@/lib/api/reports';
 import { getAuthToken } from '@/lib/api/client';
+import { normalizeApiError } from '@/lib/api/errors';
 
 function formatPeriod(period: string) {
   return new Date(period).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
@@ -37,8 +38,9 @@ export default function ReportsPage() {
         setLoading(false);
       })
       .catch((err) => {
+        const parsed = normalizeApiError(err, 'Não conseguimos carregar os relatórios.');
         console.error('Erro ao buscar relatórios:', err);
-        setError(err.message || 'Falha ao buscar dados');
+        setError(parsed.message);
         setLoading(false);
       });
   }, []);

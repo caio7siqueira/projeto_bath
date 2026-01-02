@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Param, Body, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query } from '@nestjs/common';
 import { SuperadminBillingService } from './superadmin-billing.service';
 // import { JwtSuperadminGuard } from '../../common/guards/jwt-superadmin.guard';
 // import { ModeLeituraInterceptor } from '../../../billing/mode-leitura.interceptor';
+import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 @Controller('v1/superadmin/billing/subscriptions')
 // @UseGuards(JwtSuperadminGuard)
@@ -10,8 +11,8 @@ export class SuperadminBillingController {
   constructor(private readonly service: SuperadminBillingService) {}
 
   @Get()
-  listSubscriptions() {
-    return this.service.listSubscriptions();
+  listSubscriptions(@Query() query: PaginationQueryDto) {
+    return this.service.listSubscriptions(query);
   }
 
   @Post(':id/suspend')

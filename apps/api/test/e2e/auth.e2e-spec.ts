@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
+import { expectData, expectError } from './support/http-assertions';
 
 describe('Internal Auth E2E', () => {
   let stopEnv: () => Promise<void>;
@@ -36,8 +37,7 @@ describe('Internal Auth E2E', () => {
       .post('/v1/auth/login')
       .send({ email, password: 'StrongPass123!', tenantSlug: 'efizion-bath-demo' })
       .expect(200);
-
-    const { accessToken, refreshToken } = loginRes.body;
+    const { accessToken, refreshToken } = expectData(loginRes);
 
     // protected ping
     await request(app.getHttpServer())
@@ -50,8 +50,7 @@ describe('Internal Auth E2E', () => {
       .post('/v1/auth/refresh')
       .send({ refreshToken })
       .expect(200);
-
-    expect(refreshRes.body.accessToken).toBeDefined();
+    expect(expectData(refreshRes).accessToken).toBeDefined();
 
     // logout (revoke refresh)
     await request(app.getHttpServer())
@@ -79,12 +78,12 @@ describe('Internal Auth E2E', () => {
       .post('/v1/auth/login')
       .send({ email, password: 'StrongPass123!' })
       .expect(200);
+    const token = expectData(loginRes).accessToken;
 
-    const token = loginRes.body.accessToken;
-
-    await request(app.getHttpServer())
+    const forbiddenRes = await request(app.getHttpServer())
       .get('/v1/protected/admin-only')
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
+    expectError(forbiddenRes, 'ERR_FORBIDDEN');
   });
 });

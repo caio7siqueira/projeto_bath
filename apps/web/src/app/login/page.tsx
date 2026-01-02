@@ -5,24 +5,29 @@ import { useAuth } from '@/lib/auth-context';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormField } from '@/components/FormField';
+import { ErrorBanner } from '@/components/feedback/VisualStates';
+import { createFieldErrorMap, normalizeApiError } from '@/lib/api/errors';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [bannerError, setBannerError] = useState<{ title?: string; message: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
+    setBannerError(null);
+    setFieldErrors({});
 
     try {
       await login({ email, password });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao fazer login';
-      setError(message);
+      const parsed = normalizeApiError(err, 'Não foi possível fazer login.');
+      setBannerError({ title: parsed.title, message: parsed.message });
+      setFieldErrors(createFieldErrorMap(parsed.details));
     } finally {
       setIsLoading(false);
     }
@@ -38,10 +43,12 @@ export default function LoginPage() {
 
         <Card>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
-                {error}
-              </div>
+            {bannerError && (
+              <ErrorBanner
+                title={bannerError.title}
+                message={bannerError.message}
+                scenario="login-invalid-credentials"
+              />
             )}
 
             <FormField
@@ -52,6 +59,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              error={fieldErrors.email}
             />
 
             <FormField
@@ -62,6 +70,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              error={fieldErrors.password}
             />
 
             <Button type="submit" isLoading={isLoading} className="w-full">

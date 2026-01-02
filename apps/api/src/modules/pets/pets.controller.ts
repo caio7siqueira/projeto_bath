@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -7,6 +7,8 @@ import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { PetsService } from './pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+import { ListPetsQueryDto } from './dto/list-pets.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 
 @ApiTags('pets')
@@ -22,17 +24,9 @@ export class PetsController {
   @ApiResponse({ status: 200, description: 'Lista paginada de pets' })
   async listAll(
     @TenantUser('tenantId') tenantId: string,
-    @Param() _params: any,
-    @Body() _body: any,
-    // Query params
-    @Param('page') page?: number,
-    @Param('pageSize') pageSize?: number,
-    @Param('q') q?: string,
+    @Query() query: ListPetsQueryDto,
   ) {
-    // Fallbacks
-    const pageNum = Number(page) > 0 ? Number(page) : 1;
-    const pageSizeNum = Number(pageSize) > 0 ? Math.min(Number(pageSize), 100) : 20;
-    return this.service.listAll(tenantId, { page: pageNum, pageSize: pageSizeNum, q });
+    return this.service.listAll(tenantId, query);
   }
 
   @Get('customers/:customerId/pets')
@@ -41,8 +35,9 @@ export class PetsController {
   async list(
     @TenantUser('tenantId') tenantId: string,
     @Param('customerId') customerId: string,
+    @Query() query: PaginationQueryDto,
   ) {
-    return this.service.listByCustomer(tenantId, customerId);
+    return this.service.listByCustomer(tenantId, customerId, query);
   }
 
   @Post('customers/:customerId/pets')

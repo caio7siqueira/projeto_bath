@@ -1,8 +1,15 @@
+import { BillingService, type UpsertBillingSubscriptionDto as ContractsUpsertBillingSubscriptionDto } from '@efizion/contracts';
+import { normalizeApiError, safeSdkCall } from './errors';
+import { unwrapData } from './sdk';
 
-import { apiFetch } from '../api';
-import { getAuthToken } from './client';
-
-export type BillingStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'INACTIVE';
+export type BillingStatus =
+  | 'TRIAL'
+  | 'ACTIVE'
+  | 'PAST_DUE'
+  | 'SUSPENDED'
+  | 'CANCELED'
+  | 'CANCELLED'
+  | 'INACTIVE';
 
 export interface BillingSubscription {
   id: string;
@@ -14,20 +21,23 @@ export interface BillingSubscription {
   trialEndsAt?: string;
 }
 
-export interface UpsertBillingSubscriptionDto {
+export type UpsertBillingSubscriptionDto = ContractsUpsertBillingSubscriptionDto & {
   plan: string;
   status: BillingStatus;
-}
+};
 
 
 export async function fetchBillingSubscription(): Promise<BillingSubscription | null> {
   try {
-    return await apiFetch('/admin/billing/subscription', {
-      headers: { Authorization: `Bearer ${getAuthToken()}` },
-    });
-  } catch (err: any) {
-    if (err && err.status === 404) return null;
-    throw new Error(`Falha ao carregar assinatura: ${err?.status || ''}`);
+    const response = await safeSdkCall(
+      BillingService.billingControllerGetCurrent(),
+      'Não conseguimos carregar sua assinatura.',
+    );
+    return unwrapData<BillingSubscription | null>(response as any);
+  } catch (error) {
+    const parsed = normalizeApiError(error, 'Não conseguimos carregar sua assinatura.');
+    if (parsed.status === 404) return null;
+    throw parsed;
   }
 }
 
@@ -35,9 +45,19 @@ export async function fetchBillingSubscription(): Promise<BillingSubscription | 
 export async function upsertBillingSubscription(
   dto: UpsertBillingSubscriptionDto,
 ): Promise<BillingSubscription> {
-  return apiFetch('/admin/billing/subscription', {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${getAuthToken()}` },
-    body: JSON.stringify(dto),
-  });
+  const response = await safeSdkCall(
+    BillingService.billingControllerUpsert({
+      requestBody: dto,
+    }),
+    'Não conseguimos atualizar sua assinatura.',
+  );
+  return unwrapData<BillingSubscription>(response as any);
+}
+
+export async function activateBillingPlan(plan: string) {
+  return upsertBillingSubscription({ plan, status: 'ACTIVE' });
+}
+
+export async function cancelBillingPlan(plan: string) {
+  return upsertBillingSubscription({ plan, status: 'CANCELED' });
 }

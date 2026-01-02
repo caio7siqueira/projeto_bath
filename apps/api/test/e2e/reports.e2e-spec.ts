@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { bootstrapApp } from './support/bootstrap-app';
 import { startEnv } from './support/test-env';
+import { expectData, expectList } from './support/http-assertions';
 
 /**
  * Reports E2E
@@ -41,9 +42,9 @@ describe('Reports (E2E)', () => {
         tenantSlug: 'efizion-bath-demo',
       })
       .expect(201);
-
-    adminToken = registerRes.body.accessToken;
-    tenantId = registerRes.body.user.tenantId;
+    const registerData = expectData(registerRes);
+    adminToken = registerData.accessToken;
+    tenantId = registerData.user.tenantId;
 
     // Cria location
     const locRes = await request(app.getHttpServer())
@@ -51,7 +52,7 @@ describe('Reports (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Sala Reports' })
       .expect(201);
-    locationId = locRes.body.id;
+    locationId = expectData(locRes).id;
 
     // Cria customer
     const custRes = await request(app.getHttpServer())
@@ -59,7 +60,7 @@ describe('Reports (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'John Reports', phone: `+55119${Date.now().toString().slice(-8)}` })
       .expect(201);
-    customerId = custRes.body.id;
+    customerId = expectData(custRes).id;
 
     base = Date.now() + 60 * 60 * 1000; // +1h
     todayStart = new Date(base);
@@ -83,8 +84,9 @@ describe('Reports (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ customerId, locationId, startsAt: tomorrowStart.toISOString(), endsAt: tomorrowEnd.toISOString() })
       .expect(201);
+    const a2Data = expectData(a2);
     await request(app.getHttpServer())
-      .patch(`/v1/appointments/${a2.body.id}`)
+      .patch(`/v1/appointments/${a2Data.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'DONE' })
       .expect(200);
@@ -95,8 +97,9 @@ describe('Reports (E2E)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ customerId, locationId, startsAt: new Date(base + 2 * 24 * 60 * 60 * 1000).toISOString(), endsAt: new Date(base + 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString() })
       .expect(201);
+    const a3Data = expectData(a3);
     await request(app.getHttpServer())
-      .post(`/v1/appointments/${a3.body.id}/cancel`)
+      .post(`/v1/appointments/${a3Data.id}/cancel`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
   });
@@ -117,8 +120,8 @@ describe('Reports (E2E)', () => {
       .get(`/v1/reports/appointments/summary?from=${from}&to=${to}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-
-    expect(res.body).toMatchObject({
+    const summary = expectData(res);
+    expect(summary).toMatchObject({
       total: 3,
       scheduled: 1,
       completed: 1,
@@ -136,9 +139,8 @@ describe('Reports (E2E)', () => {
       .get(`/v1/reports/appointments/timeseries?from=${from}&to=${to}&granularity=day`)
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-
-    expect(Array.isArray(res.body)).toBe(true);
-    const byPeriod = Object.fromEntries(res.body.map((item: any) => [item.period, item]));
+    const series = expectList(res);
+    const byPeriod = Object.fromEntries(series.map(item => [item.period, item]));
 
     expect(byPeriod[todayKey]).toMatchObject({ period: todayKey, scheduled: 1 });
     expect(byPeriod[tomorrowKey]).toMatchObject({ period: tomorrowKey, completed: 1 });

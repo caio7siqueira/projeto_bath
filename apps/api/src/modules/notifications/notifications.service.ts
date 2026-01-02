@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsQueueService } from './notifications.queue';
 import { normalizePhone } from '../../common/phone.util';
+import { ListNotificationJobsQueryDto } from './dto/list-notification-jobs.dto';
+import { paginatedResponse } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -119,6 +121,22 @@ export class NotificationsService {
     }
 
     return { cancelled: jobs.length };
+  }
+
+  async listJobs(tenantId: string, query?: ListNotificationJobsQueryDto) {
+    const pagination = (query ?? new ListNotificationJobsQueryDto()).toPrisma();
+    const where: any = { tenantId };
+    if (query?.status) {
+      where.status = query.status;
+    }
+
+    const orderBy = pagination.orderBy ?? { createdAt: 'desc' };
+    const [data, total] = await Promise.all([
+      (this.prisma as any).notificationJob.findMany({ where, orderBy, skip: pagination.skip, take: pagination.take }),
+      (this.prisma as any).notificationJob.count({ where }),
+    ]);
+
+    return paginatedResponse(data, total, pagination.page, pagination.pageSize);
   }
 
   async rescheduleAppointmentReminder(appointmentId: string) {

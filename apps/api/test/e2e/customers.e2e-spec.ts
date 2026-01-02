@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { startEnv } from './support/test-env';
 import { bootstrapApp } from './support/bootstrap-app';
+import { expectData, expectError, expectList, expectMeta } from './support/http-assertions';
 
 describe('Customers CRUD E2E', () => {
   let stopEnv: () => Promise<void>;
@@ -40,8 +41,7 @@ describe('Customers CRUD E2E', () => {
         tenantSlug: 'efizion-bath-demo'
       })
       .expect(200);
-
-    adminToken = loginRes.body.accessToken;
+    adminToken = expectData(loginRes).accessToken;
 
     // Create SUPER_ADMIN user for testing delete
     const superAdminEmail = `superadmin_${Date.now()}@example.com`;
@@ -64,8 +64,7 @@ describe('Customers CRUD E2E', () => {
         tenantSlug: 'efizion-bath-demo',
       })
       .expect(200);
-
-    superAdminToken = superAdminLoginRes.body.accessToken;
+    superAdminToken = expectData(superAdminLoginRes).accessToken;
 
     // Create second tenant and user for isolation testing
     const secondTenantRes = await request(app.getHttpServer())
@@ -77,8 +76,7 @@ describe('Customers CRUD E2E', () => {
         planType: 'FREE',
       })
       .expect(201);
-
-    const secondTenantSlug = secondTenantRes.body.slug;
+    const secondTenantSlug = expectData(secondTenantRes).slug;
 
     const secondAdminEmail = `admin2_${Date.now()}@example.com`;
     await request(app.getHttpServer())
@@ -100,8 +98,7 @@ describe('Customers CRUD E2E', () => {
         tenantSlug: secondTenantSlug
       })
       .expect(200);
-
-    secondTenantToken = secondLoginRes.body.accessToken;
+    secondTenantToken = expectData(secondLoginRes).accessToken;
   });
 
   afterAll(async () => {
@@ -125,7 +122,8 @@ describe('Customers CRUD E2E', () => {
         })
         .expect(201);
 
-      expect(res.body).toMatchObject({
+      const created = expectData(res);
+      expect(created).toMatchObject({
         name: 'John Doe',
         phone: '+5511999999999',
         email: 'john@example.com',
@@ -133,12 +131,12 @@ describe('Customers CRUD E2E', () => {
         optInGlobal: true,
         isActive: true,
       });
-      expect(res.body.id).toBeDefined();
-      customerId = res.body.id;
+      expect(created.id).toBeDefined();
+      customerId = created.id;
     });
 
     it('POST /v1/customers - reject duplicate phone', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/v1/customers')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
@@ -147,6 +145,7 @@ describe('Customers CRUD E2E', () => {
           email: 'jane@example.com',
         })
         .expect(409);
+      expectError(res, 'ERR_CONFLICT');
     });
 
     it('GET /v1/customers - list all customers', async () => {
@@ -155,9 +154,9 @@ describe('Customers CRUD E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.length).toBeGreaterThan(0);
-      expect(res.body.some((c: any) => c.id === customerId)).toBe(true);
+      const customers = expectList(res);
+      expect(customers.length).toBeGreaterThan(0);
+      expect(customers.some(c => c.id === customerId)).toBe(true);
     });
 
     it('GET /v1/customers?page=1&pageSize=10 - paginated list', async () => {
@@ -166,13 +165,12 @@ describe('Customers CRUD E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(res.body).toHaveProperty('data');
-      expect(res.body).toHaveProperty('meta');
-      expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.meta).toMatchObject({
+      const data = expectList(res);
+      expect(expectMeta(res)).toMatchObject({
         page: 1,
         pageSize: 10,
       });
+      expect(Array.isArray(data)).toBe(true);
     });
 
     it('GET /v1/customers?q=john - search by query', async () => {
@@ -181,8 +179,8 @@ describe('Customers CRUD E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.some((c: any) => c.name.toLowerCase().includes('john'))).toBe(true);
+      const items = expectList(res);
+      expect(items.some(c => c.name.toLowerCase().includes('john'))).toBe(true);
     });
 
     it('GET /v1/customers/:id - get single customer', async () => {
@@ -191,7 +189,8 @@ describe('Customers CRUD E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(res.body).toMatchObject({
+      const customer = expectData(res);
+      expect(customer).toMatchObject({
         id: customerId,
         name: 'John Doe',
         phone: '+5511999999999',
@@ -208,7 +207,8 @@ describe('Customers CRUD E2E', () => {
         })
         .expect(200);
 
-      expect(res.body).toMatchObject({
+      const updated = expectData(res);
+      expect(updated).toMatchObject({
         id: customerId,
         name: 'John Updated',
         email: 'john.updated@example.com',
@@ -221,23 +221,24 @@ describe('Customers CRUD E2E', () => {
         .delete(`/v1/customers/${customerId}`)
         .set('Authorization', `Bearer ${superAdminToken}`)
         .expect(200);
-
-      expect(res.body.message).toBeDefined();
+      const deletion = expectData(res);
+      expect(deletion.message).toBeDefined();
 
       // Verify it's gone from listing
       const listRes = await request(app.getHttpServer())
         .get('/v1/customers')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-
-      expect(listRes.body.some((c: any) => c.id === customerId)).toBe(false);
+      const remaining = expectList(listRes);
+      expect(remaining.some(c => c.id === customerId)).toBe(false);
     });
 
     it('GET /v1/customers/:id - 404 on deleted customer', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/v1/customers/${customerId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
+      expectError(res, 'ERR_NOT_FOUND');
     });
   });
 
@@ -254,30 +255,32 @@ describe('Customers CRUD E2E', () => {
           email: 'tenant1@example.com',
         })
         .expect(201);
-
-      tenant1CustomerId = res.body.id;
+      tenant1CustomerId = expectData(res).id;
     });
 
     it('Tenant 2 cannot access tenant 1 customer', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/v1/customers/${tenant1CustomerId}`)
         .set('Authorization', `Bearer ${secondTenantToken}`)
         .expect(404);
+      expectError(res, 'ERR_NOT_FOUND');
     });
 
     it('Tenant 2 cannot update tenant 1 customer', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .patch(`/v1/customers/${tenant1CustomerId}`)
         .set('Authorization', `Bearer ${secondTenantToken}`)
         .send({ name: 'Hacked' })
         .expect(404);
+      expectError(res, 'ERR_NOT_FOUND');
     });
 
     it('Tenant 2 cannot delete tenant 1 customer', async () => {
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .delete(`/v1/customers/${tenant1CustomerId}`)
         .set('Authorization', `Bearer ${secondTenantToken}`)
         .expect(404);
+      expectError(res, 'ERR_NOT_FOUND');
     });
 
     it('Tenant 2 does not see tenant 1 customers in list', async () => {
@@ -285,9 +288,8 @@ describe('Customers CRUD E2E', () => {
         .get('/v1/customers')
         .set('Authorization', `Bearer ${secondTenantToken}`)
         .expect(200);
-
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body.every((c: any) => c.id !== tenant1CustomerId)).toBe(true);
+      const customers = expectList(res);
+      expect(customers.every(c => c.id !== tenant1CustomerId)).toBe(true);
     });
   });
 });

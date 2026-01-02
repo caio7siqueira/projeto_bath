@@ -77,16 +77,7 @@ export class CustomersService {
       where.phone = normalizePhone(query.phone) || query.phone;
     }
 
-    // Backward compatibility: if no page params, return simple array
-    if (!query.page && !query.pageSize) {
-      return this.prisma.customer.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-      });
-    }
-
-    // Paginated response
-    const { skip, take, orderBy } = query.toPrisma();
+    const { skip, take, orderBy, page, pageSize } = query.toPrisma();
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({
         where,
@@ -97,7 +88,7 @@ export class CustomersService {
       this.prisma.customer.count({ where }),
     ]);
 
-    return paginatedResponse(data, total, query.page!, query.pageSize!);
+    return paginatedResponse(data, total, page, pageSize);
   }
 
   async findOne(id: string, user: any) {

@@ -1,19 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/auth-context';
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
-
-
-interface DashboardStats {
-  totalCustomers: number;
-  totalPets: number;
-  totalAppointments: number;
-  totalLocations: number;
-}
+import { CardGridSkeleton, ErrorBanner, HeroSkeleton, SkeletonBlock } from '@/components/feedback/VisualStates';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
+import { fetchDashboardReports, type DashboardStats } from '@/lib/api/dashboard';
+import { normalizeApiError } from '@/lib/api/errors';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
     totalPets: 0,
@@ -21,107 +18,138 @@ export default function DashboardPage() {
     totalLocations: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { accessToken } = useAuth();
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Usa client centralizado
-        const data = await import('@/lib/api').then(m => m.apiFetch('/dashboard/reports'));
-        setStats(data);
-      } catch (err) {
-        const errorMsg = err && typeof err === 'object' && 'message' in err ? (err as any).message : 'Erro ao carregar dashboard';
-        setError(errorMsg);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
+  const [errorBanner, setErrorBanner] = useState<{ title?: string; message: string } | null>(null);
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    setErrorBanner(null);
+    try {
+      const data = await fetchDashboardReports();
+      setStats(data);
+    } catch (err) {
+      const parsed = normalizeApiError(err, 'Não conseguimos carregar o dashboard.');
+      setErrorBanner({ title: parsed.title, message: parsed.message });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-        <p className="text-gray-600">Carregando...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-        <Card>
-          <p className="text-red-600">Erro: {error}</p>
-        </Card>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <div className="text-center">
-            <p className="text-gray-600 text-sm mb-2">Total de Clientes</p>
-            <p className="text-3xl font-bold text-blue-600">{stats.totalCustomers}</p>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="text-center">
-            <p className="text-gray-600 text-sm mb-2">Total de Pets</p>
-            <p className="text-3xl font-bold text-green-600">{stats.totalPets}</p>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="text-center">
-            <p className="text-gray-600 text-sm mb-2">Agendamentos</p>
-            <p className="text-3xl font-bold text-purple-600">{stats.totalAppointments}</p>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="text-center">
-            <p className="text-gray-600 text-sm mb-2">Locais</p>
-            <p className="text-3xl font-bold text-orange-600">{stats.totalLocations}</p>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card header="Ações Rápidas">
-          <div className="space-y-3">
-            <Button 
-              variant="primary" 
-              className="w-full"
-              onClick={() => window.location.href = '/admin/customers/new'}
-            >
-              Novo Cliente
-            </Button>
-            {/* Botão Novo Pet removido pois rota não existe */}
-          </div>
-        </Card>
-
-        <Card header="Bem-vindo">
-          <p className="text-gray-600 mb-4">
-            Sistema de gestão para petshop, banho & tosa e clínica veterinária. Use o menu lateral para navegar entre as seções.
+    <div className="page-shell space-y-8">
+      <header className="page-header">
+        <div className="page-header__meta">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-500">Resumo</p>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-base text-slate-500">
+            Visão geral rápida dos principais indicadores do petshop.
           </p>
-          <ul className="text-sm text-gray-500 space-y-2">
-            <li>✓ Clientes - Gerencie sua base de clientes</li>
-            <li>✓ Pets - Cadastro e histórico de pets</li>
-            <li>• Agendamentos - Em breve</li>
-            <li>• Locais - Em breve</li>
-          </ul>
-        </Card>
-      </div>
+        </div>
+        <div className="page-header__actions">
+          <Button variant="secondary" onClick={fetchStats} aria-label="Atualizar indicadores">
+            Atualizar dados
+          </Button>
+          <Button
+            onClick={() => router.push('/admin/customers/new')}
+            icon={<span aria-hidden>＋</span>}
+          >
+            Novo cliente
+          </Button>
+        </div>
+      </header>
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', isCurrent: true },
+        ]}
+        note="Trilha persistente: você sai para clientes, serviços ou agenda sem recarregar a página e pode voltar com o navegador."
+      />
+
+      {loading && (
+        <div className="space-y-8">
+          <HeroSkeleton />
+          <CardGridSkeleton items={4} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Card>
+              <div className="space-y-3">
+                <SkeletonBlock className="h-5 w-28" />
+                <SkeletonBlock className="h-12 w-full" />
+              </div>
+            </Card>
+            <Card>
+              <div className="space-y-3">
+                <SkeletonBlock className="h-5 w-40" />
+                <SkeletonBlock className="h-4 w-full" />
+                <SkeletonBlock className="h-4 w-5/6" />
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {!loading && errorBanner && (
+        <div className="space-y-4">
+          <ErrorBanner
+            scenario="dashboard-load"
+            title={errorBanner.title}
+            message={errorBanner.message}
+            action={
+              <Button onClick={fetchStats} variant="secondary">
+                Tentar novamente
+              </Button>
+            }
+          />
+        </div>
+      )}
+
+      {!loading && !errorBanner && (
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="text-center">
+              <p className="text-sm font-medium text-slate-500">Total de Clientes</p>
+              <p className="mt-3 text-4xl font-bold text-brand-600">{stats.totalCustomers}</p>
+            </Card>
+            <Card className="text-center">
+              <p className="text-sm font-medium text-slate-500">Total de Pets</p>
+              <p className="mt-3 text-4xl font-bold text-emerald-600">{stats.totalPets}</p>
+            </Card>
+            <Card className="text-center">
+              <p className="text-sm font-medium text-slate-500">Agendamentos</p>
+              <p className="mt-3 text-4xl font-bold text-purple-600">{stats.totalAppointments}</p>
+            </Card>
+            <Card className="text-center">
+              <p className="text-sm font-medium text-slate-500">Locais</p>
+              <p className="mt-3 text-4xl font-bold text-orange-500">{stats.totalLocations}</p>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Card header="Ações rápidas">
+              <div className="space-y-3">
+                <Button
+                  className="w-full"
+                  onClick={() => router.push('/admin/customers/new')}
+                >
+                  Novo Cliente
+                </Button>
+              </div>
+            </Card>
+
+            <Card header="Bem-vindo">
+              <p className="mb-4 text-slate-600">
+                Use o menu lateral para navegar entre clientes, pets e agenda. Os números acima ajudam a
+                guiar suas próximas ações.
+              </p>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li>✓ Base consolidada de clientes e pets</li>
+                <li>✓ Indicadores de agendamentos ativos</li>
+                <li>• Em breve: visão detalhada de locais e fila de serviços</li>
+              </ul>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }

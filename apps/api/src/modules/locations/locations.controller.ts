@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -14,6 +15,7 @@ import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { LocationsService } from './locations.service';
 import { CreateLocationDto, UpdateLocationDto } from './dto';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 interface JwtPayload {
   tenantId: string;
@@ -36,8 +38,8 @@ export class LocationsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar localizações do tenant' })
-  async findByTenant(@TenantUser() user: JwtPayload) {
-    return this.service.findByTenant(user.tenantId);
+  async findByTenant(@TenantUser() user: JwtPayload, @Query() query: PaginationQueryDto) {
+    return this.service.findByTenant(user.tenantId, query);
   }
 
   @Get(':id')

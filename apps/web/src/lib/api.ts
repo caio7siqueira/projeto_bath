@@ -1,4 +1,6 @@
+import Router from 'next/router';
 import { getAuthToken } from './api/client';
+import { normalizeApiError } from './api/errors';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
@@ -33,14 +35,31 @@ export async function apiFetch(path: string, options?: RequestInit) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      Router.replace('/login');
     }
-    throw { message: 'Não autorizado. Faça login novamente.', status: 401 };
+    throw normalizeApiError(
+      {
+        status: 401,
+        code: 'AUTH_UNAUTHORIZED',
+        message: 'Não autorizado. Faça login novamente.',
+      },
+      'Não autorizado. Faça login novamente.',
+    );
   }
   if (!res.ok) {
-    let error;
-    try { error = await res.json(); } catch { error = { message: 'Erro na API' }; }
-    throw error;
+    let body: unknown = null;
+    try {
+      body = await res.json();
+    } catch {
+      body = null;
+    }
+    throw normalizeApiError(
+      {
+        status: res.status,
+        ...(typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {}),
+      },
+      'Não conseguimos concluir a operação agora. Tente novamente.',
+    );
   }
   return res.json();
 }

@@ -17,8 +17,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-600">Carregando...</p>
+      <div className="flex min-h-screen items-center justify-center bg-surface-muted" role="status" aria-live="polite">
+        <div className="space-y-2 text-center">
+          <span className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600" aria-hidden />
+          <p className="text-sm font-medium text-slate-600">Carregando painel...</p>
+        </div>
       </div>
     );
   }

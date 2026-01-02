@@ -6,13 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto';
-import { IsBoolean, IsOptional } from 'class-validator';
-
-class ListServicesQuery {
-  @IsOptional()
-  @IsBoolean()
-  includeInactive?: boolean;
-}
+import { ListServicesQueryDto } from './dto/list-services-query.dto';
 
 @ApiTags('services')
 @ApiBearerAuth()
@@ -38,8 +32,8 @@ export class ServicesController {
   @ApiResponse({ status: 200, description: 'Lista de serviços' })
   findAll(
     @TenantUser('tenantId') tenantId: string,
-    @Query() query: ListServicesQuery,
+    @Query() query: ListServicesQueryDto,
   ) {
-    return this.servicesService.findAll(tenantId, query.includeInactive);
+    return this.servicesService.findAll(tenantId, query);
   }
 }

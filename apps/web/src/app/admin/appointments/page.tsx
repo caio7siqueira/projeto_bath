@@ -14,8 +14,10 @@ function useIsMobile(breakpoint = 768) {
   return isMobile;
 }
 import Link from 'next/link';
-import { Card, CardHeader } from '@/components/Card';
+import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
+import { EmptyState, HeroSkeleton, SkeletonBlock } from '@/components/feedback/VisualStates';
+import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { useAppointments, useCustomers, usePets, useLocations, useServices } from '@/lib/hooks';
 import { useAppStore } from '@/lib/store';
 import type { Appointment } from '@/lib/api/appointments';
@@ -38,6 +40,10 @@ export default function AppointmentsPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
+    fetchAppointments();
+    fetchServices();
+    fetchLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // HOOKS DE DADOS - sempre no topo
   const {
@@ -64,8 +70,20 @@ export default function AppointmentsPage() {
   const calendarRef = useRef<FullCalendar | null>(null);
   const isMobile = useIsMobile();
 
-  // Funções e memos necessários para o FullCalendar (stubs temporários para evitar ReferenceError)
-  const events = useMemo(() => [], []);
+  // Eventos reais alimentados pela store
+  const events = useMemo(
+    () =>
+      appointments.map((appointment) => ({
+        id: appointment.id,
+        title: 'Agendamento',
+        start: appointment.startsAt,
+        end: appointment.endsAt,
+        backgroundColor: statusColors[appointment.status],
+        borderColor: statusColors[appointment.status],
+        extendedProps: appointment,
+      })),
+    [appointments],
+  );
   const renderEventContent = () => null;
   const handleDateSelect = () => {};
   const handleEventClick = () => {};
@@ -73,57 +91,88 @@ export default function AppointmentsPage() {
   const handleEventResize = () => {};
 
   if (!mounted) {
-    // Skeleton inicial
     return (
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 w-1/3 bg-gray-200 rounded" />
-          <div className="h-6 w-1/2 bg-gray-100 rounded" />
-          <div className="h-96 bg-gray-100 rounded-lg" />
-        </div>
+      <div className="page-shell space-y-6">
+        <HeroSkeleton />
+        <SkeletonBlock className="h-96 w-full" />
       </div>
     );
   }
 
+  const showEmptyAppointments = !isLoading && appointments.length === 0;
+
   // ÚNICO return principal do componente
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
-          <p className="mt-2 text-gray-600">
+    <div className="page-shell space-y-6">
+      <header className="page-header">
+        <div className="page-header__meta">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-500">Operação</p>
+          <h1 className="text-3xl font-bold">Agenda</h1>
+          <p className="text-base text-slate-500">
             Visualize, crie e gerencie agendamentos de clientes, pets e serviços.
           </p>
         </div>
-        <Link href="/admin/appointments/new" className="hidden md:inline-block">
-          <Button>Novo Agendamento</Button>
-        </Link>
-      </div>
+        <div className="page-header__actions">
+          <Link href="/admin/appointments/new" className="inline-flex">
+            <Button icon={<span aria-hidden>＋</span>}>Novo Agendamento</Button>
+          </Link>
+        </div>
+      </header>
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', href: '/admin/dashboard' },
+          { label: 'Agenda', isCurrent: true },
+        ]}
+        note="Esta seção agora registra o caminho da navegação e evita recarregamentos totais quando você abre ou retorna de um agendamento."
+      />
 
       {servicesLoading && (
-        <div className="mb-4 rounded-lg bg-blue-50 p-4 text-blue-800">
-          Carregando serviços disponíveis...
-        </div>
+        <Card className="border-brand-100 bg-brand-50 text-brand-700">
+          <div className="flex items-center gap-3">
+            <SkeletonBlock className="h-5 w-5 rounded-full" />
+            Carregando serviços disponíveis...
+          </div>
+        </Card>
       )}
       {servicesError && (
-        <div className="mb-4 rounded-lg bg-yellow-50 p-4 text-yellow-800">
-          Não foi possível carregar serviços agora. Você ainda pode visualizar a agenda.
-        </div>
+        <EmptyState
+          variant="inline"
+          mood="warning"
+          icon="🧼"
+          title="Serviços não carregaram"
+          description="Você ainda pode visualizar a agenda, mas cadastros dependem da lista de serviços."
+          action={
+            <Link href="/admin/services" className="inline-flex justify-center">
+              <Button size="sm" variant="secondary">Recarregar serviços</Button>
+            </Link>
+          }
+        />
       )}
       {!servicesLoading && services.length === 0 && !servicesError && (
-        // Nenhum serviço disponível, mas não exibe nada
-        null
+        <EmptyState
+          variant="inline"
+          icon="🛁"
+          title="Cadastre seus serviços antes de agendar"
+          description="Sem serviços ativos não é possível definir duração e preço dos agendamentos."
+          action={
+            <Link href="/admin/services" className="inline-flex justify-center">
+              <Button size="sm">Cadastrar serviço</Button>
+            </Link>
+          }
+        />
       )}
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">{error}</div>
+        <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800" role="alert">
+          {error}
+        </div>
       )}
 
       {isLoading ? (
-        <div className="space-y-4">
-          <div className="animate-pulse h-8 w-1/3 bg-gray-200 rounded mx-auto" />
-          <div className="animate-pulse h-6 w-1/2 bg-gray-100 rounded mx-auto" />
-          <div className="animate-pulse h-96 bg-gray-100 rounded-lg" />
+        <div className="space-y-6">
+          <SkeletonBlock className="h-10 w-72" />
+          <SkeletonBlock className="h-5 w-1/2" />
+          <SkeletonBlock className="h-96 w-full" />
         </div>
       ) : (
         <>
@@ -132,18 +181,35 @@ export default function AppointmentsPage() {
             <div className="relative">
               {/* ...existing mobile code... */}
             </div>
+          ) : showEmptyAppointments ? (
+            <EmptyState
+              icon="📅"
+              variant="inline"
+              title="Nenhum agendamento por aqui"
+              description="Use o botão acima para criar o primeiro horário e acompanhar tudo pela grade."
+              action={
+                <Link href="/admin/appointments/new" className="inline-flex justify-center">
+                  <Button>Agendar agora</Button>
+                </Link>
+              }
+            />
           ) : (
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto">
-              {/* Barra de visualização e botão novo agendamento */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border-b bg-gray-50">
-                <div className="flex gap-2 items-center">
-                  <Button size="sm" onClick={() => calendarRef.current?.getApi().prev()}>&lt;</Button>
-                  <Button size="sm" onClick={() => calendarRef.current?.getApi().today()}>Hoje</Button>
-                  <Button size="sm" onClick={() => calendarRef.current?.getApi().next()}>&gt;</Button>
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-surface-divider bg-surface-muted p-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => calendarRef.current?.getApi().prev()}>
+                    &lt;
+                  </Button>
+                  <Button size="sm" onClick={() => calendarRef.current?.getApi().today()}>
+                    Hoje
+                  </Button>
+                  <Button size="sm" onClick={() => calendarRef.current?.getApi().next()}>
+                    &gt;
+                  </Button>
                   <select
-                    className="ml-2 border rounded px-2 py-1 text-sm"
+                    className="ml-2 rounded border px-2 py-1 text-sm"
                     defaultValue="timeGridWeek"
-                    onChange={e => calendarRef.current?.getApi().changeView(e.target.value)}
+                    onChange={(e) => calendarRef.current?.getApi().changeView(e.target.value)}
                   >
                     <option value="dayGridMonth">Mês</option>
                     <option value="timeGridWeek">Semana</option>
@@ -151,7 +217,9 @@ export default function AppointmentsPage() {
                   </select>
                 </div>
                 <Link href="/admin/appointments/new">
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">+ Novo Agendamento</Button>
+                  <Button size="sm" icon={<span aria-hidden>＋</span>}>
+                    Novo agendamento
+                  </Button>
                 </Link>
               </div>
               <FullCalendar
@@ -177,7 +245,9 @@ export default function AppointmentsPage() {
                 eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
                 dayMaxEvents={3}
                 aspectRatio={1.5}
-                eventClassNames={(arg) => `transition-shadow focus:ring-2 focus:ring-blue-400 ${arg.event.extendedProps.status ? 'border-l-4' : ''}`}
+                eventClassNames={(arg) =>
+                  `transition-shadow focus:ring-2 focus:ring-blue-400 ${arg.event.extendedProps.status ? 'border-l-4' : ''}`
+                }
                 eventContent={renderEventContent}
                 slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
                 dayHeaderFormat={{ weekday: 'short', day: '2-digit', month: '2-digit' }}

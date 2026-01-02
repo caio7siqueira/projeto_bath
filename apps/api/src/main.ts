@@ -3,10 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 import { buildSwaggerDocument, swaggerUiOptions } from './docs/swagger.config';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -46,7 +46,7 @@ async function bootstrap() {
     exclude: ['/'],
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useGlobalFilters(new PrismaExceptionFilter());
+  app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new RequestLoggingInterceptor(), new ApiResponseInterceptor());
 
   const document = buildSwaggerDocument(app);

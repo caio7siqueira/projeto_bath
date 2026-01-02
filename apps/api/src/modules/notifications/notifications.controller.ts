@@ -5,6 +5,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantUser } from '../../common/decorators/tenant-user.decorator';
 import { NotificationsService } from './notifications.service';
+import { ListNotificationJobsQueryDto } from './dto/list-notification-jobs.dto';
 
 @ApiTags('notifications')
 @Controller('integrations/notifications')
@@ -27,18 +28,8 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Listar NotificationJobs do tenant (ADMIN)' })
   async listJobs(
     @TenantUser('tenantId') tenantId: string,
-    @Query('status') status?: string,
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '20',
+    @Query() query: ListNotificationJobsQueryDto,
   ) {
-    const take = Math.min(Math.max(parseInt(pageSize, 10) || 20, 1), 100);
-    const skip = (Math.max(parseInt(page, 10) || 1, 1) - 1) * take;
-    const where: any = { tenantId };
-    if (status) where.status = status;
-    const [data, total] = await Promise.all([
-      this.service['prisma'].notificationJob.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
-      this.service['prisma'].notificationJob.count({ where }),
-    ]);
-    return { data, total, page: Math.floor(skip / take) + 1, pageSize: take };
+    return this.service.listJobs(tenantId, query);
   }
 }

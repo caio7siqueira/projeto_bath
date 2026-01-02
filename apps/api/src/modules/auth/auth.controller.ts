@@ -1,21 +1,23 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
   HttpCode,
   HttpStatus,
-  UseGuards,
+  Post,
   Request,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,6 +37,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiTooManyRequestsResponse({ description: 'Limite de tentativas excedido' })
+  @Throttle({ login: { limit: 5, ttl: 60 } })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -44,6 +48,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
+  @ApiTooManyRequestsResponse({ description: 'Limite de tentativas excedido' })
+  @Throttle({ refresh: { limit: 10, ttl: 300 } })
   async refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto);
   }
