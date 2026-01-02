@@ -49,6 +49,8 @@ jobs:
         run: corepack enable; corepack prepare pnpm@9.12.0 --activate
       - name: Install deps
         run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install
       - name: Run e2e (Docker required)
         env:
           NODE_ENV: test

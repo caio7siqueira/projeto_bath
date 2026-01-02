@@ -24,6 +24,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/node": "^20.10.6",
     "eslint": "^8.56.0",
     "openapi-typescript": "^7.10.1",
