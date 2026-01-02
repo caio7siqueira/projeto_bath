@@ -44,6 +44,148 @@ pnpm -w test:e2e
 
 Preferir Codespaces/devcontainer. Se não houver Postgres acessível via `DATABASE_URL`, pule migrations localmente e use apenas build/typecheck/lint. Rode migrations no Codespaces/CI.
 
+## Contratos REST, OpenAPI e SDK
+
+### Envelope `{ data, meta }`
+
+Todas as rotas HTTP retornam o contrato envelope:
+
+```json
+{
+  "data": { "...payload..." },
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 42,
+    "totalPages": 3
+  }
+}
+```
+
+- `meta` só aparece em coleções; erros continuam usando os `HttpException` padrões do Nest.
+- Regras de validação e campos obrigatórios estão descritos nos DTOs e no bundle OpenAPI.
+
+### Bundle OpenAPI
+
+- Arquivos sempre atualizados em `docs/openapi/openapi.json` e `docs/openapi/openapi.yaml`.
+- Para gerar novamente (ex.: após alterar DTOs):
+
+```bash
+pnpm openapi:bundle      # gera JSON/YAML aplicando o envelope automaticamente
+pnpm openapi:sdk         # gera tipos + cliente HTTP em packages/contracts
+pnpm contracts:generate  # encadeia os dois passos
+```
+
+### SDK compartilhado (`@efizion/contracts`)
+
+- Código-fonte em `packages/contracts` com exports de `src/types.ts` (tipos puros) e `src/sdk` (cliente Fetch).
+- Exemplo básico de uso no frontend Next.js:
+
+```ts
+import { CustomersService, OpenAPI } from '@efizion/contracts';
+
+OpenAPI.BASE = process.env.NEXT_PUBLIC_API_URL!;
+OpenAPI.TOKEN = async () => localStorage.getItem('token') ?? undefined;
+
+const customersApi = new CustomersService();
+const { data, meta } = await customersApi.customersControllerFindAll({
+  page: 1,
+  pageSize: 20,
+});
+
+console.log(meta.total, data[0].name);
+```
+
+### Exemplos de payload
+
+#### Auth → Login (`POST /v1/auth/login`)
+
+Request:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "StrongPass123!",
+  "tenantSlug": "efizion-bath-demo"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "accessToken": "jwt...",
+    "refreshToken": "jwt...",
+    "user": {
+      "id": "...",
+      "role": "ADMIN",
+      "tenantId": "..."
+    }
+  }
+}
+```
+
+Campos obrigatórios: `email`, `password`, `tenantSlug`. Validações seguem `RegisterDto/LoginDto` no OpenAPI.
+
+#### Customers → Listagem paginada (`GET /v1/customers?page=1&pageSize=10`)
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "name": "John Doe",
+      "phone": "+5511999999999",
+      "email": "john@example.com",
+      "optInGlobal": true,
+      "createdAt": "2026-01-02T12:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 10,
+    "total": 1,
+    "totalPages": 1
+  }
+}
+```
+
+Parâmetros aceitos: `page`, `pageSize` (1-100), `q` (busca textual). Todos documentados no bundle.
+
+#### Appointments → Criação (`POST /v1/appointments`)
+
+Request:
+
+```json
+{
+  "customerId": "uuid",
+  "locationId": "uuid",
+  "startsAt": "2026-01-02T13:00:00Z",
+  "endsAt": "2026-01-02T14:00:00Z",
+  "notes": "Cliente prefere manhã"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "...",
+    "status": "SCHEDULED",
+    "startsAt": "2026-01-02T13:00:00Z",
+    "endsAt": "2026-01-02T14:00:00Z",
+    "customerId": "uuid",
+    "locationId": "uuid"
+  }
+}
+```
+
+Validações: duração mínima de $5$ minutos, `startsAt < endsAt`, overlap bloqueado (409). Tudo refletido em `CreateAppointmentDto`.
+
 ## Setup manual (com Docker)
 
 ```bash
@@ -98,6 +240,8 @@ Todos os apps do monorepo expõem healthchecks simples, sem dependências extern
 
 ---
 ## Endpoints
+
+Consulte `docs/contracts-changelog.md` para um histórico de alterações de contrato e exemplos adicionais por módulo. Os exemplos abaixo já assumem o envelope `{ data, meta }` descrito anteriormente.
 
 ### Auth (Internal Users)
 ```bash
@@ -344,6 +488,7 @@ Worker:
 - `pnpm -w build` / `pnpm -w typecheck` / `pnpm -w lint`
 - `pnpm db:generate` / `pnpm db:deploy` / `pnpm db:seed` / `pnpm db:studio`
 - `pnpm db:migrate` (dev local com histórico interativo)
+- `pnpm openapi:bundle` / `pnpm openapi:sdk` / `pnpm contracts:generate` (atualizam docs e SDK)
 
 ## Autenticação
 

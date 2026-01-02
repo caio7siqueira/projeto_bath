@@ -1,0 +1,19 @@
+{
+  "name": "@efizion/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "codegen:client": "openapi --input ../../docs/openapi/openapi.json --output src/sdk --client fetch --useUnionTypes --useOptions",
+    "codegen:types": "openapi-typescript ../../docs/openapi/openapi.json --output src/types.ts",
+    "sdk:generate": "pnpm run codegen:client && pnpm run codegen:types && pnpm run build"
+  },
+  "devDependencies": {},
+  "peerDependencies": {},
+  "dependencies": {}
+}
