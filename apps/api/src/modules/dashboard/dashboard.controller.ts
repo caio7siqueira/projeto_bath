@@ -20,6 +20,9 @@ export class DashboardController {
     if (process.env.NODE_ENV === 'development') {
       return this.service.getReports('dev-tenant');
     }
+    if (!tenantId) {
+      throw new Error('tenantId não pode ser undefined');
+    }
     return this.service.getReports(tenantId);
   }
 }
