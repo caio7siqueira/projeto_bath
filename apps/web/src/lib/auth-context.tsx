@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { login as apiLogin, logout as apiLogout, refresh as apiRefresh, type LoginRequest } from './api/auth';
+import { normalizeApiError } from './api/errors';
 
 interface User {
   id: string;
@@ -21,6 +22,30 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const DEMO_ACCESS_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN ?? '';
+
+function buildUserFromToken(token: string): User {
+  try {
+    const [, payload = ''] = token.split('.');
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+
+    return {
+      id: decoded.sub ?? 'demo-user',
+      email: decoded.email ?? 'demo@efizion.com',
+      name: decoded.name ?? 'Admin Demo',
+      role: decoded.role ?? 'ADMIN',
+      tenantId: decoded.tenantId ?? 'demo-tenant',
+    } as User;
+  } catch {
+    return {
+      id: 'demo-user',
+      email: 'demo@efizion.com',
+      name: 'Admin Demo',
+      role: 'ADMIN',
+      tenantId: 'demo-tenant',
+    };
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,11 +60,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedRefresh = localStorage.getItem('refreshToken');
     const storedUser = localStorage.getItem('user');
 
-    if (storedToken && storedRefresh && storedUser) {
+    if (storedToken && storedUser) {
       setAccessToken(storedToken);
-      setRefreshToken(storedRefresh);
       setUser(JSON.parse(storedUser));
+      if (storedRefresh) {
+        setRefreshToken(storedRefresh);
+      }
+      setIsLoading(false);
+      return;
     }
+
+    if (DEMO_ACCESS_TOKEN) {
+      const demoUser = buildUserFromToken(DEMO_ACCESS_TOKEN);
+      setAccessToken(DEMO_ACCESS_TOKEN);
+      setRefreshToken(null);
+      setUser(demoUser);
+      localStorage.setItem('accessToken', DEMO_ACCESS_TOKEN);
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      localStorage.removeItem('refreshToken');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(false);
   }, []);
 
@@ -76,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       router.push('/admin/dashboard');
     } catch (err) {
-      throw err;
+      throw normalizeApiError(err, 'Não foi possível fazer login. Verifique as credenciais.');
     }
   };
 

@@ -208,6 +208,134 @@ pnpm db:seed
 pnpm dev
 ```
 
+## Guia do Frontend/Admin (Micro-etapa 7)
+
+### Visão geral e onboarding rápido
+- **Onde fica:** todo o painel administrativo vive em `apps/web` (Next.js 14 App Router). Rode `pnpm --filter @efizion/web dev` para levantar somente o frontend ou `pnpm dev` para todo o monorepo.
+- **Providers obrigatórios:** o `AuthProvider` (tokens/foco em login) já envolve toda a árvore em `apps/web/src/app/layout.tsx`, junto com as fontes `Plus Jakarta Sans` e `Space Grotesk`. Reaproveite `page-shell` e componentes de layout antes de criar wrappers novos.
+- **Stack base:** Zustand (`apps/web/src/lib/store.ts`) para cache local, React Hook Form + Zod para formulários, SWR apenas em páginas legacy (preferir hooks dedicados).
+- **Checklist inicial:** copie `.env.local` para `apps/web`, configure `NEXT_PUBLIC_API_URL` e (quando necessário) `NEXT_PUBLIC_DEMO_TOKEN`, execute `pnpm install` e rode os testes E2E (`pnpm --filter @efizion/web test`) antes de abrir PR.
+
+### Integração com o SDK `@efizion/contracts`
+- **Configuração única:** `apps/web/src/lib/contracts-client.ts` chama `ensureContractsClientConfig()` durante o boot para setar `OpenAPI.BASE`, `WITH_CREDENTIALS` e o resolver de token (lendo `localStorage`).
+- **Camada REST pura:** `apps/web/src/lib/api.ts` centraliza `apiFetch` com headers, tratamento 401 e normalização de erro via `normalizeApiError`.
+- **Serviços gerados:** use os clients gerados em `apps/web/src/lib/api/*`. Exemplo real, extraído de `apps/web/src/lib/hooks.ts`:
+
+```ts
+import { createService } from '@/lib/api/services';
+
+export async function createNewService(dto: CreateServiceDto) {
+  const service = await createService(dto); // usa o SDK configurado
+  setServices((prev) => [service, ...prev]);
+  return service;
+}
+```
+- **Quando usar qual camada:**
+  - **SDK (`@efizion/contracts`):** sempre que precisar de tipagem forte do OpenAPI ou endpoints novos.
+  - **`apiFetch`:** requests simples ou quando ainda não geramos o cliente; mantenha o padrão `await apiFetch('/customers', { method: 'POST', body: JSON.stringify(dto) })`.
+
+### Hooks, stores e utilitários principais
+- `AuthProvider` + `useAuth` (`apps/web/src/lib/auth-context.tsx`): guardam `user`, tokens, refresh e redirect pós-login.
+- `useRole` (`apps/web/src/lib/use-role.ts`): devolve `isAdmin`, `isStaff`, `hasRole(...)` para gates e banners.
+- `useCustomers`, `useAppointments`, `useServices`, `usePets`, `useLocations` (`apps/web/src/lib/hooks.ts`): manipulam cache do Zustand, normalizam erros e já expõem `fetch*`, `create*`, `update*` e `cancel*` com mensagens padrão.
+- `useAppStore` (`apps/web/src/lib/store.ts`): único ponto de verdade para listas renderizadas em dashboard, agenda e cadastros.
+- `normalizeApiError` (`apps/web/src/lib/api/errors.ts`): converte `{ code, status, details }` em mensagens amigáveis + `details` opcionais para os banners.
+
+### Padrões visuais, shells e estados
+- **Componentes fundacionais:** `Card`, `Button`, `Badge` (design tokens), `PageHeader` e `Shell` (estrutura responsiva com gutters fixos).
+- **Navegação e contexto:** `Breadcrumbs` (`apps/web/src/components/navigation/Breadcrumbs.tsx`) define `<nav aria-label="Trilha de navegação">` com nota auxiliar.
+- **Loaders / Skeletons:** `HeroSkeleton`, `ListSkeleton`, `CardGridSkeleton`, `ChartSkeleton` e `SkeletonBlock` vivem em `apps/web/src/components/feedback/VisualStates.tsx`. Use `HeroSkeleton` para headers, `ListSkeleton` para listagens com/sem ações e `CardGridSkeleton` para KPIs.
+- **Empty states:** `EmptyState` aceita `variant="card"|"inline"`, ícone (emoji ok) e CTA – padrão no dashboard e billing.
+- **Error banners:** `ErrorBanner` seta `role="alert"`, `aria-live="assertive"` e permite `data-error-scenario` para testes (ver specs E2E de Auth/Billing).
+- **Shells reutilizáveis:** dashboards usam `page-shell` (ver `apps/web/src/app/admin/billing/page.tsx`), listas usam `StackedList` + `FiltersPanel`, formulários longos seguem `FormSection` + `FormActions` (ver cadastros de clientes/pets/serviços).
+
+### Estratégia de acessibilidade
+- **Foco e teclado:** todos os botões/links utilizam Tailwind focus rings (`focus-visible:ring-*`). Priorize `Button`/`Link` padrões e evite `div` clicável.
+- **Semântica:** `Breadcrumbs` encapsula `<nav>`, banners usam `role="alert"`, skeletons omitem `aria` e deixam conteúdo real assumir o foco.
+  - **Skip link e landmarks:** `apps/web/src/app/layout.tsx` injeta o link "Pular para o conteúdo principal" (classe `.skip-link`) e envolve as páginas em `header`/`main`/`footer` com `role` explícito.
+- **Contraste:** tokens `text-slate-900`, `brand-600`, `bg-red-50` seguem WCAG AA; alinhe mudanças em `globals.css` com o time de design antes de customizar.
+- **Anunciadores:** Next adiciona `#__next-route-announcer__`. Os testes E2E mostram como filtrar `data-error-scenario` para não conflitar com esse elemento.
+  - **Pendências de A11y:** revisar o comportamento de foco ao fechar modais/toasts e avaliar skip-links secundários (filtros/lateral) para acessos prolongados.
+
+### Scripts, variáveis e deploy (apps/web)
+
+| Tipo | Comando |
+| --- | --- |
+| Dev isolado | `pnpm --filter @efizion/web dev` (usa `PORT=3001` por padrão) |
+| Build | `pnpm --filter @efizion/web build` |
+| Start (preview) | `pnpm --filter @efizion/web start` |
+| Typecheck | `pnpm --filter @efizion/web typecheck` |
+| Teste headless | `pnpm --filter @efizion/web test` ou `test:e2e` |
+| Teste interativo | `pnpm --filter @efizion/web test:e2e:ui` |
+| Captura de telas | `CAPTURE_DOCS=true pnpm --filter @efizion/web test -- --grep "@docs"` |
+
+**Variáveis importantes**
+
+| Variável | Descrição |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | URL base da API (sem `/v1`). Obrigatório para builds e preview. |
+| `NEXT_PUBLIC_DEMO_TOKEN` | Token opcional usado nas rotas demo do dashboard para liberar modo read-only. |
+| `PORT` | Define a porta do Next (`dev`/`start`). Útil quando rodar paralelo ao backend. |
+| `CAPTURE_DOCS` | Quando `true`, habilita o spec `docs-screenshots` para gerar novas imagens do README. |
+
+**Deploy manual (Vercel/Render/VM):**
+1. Garantir `pnpm --filter @efizion/web build` sem erros.
+2. Exportar `NEXT_PUBLIC_API_URL` no painel do provedor.
+3. Configurar `PLAYWRIGHT_BROWSERS_PATH=0` apenas para CI (não requerido em produção).
+4. Publicar via `turbo deploy` ou pipeline preferido (ver `docs/SETUP_DEPLOY.md`).
+- O `next.config.js` já define `allowedDevOrigins` para `localhost`/`127.0.0.1` (3000–3100), permitindo que o Playwright utilize `http://127.0.0.1:3100` sem novos avisos.
+
+### Testes automatizados (smoke/E2E)
+- **Escopo atual:** login, agenda (CRUD + conflitos), billing (checkout/cancel/restrição), cadastros (cliente/pet/serviço + erros) e navegação.
+- **Onde ficam:** `apps/web/tests/e2e/*.spec.ts` utiliza Playwright com mock backend (`tests/e2e/support/mock-backend.ts`).
+- **Executar localmente:** `pnpm --filter @efizion/web test` (headless) ou `pnpm --filter @efizion/web test:e2e:ui` (Visual Runner).
+- **Relatórios:** abra `pnpm exec playwright show-report` após a execução. Os traces/snapshots estão em `apps/web/test-results` e podem ser anexados ao QA.
+- **Mock-infra:** ajustar fixtures no helper antes de mudar contratos reais para evitar escrita em produção.
+- **Status recente:** 2026-01-02 → `pnpm --filter @efizion/web test` retornou 15/15 cenários verdes (Auth, Agenda, Billing, Cadastros e Navegação).
+- **Capturas:** gere imagens oficiais com `CAPTURE_DOCS=true pnpm --filter @efizion/web test -- --grep "@docs"` (os PNGs ficam em `apps/web/docs/assets`).
+
+### Fluxos principais (diagramas textuais)
+
+```mermaid
+flowchart LR
+    Login[[Login Admin]] --> Dashboard[Dashboard]
+    Dashboard --> KPI{Cards e gráficos}
+    Dashboard --> AgendaLink[Ir para Agenda]
+    AgendaLink --> AgendaLista[Lista + filtros + skeleton]
+    AgendaLista --> NovoAgendamento[Modal/Form Novo]
+    Dashboard --> BillingLink
+    BillingLink --> BillingPage[Resumo / EmptyState]
+    BillingPage --> Checkout
+    Dashboard --> Cadastros[Clientes/Pets/Serviços]
+```
+
+- **Dashboard:** cards de métricas + gráficos (`CardGridSkeleton` → cards com CTA). Breadcrumb volta para `/admin/dashboard`.
+- **Agenda:** `page-shell` com filtros persistentes, formulário `Novo Agendamento` compartilha hooks de pets/clientes para popular selects.
+- **Billing:** `EmptyState` mostra CTA “Ativar assinatura”; ao clicar abre `/admin/billing/checkout` com `ErrorBanner`/`SuccessMessage`. Fluxo de cancelamento segue `/admin/billing/cancel`.
+- **Cadastros:** cada CRUD usa `FormSection` + `ErrorBanner`. Após salvar, `router.push` volta para lista e `useCustomers/usePets/useServices` atualizam o cache.
+
+### Capturas de tela reais
+
+As imagens abaixo foram geradas com o spec `docs-screenshots` (ver comando acima):
+
+![Dashboard](apps/web/docs/assets/dashboard.png)
+![Agenda administrativa](apps/web/docs/assets/agenda.png)
+![Billing/assinatura](apps/web/docs/assets/billing.png)
+![Cadastro de clientes](apps/web/docs/assets/cadastros.png)
+
+### Onboarding para novos devs/analistas
+1. **Ferramentas:** Node 20 + pnpm 8, Playwright (`pnpm --filter @efizion/web exec playwright install --with-deps` no primeiro dia).
+2. **Clonar & instalar:** `pnpm install` na raiz → `pnpm --filter @efizion/web dev`.
+3. **Credenciais:** peça ao time Ops o `.env.local` com `NEXT_PUBLIC_API_URL` e tokens demo.
+4. **Conhecer hooks:** leia `apps/web/src/lib/hooks.ts` (CRUD), `auth-context` (login/logout) e `use-role` (feature flags) antes de tocar telas.
+5. **Componentes chave:** `Button`, `Card`, `Breadcrumbs`, `VisualStates` (skeleton/error) e `Table/List` dentro de `apps/web/src/components`. Reutilize antes de criar variações.
+6. **Fluxo de review:** abra PR com screenshot do estado feliz + link do relatório Playwright; descreva mudanças de contrato no `docs/contracts-changelog.md`.
+
+### Pendências e próximos passos
+- Automatizar upload dos relatórios Playwright como artefato de CI.
+- Documentar o comportamento de foco em modais e toasts (após incluir skip-links secundários).
+- Validar as capturas de tela em dispositivos móveis (hoje foram geradas apenas em viewport desktop 1440×900).
+
 
 ## Healthchecks
 
