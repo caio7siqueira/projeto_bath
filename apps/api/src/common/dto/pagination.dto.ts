@@ -52,14 +52,16 @@ export class PaginationQueryDto {
   }
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  meta: PaginationMeta;
 }
 
 export function paginatedResponse<T>(
