@@ -7,7 +7,8 @@ test.describe('Navegação e breadcrumbs', () => {
     await setupMockBackend(page);
     await loginAs(page);
 
-    const customersLink = page.getByRole('link', { name: 'Clientes' });
+    const sidebarNav = page.getByRole('navigation', { name: 'Seções do admin' });
+    const customersLink = sidebarNav.getByRole('link', { name: 'Clientes' });
     await customersLink.click();
     await page.waitForURL('**/admin/customers');
     await expect(customersLink).toHaveAttribute('aria-current', 'page');
