@@ -11,6 +11,7 @@ import { createFieldErrorMap, normalizeApiError } from '@/lib/api/errors';
 import type { NormalizedApiError } from '@/lib/api/errors';
 import { useCustomers, usePets, useLocations, useServices, useAppointments } from '@/lib/hooks';
 import { appointmentSchema, AppointmentFormData } from '@/lib/schemas';
+import { calculateEndDateTime } from '@/lib/datetime/calculate-end-time';
 
 export default function NewAppointmentPage() {
   // =============================
@@ -125,15 +126,22 @@ export default function NewAppointmentPage() {
 
   // Preenche automaticamente o campo de término ao selecionar serviço
   useEffect(() => {
-    if (selectedServiceId && startsAt) {
-      const selectedService = services?.find((s: any) => s.id === selectedServiceId);
-      if (selectedService && selectedService.baseDurationMinutes) {
-        const startDate = new Date(startsAt);
-        if (!isNaN(startDate.getTime())) {
-          const endDate = new Date(startDate.getTime() + selectedService.baseDurationMinutes * 60000);
-          setValue('endsAt', endDate.toISOString().slice(0, 16)); // formato yyyy-MM-ddTHH:mm
-        }
-      }
+    if (!selectedServiceId) {
+      return;
+    }
+    const selectedService = services?.find((s: any) => s.id === selectedServiceId);
+    if (!selectedService || !selectedService.baseDurationMinutes) {
+      return;
+    }
+
+    if (!startsAt) {
+      setValue('endsAt', '');
+      return;
+    }
+
+    const computedEnd = calculateEndDateTime(startsAt, selectedService.baseDurationMinutes);
+    if (computedEnd) {
+      setValue('endsAt', computedEnd);
     }
   }, [selectedServiceId, startsAt, services, setValue]);
   const [actionError, setActionError] = useState<{ title?: string; message: string; details?: string[] } | null>(null);

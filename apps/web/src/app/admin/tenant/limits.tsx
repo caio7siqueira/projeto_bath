@@ -75,7 +75,9 @@ export default function TenantLimits() {
 
   const limits = limitsState.data;
   const usage = usageState.data;
-  const overLimitKeys = Object.keys(limits).filter((key) => (usage[key] ?? 0) > (limits[key] ?? 0));
+  const hiddenKeys = new Set(['automations']);
+  const visibleKeys = Object.keys(limits).filter((key) => !hiddenKeys.has(key));
+  const overLimitKeys = visibleKeys.filter((key) => (usage[key] ?? 0) > (limits[key] ?? 0));
 
   return (
     <Card className="space-y-4">
@@ -95,7 +97,7 @@ export default function TenantLimits() {
             </tr>
           </thead>
           <tbody>
-            {Object.keys(limits).map((key) => {
+            {visibleKeys.map((key) => {
               const used = usage[key] ?? 0;
               const limit = limits[key] ?? 0;
               const isOver = used > limit;

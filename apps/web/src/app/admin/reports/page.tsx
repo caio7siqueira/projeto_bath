@@ -73,11 +73,16 @@ export default function ReportsPage() {
       } catch (err) {
         if (!active) return;
         const parsed = normalizeApiError(err, 'Não conseguimos carregar os relatórios.');
-        const details = parsed.details.filter((detail) => !detail.field).map((detail) => detail.message);
+        const baseDetails = parsed.details.filter((detail) => !detail.field).map((detail) => detail.message);
+        const friendlyMessage = parsed.status && parsed.status >= 500
+          ? 'Detectamos uma instabilidade momentânea ao carregar os relatórios. Tente novamente em instantes.'
+          : parsed.message;
+        const detailMessages = parsed.status ? [...baseDetails, `Código do erro: ${parsed.status}`] : baseDetails;
+
         setErrorBanner({
-          title: parsed.title,
-          message: parsed.message,
-          details: details.length ? details : undefined,
+          title: parsed.title ?? 'Erro ao carregar relatórios',
+          message: friendlyMessage,
+          details: detailMessages.length ? detailMessages : undefined,
         });
       } finally {
         if (active) setChartsLoading(false);

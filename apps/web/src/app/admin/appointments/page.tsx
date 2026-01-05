@@ -21,6 +21,9 @@ import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { useAppointments, useCustomers, usePets, useLocations, useServices } from '@/lib/hooks';
 import { useAppStore } from '@/lib/store';
 import type { Appointment } from '@/lib/api/appointments';
+import type { Customer, Pet } from '@/lib/api/customers';
+import type { Location } from '@/lib/api/locations';
+import type { Service } from '@/lib/api/services';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -32,6 +35,12 @@ const statusColors: Record<Appointment['status'], string> = {
   SCHEDULED: '#2563eb', // azul
   CANCELLED: '#ef4444', // vermelho
   DONE: '#22c55e',
+};
+
+const statusTokens: Record<Appointment['status'], { label: string; badgeClass: string }> = {
+  SCHEDULED: { label: 'Agendado', badgeClass: 'bg-blue-50 text-blue-700' },
+  DONE: { label: 'Concluído', badgeClass: 'bg-emerald-50 text-emerald-700' },
+  CANCELLED: { label: 'Cancelado', badgeClass: 'bg-rose-50 text-rose-700' },
 };
 
 
@@ -69,6 +78,66 @@ export default function AppointmentsPage() {
   const [tapStart, setTapStart] = useState<Date | null>(null);
   const calendarRef = useRef<FullCalendar | null>(null);
   const isMobile = useIsMobile();
+  const sortedAppointments = useMemo(
+    () =>
+      [...appointments].sort(
+        (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
+      ),
+    [appointments],
+  );
+  const customersById = useMemo(() => {
+    const map = new Map<string, Customer>();
+    (customers ?? []).forEach((customer) => {
+      if (customer?.id) {
+        map.set(customer.id, customer as Customer);
+      }
+    });
+    return map;
+  }, [customers]);
+  const petsById = useMemo(() => {
+    const map = new Map<string, Pet>();
+    (pets ?? []).forEach((pet) => {
+      if (pet?.id) {
+        map.set(pet.id, pet as Pet);
+      }
+    });
+    return map;
+  }, [pets]);
+  const servicesById = useMemo(() => {
+    const map = new Map<string, Service>();
+    (services ?? []).forEach((service) => {
+      if (service?.id) {
+        map.set(service.id, service as Service);
+      }
+    });
+    return map;
+  }, [services]);
+  const locationsById = useMemo(() => {
+    const map = new Map<string, Location>();
+    (locations ?? []).forEach((location) => {
+      if (location?.id) {
+        map.set(location.id, location as Location);
+      }
+    });
+    return map;
+  }, [locations]);
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('pt-BR', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+      }),
+    [],
+  );
+  const timeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    [],
+  );
 
   // Eventos reais alimentados pela store
   const events = useMemo(
@@ -100,6 +169,7 @@ export default function AppointmentsPage() {
   }
 
   const showEmptyAppointments = !isLoading && appointments.length === 0;
+  const hasAppointments = !isLoading && sortedAppointments.length > 0;
 
   // ÚNICO return principal do componente
   return (
@@ -168,6 +238,85 @@ export default function AppointmentsPage() {
         </div>
       )}
 
+      {!isLoading && hasAppointments && (
+        <section aria-label="Lista de agendamentos" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {sortedAppointments.map((appointment) => {
+            const customer = appointment.customerId ? customersById.get(appointment.customerId) : undefined;
+            const pet = appointment.petId ? petsById.get(appointment.petId) : undefined;
+            const service = appointment.serviceId ? servicesById.get(appointment.serviceId) : undefined;
+            const location = appointment.locationId ? locationsById.get(appointment.locationId) : undefined;
+
+            const startDate = appointment.startsAt ? new Date(appointment.startsAt) : null;
+            const endDate = appointment.endsAt ? new Date(appointment.endsAt) : null;
+            const dateLabel = startDate ? dateFormatter.format(startDate) : 'Data não definida';
+            const startTimeLabel = startDate ? timeFormatter.format(startDate) : '--:--';
+            const endTimeLabel = endDate ? timeFormatter.format(endDate) : '--:--';
+            const notes = appointment.notes?.trim() || 'Sem observações';
+            const statusMeta = statusTokens[appointment.status];
+            const tooltipLines = [
+              `Data: ${dateLabel}`,
+              `Horário: ${startTimeLabel} – ${endTimeLabel}`,
+              `Local: ${location?.name ?? 'Não informado'}`,
+              `Notas: ${notes}`,
+            ];
+            const srTooltipId = `appointment-tooltip-${appointment.id}-sr`;
+            const visualTooltipId = `appointment-tooltip-${appointment.id}`;
+
+            return (
+              <article
+                key={appointment.id}
+                className="group relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm outline-none transition hover:shadow-md focus-within:ring-2 focus-within:ring-brand-300"
+                tabIndex={0}
+                aria-describedby={srTooltipId}
+              >
+                <span id={srTooltipId} className="sr-only">
+                  {tooltipLines.join('. ')}
+                </span>
+                <div className="flex items-center justify-between text-sm text-slate-500">
+                  <span className="font-semibold text-slate-800">{dateLabel}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusMeta.badgeClass}`}>
+                    {statusMeta.label}
+                  </span>
+                </div>
+                <h3 className="mt-3 text-lg font-semibold text-slate-900">{service?.name ?? 'Serviço não informado'}</h3>
+                <dl className="mt-2 space-y-1 text-sm text-slate-700">
+                  <div className="flex gap-2">
+                    <dt className="text-slate-500">Tutor:</dt>
+                    <dd className="font-medium">{customer?.name ?? 'Não informado'}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-slate-500">Pet:</dt>
+                    <dd className="font-medium">{pet?.name ?? 'Não informado'}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-slate-500">Serviço:</dt>
+                    <dd className="font-medium">{service?.name ?? 'Não informado'}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-slate-500">Horário:</dt>
+                    <dd className="font-medium">{startTimeLabel} – {endTimeLabel}</dd>
+                  </div>
+                </dl>
+                <div
+                  id={visualTooltipId}
+                  role="tooltip"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-1/2 top-full z-10 mt-3 w-72 -translate-x-1/2 rounded-2xl bg-slate-900/95 p-3 text-xs text-white opacity-0 shadow-2xl transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100 sm:left-auto sm:right-0 sm:translate-x-0"
+                >
+                  <p className="text-sm font-semibold">{service?.name ?? 'Agendamento'}</p>
+                  <ul className="mt-2 space-y-1 text-slate-200">
+                    <li>{dateLabel}</li>
+                    <li>{startTimeLabel} – {endTimeLabel}</li>
+                    <li>Local: {location?.name ?? 'Não informado'}</li>
+                    <li>Notas: {notes}</li>
+                  </ul>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+
       {isLoading ? (
         <div className="space-y-6">
           <SkeletonBlock className="h-10 w-72" />
@@ -176,11 +325,20 @@ export default function AppointmentsPage() {
         </div>
       ) : (
         <>
-          {/* Mobile: lista vertical, swipe, FAB */}
           {isMobile ? (
-            <div className="relative">
-              {/* ...existing mobile code... */}
-            </div>
+            showEmptyAppointments ? (
+              <EmptyState
+                icon="📅"
+                variant="inline"
+                title="Nenhum agendamento por aqui"
+                description="Use o botão acima para criar o primeiro horário e acompanhar tudo pela grade."
+                action={
+                  <Link href="/admin/appointments/new" className="inline-flex justify-center">
+                    <Button>Agendar agora</Button>
+                  </Link>
+                }
+              />
+            ) : null
           ) : showEmptyAppointments ? (
             <EmptyState
               icon="📅"
