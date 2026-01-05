@@ -309,7 +309,12 @@ export class UsersService {
     return randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
   }
 
-  private async recordAuditLog(tenantId: string | null | undefined, actorId: string, action: string, payload?: Record<string, unknown>) {
+  private async recordAuditLog(
+    tenantId: string | null | undefined,
+    actorId: string,
+    action: string,
+    payload?: Prisma.InputJsonValue,
+  ) {
     if (!tenantId) {
       return;
     }
@@ -320,7 +325,7 @@ export class UsersService {
           tenantId,
           actorId,
           action,
-          payload: payload ?? null,
+          payload: payload ?? undefined,
         },
       });
     } catch (error) {
