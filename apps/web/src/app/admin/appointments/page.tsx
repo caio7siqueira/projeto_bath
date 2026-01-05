@@ -23,28 +23,28 @@ const statusVisuals: Record<Appointment['status'], {
   blockClass: string;
   badgeClass: string;
   accentDot: string;
-  fcColor: string;
+  mutedDot: string;
 }> = {
   SCHEDULED: {
     label: 'Agendado',
-    blockClass: 'border-blue-300/40 bg-blue-600/90 text-white shadow-lg',
+    blockClass: 'bg-blue-600 text-white',
     badgeClass: 'bg-blue-50 text-blue-700',
-    accentDot: 'bg-blue-500',
-    fcColor: '#2563eb',
+    accentDot: 'bg-blue-400',
+    mutedDot: 'bg-blue-200',
   },
   DONE: {
     label: 'Concluído',
-    blockClass: 'border-emerald-300/50 bg-emerald-600/90 text-white shadow-lg',
+    blockClass: 'bg-emerald-600 text-white',
     badgeClass: 'bg-emerald-50 text-emerald-700',
-    accentDot: 'bg-emerald-500',
-    fcColor: '#10b981',
+    accentDot: 'bg-emerald-400',
+    mutedDot: 'bg-emerald-200',
   },
   CANCELLED: {
     label: 'Cancelado',
-    blockClass: 'border-slate-300/40 bg-slate-500/80 text-white shadow-lg',
+    blockClass: 'bg-slate-500 text-white',
     badgeClass: 'bg-slate-200 text-slate-700',
     accentDot: 'bg-slate-400',
-    fcColor: '#94a3b8',
+    mutedDot: 'bg-slate-300',
   },
 };
 
@@ -73,6 +73,10 @@ type CalendarEventPayload = {
 
 type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
 
+type CalendarEventClassArg = {
+  event: { id: string };
+};
+
 const formatRangeLabel = (start: Date, end: Date) => {
   const startDay = clampToDayStart(start);
   const endDay = clampToDayStart(addDays(end, -1));
@@ -83,6 +87,14 @@ const formatRangeLabel = (start: Date, end: Date) => {
     return `${startDay.getDate()}–${endDay.getDate()} ${startMonth}`;
   }
   return `${startDay.getDate()} ${startMonth} – ${endDay.getDate()} ${endMonth}`;
+};
+
+const timeToScrollValue = (dateInput?: string | Date | null) => {
+  if (!dateInput) return null;
+  const date = new Date(dateInput);
+  const hours = `${date.getHours()}`.padStart(2, '0');
+  const minutes = `${date.getMinutes()}`.padStart(2, '0');
+  return `${hours}:${minutes}:00`;
 };
 
 
@@ -114,6 +126,7 @@ export default function AppointmentsPage() {
   const [currentRangeLabel, setCurrentRangeLabel] = useState('');
   const [focusDay, setFocusDay] = useState(() => clampToDayStart(new Date()));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventPayload | null>(null);
+  const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
   const sortedAppointments = useMemo(
     () =>
       [...appointments].sort(
@@ -254,27 +267,43 @@ export default function AppointmentsPage() {
     const visuals = statusVisuals[appointment.status];
     const serviceName = payload.service?.name ?? 'Serviço não informado';
     const secondary = payload.pet?.name ?? payload.customer?.name ?? 'Cliente não informado';
+    const start = appointment.startsAt ? new Date(appointment.startsAt) : null;
+    const end = appointment.endsAt ? new Date(appointment.endsAt) : null;
+    const timeLabel = start && end ? `${timeFormatter.format(start)} – ${timeFormatter.format(end)}` : arg.timeText;
 
     return (
-      <div className={`flex h-full flex-col rounded-2xl border border-white/40 px-3 py-2 text-left text-xs ${visuals.blockClass}`}>
-        <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em]">
-          <span className="flex items-center gap-1 font-semibold tracking-tight">
-            <span className={`h-2 w-2 rounded-full ${visuals.accentDot}`} />
-            {visuals.label}
-          </span>
-          <span className="font-semibold tracking-tight">{arg.timeText}</span>
+      <div
+        className={`flex h-full flex-col justify-between rounded-[8px] px-2 py-1.5 text-left text-xs font-medium leading-tight ${visuals.blockClass}`}
+      >
+        <div className="flex items-center gap-2">
+          <span className={`h-1.5 w-1.5 rounded-full ${visuals.accentDot}`} aria-hidden />
+          <span className="text-[11px] font-semibold tracking-tight opacity-90">{timeLabel}</span>
         </div>
-        <p className="mt-1 text-sm font-semibold leading-tight">{serviceName}</p>
-        <p className="text-[11px] opacity-90">{secondary}</p>
+        <div className="mt-1 flex flex-col gap-0.5">
+          <span className="text-sm font-semibold">{serviceName}</span>
+          <span className="text-[11px] opacity-90">{secondary}</span>
+        </div>
       </div>
     );
+  }, [timeFormatter]);
+
+  const focusAppointment = useCallback((payload: CalendarEventPayload, opts?: { openDetails?: boolean }) => {
+    setFocusedEventId(payload.appointment.id);
+    const api = calendarRef.current?.getApi();
+    const scrollValue = timeToScrollValue(payload.appointment.startsAt);
+    if (api && scrollValue) {
+      api.scrollToTime(scrollValue);
+    }
+    if (opts?.openDetails) {
+      setSelectedEvent(payload);
+    }
   }, []);
 
   const handleEventClick = useCallback((arg: EventClickArg) => {
     arg.jsEvent.preventDefault();
     const payload = arg.event.extendedProps as CalendarEventPayload;
-    setSelectedEvent(payload);
-  }, []);
+    focusAppointment(payload, { openDetails: true });
+  }, [focusAppointment]);
 
   const closeDetails = useCallback(() => setSelectedEvent(null), []);
 
@@ -314,6 +343,35 @@ export default function AppointmentsPage() {
   const handleFocusDayShift = useCallback((delta: number) => {
     setFocusDay((prev) => addDays(prev, delta));
   }, []);
+
+  const handleEventDrop = useCallback(() => {
+    // Placeholder: future drag-and-drop reschedule integration will live here.
+  }, []);
+
+  const handleEventResize = useCallback(() => {
+    // Placeholder: future drag-resize controls will be wired here.
+  }, []);
+
+  const eventClassNames = useCallback((arg: CalendarEventClassArg) => {
+    const classes = [
+      '!border-0',
+      '!bg-transparent',
+      '!p-0',
+      'cursor-pointer',
+      'rounded-lg',
+      'transition-all',
+      'shadow-sm',
+      'hover:shadow-lg',
+      'focus-visible:outline-none',
+      'focus-visible:ring-2',
+      'focus-visible:ring-brand-200',
+      'focus-visible:ring-offset-2',
+    ];
+    if (focusedEventId && arg.event.id === focusedEventId) {
+      classes.push('ring-2', 'ring-offset-2', 'ring-brand-300', 'z-20');
+    }
+    return classes;
+  }, [focusedEventId]);
 
   useEffect(() => {
     if (!selectedEvent) return undefined;
@@ -456,10 +514,14 @@ export default function AppointmentsPage() {
                   locales={[ptBrLocale]}
                   locale="pt-br"
                   nowIndicator
+                  editable={false}
                   events={events}
                   datesSet={handleDatesSet}
                   eventClick={handleEventClick}
+                  eventDrop={handleEventDrop}
+                  eventResize={handleEventResize}
                   eventContent={renderEventContent}
+                  eventClassNames={eventClassNames}
                   height="auto"
                   expandRows
                   slotMinTime="07:00:00"
@@ -470,6 +532,7 @@ export default function AppointmentsPage() {
                   allDaySlot={false}
                   eventDisplay="block"
                   eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  slotEventOverlap
                 />
               </div>
             </div>
@@ -510,22 +573,23 @@ export default function AppointmentsPage() {
                   ) : (
                     digestAppointments.map(({ appointment, customer, pet, service, location, startLabel, endLabel }) => {
                       const visuals = statusVisuals[appointment.status];
+                      const payload: CalendarEventPayload = { appointment, customer, pet, service, location };
+                      const isFocused = focusedEventId === appointment.id;
                       return (
                         <button
                           key={appointment.id}
                           type="button"
-                          onClick={() =>
-                            setSelectedEvent({ appointment, customer, pet, service, location })
-                          }
-                          className="w-full rounded-2xl border border-slate-200 p-4 text-left transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                          onClick={() => focusAppointment(payload, { openDetails: true })}
+                          className={`w-full rounded-xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 ${
+                            isFocused ? 'border-brand-300 bg-brand-50 shadow-sm' : 'border-slate-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md'
+                          }`}
+                          aria-label={`Ver ${service?.name ?? 'serviço'} de ${pet?.name ?? customer?.name ?? 'cliente'} às ${startLabel}`}
                         >
                           <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
                             <span className="font-semibold text-slate-700">
                               {startLabel} – {endLabel}
                             </span>
-                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${visuals.badgeClass}`}>
-                              {visuals.label}
-                            </span>
+                            <span className={`h-1.5 w-1.5 rounded-full ${visuals.mutedDot}`} aria-hidden />
                           </div>
                           <p className="mt-2 text-sm font-semibold text-slate-900">
                             {service?.name ?? 'Serviço não informado'}
@@ -627,6 +691,35 @@ export default function AppointmentsPage() {
           </div>
         </div>
       )}
+      <style jsx global>{`
+        .fc .fc-scrollgrid,
+        .fc .fc-scrollgrid table {
+          border-color: #e2e8f0;
+        }
+        .fc .fc-timegrid-slot {
+          height: 48px;
+        }
+        .fc .fc-timegrid-col-frame {
+          padding: 0 12px;
+        }
+        .fc .fc-timegrid-event,
+        .fc .fc-timegrid-event .fc-event-main {
+          border-radius: 8px;
+        }
+        .fc .fc-timegrid-event-harness {
+          margin-right: 6px;
+        }
+        .fc .fc-timegrid-event {
+          margin: 2px 0;
+        }
+        .fc .fc-timegrid-event:hover {
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.15);
+        }
+        .fc .fc-timegrid-slot-label-cushion {
+          font-weight: 600;
+          color: #475569;
+        }
+      `}</style>
     </div>
   );
 }
