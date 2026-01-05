@@ -253,63 +253,54 @@ export default function AppointmentsPage() {
             const endTimeLabel = endDate ? timeFormatter.format(endDate) : '--:--';
             const notes = appointment.notes?.trim() || 'Sem observações';
             const statusMeta = statusTokens[appointment.status];
-            const tooltipLines = [
-              `Data: ${dateLabel}`,
-              `Horário: ${startTimeLabel} – ${endTimeLabel}`,
-              `Local: ${location?.name ?? 'Não informado'}`,
-              `Notas: ${notes}`,
-            ];
-            const srTooltipId = `appointment-tooltip-${appointment.id}-sr`;
-            const visualTooltipId = `appointment-tooltip-${appointment.id}`;
-
             return (
               <article
                 key={appointment.id}
-                className="group relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm outline-none transition hover:shadow-md focus-within:ring-2 focus-within:ring-brand-300"
-                tabIndex={0}
-                aria-describedby={srTooltipId}
+                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-brand-300"
+                aria-label={`Agendamento ${service?.name ?? ''} em ${dateLabel}`}
               >
-                <span id={srTooltipId} className="sr-only">
-                  {tooltipLines.join('. ')}
-                </span>
-                <div className="flex items-center justify-between text-sm text-slate-500">
-                  <span className="font-semibold text-slate-800">{dateLabel}</span>
+                <div className="flex items-start justify-between gap-4 text-sm text-slate-500">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-brand-500">{dateLabel}</p>
+                    <p className="mt-1 font-semibold text-slate-700">{startTimeLabel} – {endTimeLabel}</p>
+                  </div>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusMeta.badgeClass}`}>
                     {statusMeta.label}
                   </span>
                 </div>
-                <h3 className="mt-3 text-lg font-semibold text-slate-900">{service?.name ?? 'Serviço não informado'}</h3>
-                <dl className="mt-2 space-y-1 text-sm text-slate-700">
-                  <div className="flex gap-2">
-                    <dt className="text-slate-500">Tutor:</dt>
-                    <dd className="font-medium">{customer?.name ?? 'Não informado'}</dd>
+                <div className="mt-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Serviço</p>
+                  <h3 className="text-lg font-semibold text-slate-900">{service?.name ?? 'Serviço não informado'}</h3>
+                </div>
+                <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <dl className="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tutor</dt>
+                      <dd className="font-medium text-slate-900">{customer?.name ?? 'Não informado'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pet</dt>
+                      <dd className="font-medium text-slate-900">{pet?.name ?? 'Não informado'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Serviço</dt>
+                      <dd className="font-medium text-slate-900">{service?.name ?? 'Não informado'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Horário</dt>
+                      <dd className="font-medium text-slate-900">{startTimeLabel} – {endTimeLabel}</dd>
+                    </div>
+                  </dl>
+                  <div className="mt-4 space-y-2 text-sm text-slate-600">
+                    <p>
+                      <span className="font-semibold text-slate-800">Local: </span>
+                      {location?.name ?? 'Não informado'}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-800">Notas: </span>
+                      {notes}
+                    </p>
                   </div>
-                  <div className="flex gap-2">
-                    <dt className="text-slate-500">Pet:</dt>
-                    <dd className="font-medium">{pet?.name ?? 'Não informado'}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-slate-500">Serviço:</dt>
-                    <dd className="font-medium">{service?.name ?? 'Não informado'}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="text-slate-500">Horário:</dt>
-                    <dd className="font-medium">{startTimeLabel} – {endTimeLabel}</dd>
-                  </div>
-                </dl>
-                <div
-                  id={visualTooltipId}
-                  role="tooltip"
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-1/2 top-full z-10 mt-3 w-72 -translate-x-1/2 rounded-2xl bg-slate-900/95 p-3 text-xs text-white opacity-0 shadow-2xl transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100 sm:left-auto sm:right-0 sm:translate-x-0"
-                >
-                  <p className="text-sm font-semibold">{service?.name ?? 'Agendamento'}</p>
-                  <ul className="mt-2 space-y-1 text-slate-200">
-                    <li>{dateLabel}</li>
-                    <li>{startTimeLabel} – {endTimeLabel}</li>
-                    <li>Local: {location?.name ?? 'Não informado'}</li>
-                    <li>Notas: {notes}</li>
-                  </ul>
                 </div>
               </article>
             );
