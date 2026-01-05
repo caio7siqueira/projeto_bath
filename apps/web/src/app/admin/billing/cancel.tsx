@@ -62,13 +62,7 @@ export default function BillingCancel() {
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <Card className="my-8 max-w-md mx-auto">
-        <p className="text-sm text-red-700">Somente administradores podem cancelar planos de assinatura.</p>
-      </Card>
-    );
-  }
+  const canManage = isAdmin;
 
   return (
     <div className="my-8 max-w-md mx-auto p-4 border rounded-lg bg-white">
@@ -78,49 +72,57 @@ export default function BillingCancel() {
           Navegação registrada: use &ldquo;Voltar&rdquo; para retornar ao ponto anterior sem atualizar a página inteira.
         </p>
       </div>
-      {subscription && (
-        <p className="text-sm text-gray-600 mb-4">
-          Plano atual: <strong>{subscription.plan}</strong> • Status: <strong>{subscription.status}</strong>
-        </p>
+      {!canManage ? (
+        <Card className="mt-4 border-red-100 bg-red-50">
+          <p className="text-sm text-red-700">Somente administradores podem cancelar planos de assinatura.</p>
+        </Card>
+      ) : (
+        <>
+          {subscription && (
+            <p className="text-sm text-gray-600 mb-4">
+              Plano atual: <strong>{subscription.plan}</strong> • Status: <strong>{subscription.status}</strong>
+            </p>
+          )}
+          {bannerError && (
+            <div className="mb-4">
+              <ErrorBanner
+                scenario="billing-cancel"
+                title={bannerError.title}
+                message={bannerError.message}
+                details={bannerError.details}
+              />
+            </div>
+          )}
+          {successMessage && (
+            <div className="mb-3 rounded-lg bg-green-50 p-3 text-green-700 text-sm font-medium">
+              {successMessage}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="danger"
+              onClick={handleCancel}
+              isLoading={loading || loadingSubscription}
+              disabled={loading || loadingSubscription}
+            >
+              Cancelar assinatura
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push('/admin/billing');
+                }
+              }}
+            >
+              Voltar
+            </Button>
+          </div>
+        </>
       )}
-      {bannerError && (
-        <div className="mb-4">
-          <ErrorBanner
-            scenario="billing-cancel"
-            title={bannerError.title}
-            message={bannerError.message}
-            details={bannerError.details}
-          />
-        </div>
-      )}
-      {successMessage && (
-        <div className="mb-3 rounded-lg bg-green-50 p-3 text-green-700 text-sm font-medium">
-          {successMessage}
-        </div>
-      )}
-      <div className="flex gap-2">
-        <Button
-          variant="danger"
-          onClick={handleCancel}
-          isLoading={loading || loadingSubscription}
-          disabled={loading || loadingSubscription}
-        >
-          Cancelar assinatura
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) {
-              router.back();
-            } else {
-              router.push('/admin/billing');
-            }
-          }}
-        >
-          Voltar
-        </Button>
-      </div>
     </div>
   );
 }
