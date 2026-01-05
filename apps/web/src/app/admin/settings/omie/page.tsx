@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useRole } from '@/lib/use-role';
@@ -73,6 +73,7 @@ export default function OmieIntegrationPage() {
   const [form, setForm] = useState({ appKey: '', appSecret: '' });
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [testing, setTesting] = useState(false);
   const [eventFilter, setEventFilter] = useState<EventFilter>('ALL');
@@ -82,8 +83,18 @@ export default function OmieIntegrationPage() {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
+  const saveBannerRef = useRef<HTMLDivElement | null>(null);
 
   const canTestWithOverride = form.appKey.trim().length > 0 && form.appSecret.trim().length > 0;
+
+  const handleFormChange = useCallback(
+    (field: 'appKey' | 'appSecret', value: string) => {
+      setForm((prev) => ({ ...prev, [field]: value }));
+      if (saveMessage) setSaveMessage(null);
+      if (saveError) setSaveError(null);
+    },
+    [saveMessage, saveError],
+  );
 
   const loadConnection = useCallback(async () => {
     setConnectionLoading(true);
@@ -126,22 +137,34 @@ export default function OmieIntegrationPage() {
     loadEvents();
   }, [loadEvents]);
 
+  useEffect(() => {
+    if ((saveMessage || saveError) && saveBannerRef.current) {
+      saveBannerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [saveMessage, saveError]);
+
   const handleSave = async () => {
     if (!form.appKey.trim() || !form.appSecret.trim()) {
-      setConnectionError('Informe appKey e appSecret.');
+      setSaveError('Informe appKey e appSecret.');
       return;
     }
     setSaving(true);
-    setConnectionError(null);
+    setSaveError(null);
     setSaveMessage(null);
     try {
-      await saveOmieConnection({ appKey: form.appKey.trim(), appSecret: form.appSecret.trim() });
+      const response = await saveOmieConnection({ appKey: form.appKey.trim(), appSecret: form.appSecret.trim() });
       setForm({ appKey: '', appSecret: '' });
       setSaveMessage('Credenciais atualizadas com sucesso.');
+      setConnection((prev) => ({
+        configured: true,
+        source: 'TENANT',
+        createdAt: prev?.createdAt ?? response.updatedAt,
+        updatedAt: response.updatedAt,
+      }));
       await loadConnection();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Falha ao salvar credenciais.';
-      setConnectionError(message);
+      setSaveError(message);
     } finally {
       setSaving(false);
     }
@@ -211,9 +234,6 @@ export default function OmieIntegrationPage() {
       {connectionError && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{connectionError}</div>
       )}
-      {saveMessage && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{saveMessage}</div>
-      )}
       {testMessage && (
         <div
           className={`rounded-lg border p-4 text-sm ${
@@ -273,7 +293,7 @@ export default function OmieIntegrationPage() {
                   id="omie-app-key"
                   type="text"
                   value={form.appKey}
-                  onChange={(event) => setForm((prev) => ({ ...prev, appKey: event.target.value }))}
+                  onChange={(event) => handleFormChange('appKey', event.target.value)}
                   placeholder="Ex.: 1234567890"
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                   autoComplete="off"
@@ -285,7 +305,7 @@ export default function OmieIntegrationPage() {
                   id="omie-app-secret"
                   type="password"
                   value={form.appSecret}
-                  onChange={(event) => setForm((prev) => ({ ...prev, appSecret: event.target.value }))}
+                  onChange={(event) => handleFormChange('appSecret', event.target.value)}
                   placeholder="••••••••"
                   className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                   autoComplete="new-password"
@@ -299,6 +319,14 @@ export default function OmieIntegrationPage() {
               <Button variant="ghost" onClick={handleTest} disabled={testing}>
                 {testing ? 'Testando...' : canTestWithOverride ? 'Testar com dados acima' : 'Testar credenciais salvas'}
               </Button>
+            </div>
+            <div ref={saveBannerRef} className="space-y-2" aria-live="polite">
+              {saveError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{saveError}</div>
+              )}
+              {saveMessage && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{saveMessage}</div>
+              )}
             </div>
             <p className="text-xs text-gray-500">
               Nunca exibimos o segredo armazenado; informe um novo par completo sempre que precisar atualizar.

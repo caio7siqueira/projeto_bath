@@ -110,6 +110,41 @@ export default function AppointmentsPage() {
     fetchAllPets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const query = window.matchMedia('(max-width: 768px)');
+    const applyMatch = (matches: boolean) => {
+      setIsCompactLayout(matches);
+      const desiredView: CalendarViewType = matches ? 'timeGridDay' : 'timeGridWeek';
+      const api = calendarRef.current?.getApi();
+      const currentView = api?.view.type as CalendarViewType | undefined;
+      if (api && currentView && (currentView === 'timeGridWeek' || currentView === 'timeGridDay') && currentView !== desiredView) {
+        api.changeView(desiredView);
+      }
+      setCalendarView((prev) => {
+        if (matches && prev === 'timeGridWeek') return 'timeGridDay';
+        if (!matches && prev === 'timeGridDay') return 'timeGridWeek';
+        return prev;
+      });
+    };
+    applyMatch(query.matches);
+    const listener = (event: MediaQueryListEvent) => applyMatch(event.matches);
+    if (typeof query.addEventListener === 'function') {
+      query.addEventListener('change', listener);
+    } else {
+      // Safari < 14
+      // @ts-expect-error - addListener ainda é usado em navegadores legados
+      query.addListener(listener);
+    }
+    return () => {
+      if (typeof query.removeEventListener === 'function') {
+        query.removeEventListener('change', listener);
+      } else {
+        // @ts-expect-error - removeListener para suporte legado
+        query.removeListener(listener);
+      }
+    };
+  }, []);
   // HOOKS DE DADOS - sempre no topo
   const {
     appointments,
@@ -127,6 +162,7 @@ export default function AppointmentsPage() {
   const [focusDay, setFocusDay] = useState(() => clampToDayStart(new Date()));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventPayload | null>(null);
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
   const sortedAppointments = useMemo(
     () =>
       [...appointments].sort(
@@ -198,6 +234,20 @@ export default function AppointmentsPage() {
   );
 
   const focusDayLabel = focusDayFormatter.format(focusDay);
+
+  const slotLabelFormat = useMemo(
+    () => ({
+      hour: isCompactLayout ? 'numeric' : '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }),
+    [isCompactLayout],
+  );
+
+  const headerFormat = useMemo(
+    () => (isCompactLayout ? { weekday: 'short', day: '2-digit' } : { weekday: 'short', day: '2-digit', month: '2-digit' }),
+    [isCompactLayout],
+  );
 
   const digestAppointments = useMemo(() => {
     return sortedAppointments
@@ -470,75 +520,9 @@ export default function AppointmentsPage() {
         </div>
       ) : (
         <>
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="rounded-3xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-4 border-b border-surface-divider bg-surface-muted/60 p-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('prev')} aria-label="Semana anterior">
-                    {'<'}
-                  </Button>
-                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('today')}>
-                    Hoje
-                  </Button>
-                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('next')} aria-label="Próxima semana">
-                    {'>'}
-                  </Button>
-                  <div className="ml-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700">
-                    {currentRangeLabel || 'Carregando grade...'}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <select
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-                    value={calendarView}
-                    onChange={(e) => handleViewChange(e.target.value as CalendarViewType)}
-                    aria-label="Mudar visualização da agenda"
-                  >
-                    <option value="dayGridMonth">Mês</option>
-                    <option value="timeGridWeek">Semana</option>
-                    <option value="timeGridDay">Dia</option>
-                  </select>
-                  <Link href="/admin/appointments/new">
-                    <Button size="sm" icon={<span aria-hidden>＋</span>}>
-                      Novo agendamento
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="px-2 py-4 md:px-4">
-                <FullCalendar
-                  ref={calendarRef}
-                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                  initialView="timeGridWeek"
-                  headerToolbar={false}
-                  locales={[ptBrLocale]}
-                  locale="pt-br"
-                  nowIndicator
-                  editable={false}
-                  events={events}
-                  datesSet={handleDatesSet}
-                  eventClick={handleEventClick}
-                  eventDrop={handleEventDrop}
-                  eventResize={handleEventResize}
-                  eventContent={renderEventContent}
-                  eventClassNames={eventClassNames}
-                  height="auto"
-                  expandRows
-                  slotMinTime="07:00:00"
-                  slotMaxTime="21:00:00"
-                  slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                  dayHeaderFormat={{ weekday: 'short', day: '2-digit', month: '2-digit' }}
-                  dayMaxEvents={false}
-                  allDaySlot={false}
-                  eventDisplay="block"
-                  eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                  slotEventOverlap
-                />
-              </div>
-            </div>
-
-            <aside className="space-y-4">
-              <div className="h-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="flex flex-col gap-6 xl:flex-row xl:items-start">
+            <aside className="order-1 w-full xl:order-2 xl:max-w-sm xl:pl-6">
+              <div className="h-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-32">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-brand-500">Resumo diário</p>
@@ -597,9 +581,7 @@ export default function AppointmentsPage() {
                           <p className="text-sm text-slate-500">
                             {pet?.name ?? customer?.name ?? 'Cliente não informado'}
                           </p>
-                          {location?.name && (
-                            <p className="text-xs text-slate-400">{location.name}</p>
-                          )}
+                          {location?.name && <p className="text-xs text-slate-400">{location.name}</p>}
                         </button>
                       );
                     })
@@ -607,6 +589,77 @@ export default function AppointmentsPage() {
                 </div>
               </div>
             </aside>
+
+            <div className="order-2 flex-1 rounded-3xl border border-gray-200 bg-white shadow-sm xl:order-1">
+              <div className="flex flex-col gap-4 border-b border-surface-divider bg-surface-muted/60 p-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('prev')} aria-label="Semana anterior">
+                    {'<'}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('today')}>
+                    Hoje
+                  </Button>
+                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('next')} aria-label="Próxima semana">
+                    {'>'}
+                  </Button>
+                  <div className="ml-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700">
+                    {currentRangeLabel || 'Carregando grade...'}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                    value={calendarView}
+                    onChange={(e) => handleViewChange(e.target.value as CalendarViewType)}
+                    aria-label="Mudar visualização da agenda"
+                  >
+                    <option value="dayGridMonth">Mês</option>
+                    <option value="timeGridWeek">Semana</option>
+                    <option value="timeGridDay">Dia</option>
+                  </select>
+                  <Link href="/admin/appointments/new">
+                    <Button size="sm" icon={<span aria-hidden>＋</span>}>
+                      Novo agendamento
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className={`px-2 py-4 md:px-4 ${isCompactLayout ? '-mx-4 sm:mx-0' : ''}`}>
+                <div className={isCompactLayout ? 'overflow-x-auto pb-3' : ''}>
+                  <div className={isCompactLayout ? 'min-w-[640px]' : ''}>
+                    <FullCalendar
+                      key={isCompactLayout ? 'calendar-mobile' : 'calendar-desktop'}
+                      ref={calendarRef}
+                      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                      initialView={isCompactLayout ? 'timeGridDay' : 'timeGridWeek'}
+                      headerToolbar={false}
+                      locales={[ptBrLocale]}
+                      locale="pt-br"
+                      nowIndicator
+                      editable={false}
+                      events={events}
+                      datesSet={handleDatesSet}
+                      eventClick={handleEventClick}
+                      eventDrop={handleEventDrop}
+                      eventResize={handleEventResize}
+                      eventContent={renderEventContent}
+                      eventClassNames={eventClassNames}
+                      height="auto"
+                      expandRows
+                      slotMinTime="07:00:00"
+                      slotMaxTime="21:00:00"
+                      slotLabelFormat={slotLabelFormat}
+                      dayHeaderFormat={headerFormat}
+                      dayMaxEvents={false}
+                      allDaySlot={false}
+                      eventDisplay="block"
+                      eventTimeFormat={slotLabelFormat}
+                      slotEventOverlap
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
 
           {showEmptyAppointments && (
@@ -718,6 +771,20 @@ export default function AppointmentsPage() {
         .fc .fc-timegrid-slot-label-cushion {
           font-weight: 600;
           color: #475569;
+        }
+        @media (max-width: 768px) {
+          .fc .fc-timegrid-slot {
+            height: 60px;
+          }
+          .fc .fc-timegrid-slot-label-cushion {
+            font-size: 0.85rem;
+          }
+          .fc .fc-timegrid-axis-frame {
+            padding-left: 8px;
+          }
+          .fc .fc-daygrid-day-number {
+            font-size: 0.85rem;
+          }
         }
       `}</style>
     </div>

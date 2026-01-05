@@ -54,7 +54,9 @@ export interface OmieEventsResponse {
 }
 
 export async function fetchOmieConnectionStatus() {
-  return apiFetch('/integrations/omie/connection') as Promise<OmieConnectionStatusResponse>;
+  return apiFetch('/integrations/omie/connection', {
+    cache: 'no-store',
+  }) as Promise<OmieConnectionStatusResponse>;
 }
 
 export async function saveOmieConnection(body: UpsertOmieConnectionDto) {
@@ -77,7 +79,9 @@ export async function listOmieEvents(params: { status?: OmieEventStatus; page?: 
   if (params.page) qs.set('page', String(params.page));
   if (params.pageSize) qs.set('pageSize', String(params.pageSize));
   const query = qs.toString();
-  return apiFetch(`/integrations/omie/events${query ? `?${query}` : ''}`) as Promise<OmieEventsResponse>;
+  return apiFetch(`/integrations/omie/events${query ? `?${query}` : ''}`, {
+    cache: 'no-store',
+  }) as Promise<OmieEventsResponse>;
 }
 
 export async function reprocessOmieEvent(eventId: string) {
