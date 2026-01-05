@@ -258,7 +258,7 @@ model RecurrenceSeries {
 
 model OmieConnection {
   id        String   @id @default(uuid())
-  tenantId  String
+  tenantId  String   @unique
   appKey    String
   appSecret String
   createdAt DateTime @default(now())
@@ -287,6 +287,9 @@ model OmieSalesEvent {
   errorMessage  String?
   omieOrderId   String?
   status        String       @default("PENDING")
+  attemptCount  Int          @default(0)
+  lastAttemptAt DateTime?
+  lastErrorCode String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   tenant        Tenant       @relation(fields: [tenantId], references: [id])
 }

@@ -150,7 +150,18 @@ export function Sidebar() {
             <NavLink href="/admin/notifications" label="Notificações" isActive={pathname?.startsWith('/admin/notifications')} onClick={closeDrawer} />
             {/* Configurações */}
             <div className="mb-2 mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Configurações</div>
-            <NavLink href="/admin/settings" label="Configurações" isActive={pathname?.startsWith('/admin/settings')} onClick={closeDrawer} />
+            <NavLink
+              href="/admin/settings"
+              label="Configurações"
+              isActive={pathname === '/admin/settings' || pathname?.startsWith('/admin/settings/tenant')}
+              onClick={closeDrawer}
+            />
+            <NavLink
+              href="/admin/settings/omie"
+              label="Integrações (Omie)"
+              isActive={pathname?.startsWith('/admin/settings/omie')}
+              onClick={closeDrawer}
+            />
             {/* Super Admin */}
             {isSuperAdmin && (
               <>

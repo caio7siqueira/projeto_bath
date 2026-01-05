@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OmieQueueService } from './omie.queue';
 import { fetchWithRetry } from '../../common/http-retry.util';
+import { ListOmieEventsQueryDto, TestOmieConnectionDto, UpsertOmieConnectionDto } from './dto/omie-connection.dto';
+import { OmieEventStatus } from './omie.constants';
 
 export interface OmieCustomerDto {
   nome_fantasia: string;
@@ -23,72 +26,130 @@ export interface OmieSalesOrderDto {
   }>;
 }
 
+type OmieCredentialSource = 'TENANT' | 'ENV' | 'PROVIDED';
+
+interface OmieResolvedCredentials {
+  appKey: string;
+  appSecret: string;
+  source: OmieCredentialSource;
+}
+
 @Injectable()
 export class OmieService {
   private readonly logger = new Logger(OmieService.name);
-  private readonly appKey: string;
-  private readonly appSecret: string;
   private readonly baseUrl = 'https://app.omie.com.br/api/v1';
+  private readonly envCredentials?: { appKey: string; appSecret: string };
 
   constructor(private prisma: PrismaService, private omieQueue: OmieQueueService) {
-    this.appKey = process.env.OMIE_APP_KEY || '';
-    this.appSecret = process.env.OMIE_APP_SECRET || '';
+    const envKey = process.env.OMIE_APP_KEY;
+    const envSecret = process.env.OMIE_APP_SECRET;
 
-    if (!this.appKey || !this.appSecret) {
-      this.logger.warn('Omie credentials not configured. Integration disabled.');
+    if (envKey && envSecret) {
+      this.envCredentials = { appKey: envKey, appSecret: envSecret };
+    } else {
+      this.logger.warn('Omie credentials not configured. Tenants must provide appKey/appSecret.');
     }
   }
 
-  async upsertCustomer(tenantId: string, customer: OmieCustomerDto): Promise<{ codigo_cliente_omie: number }> {
-    if (!this.appKey || !this.appSecret) {
-      throw new Error('Omie integration not configured');
+  async getConnectionStatus(tenantId: string) {
+    const connection = await this.prisma.omieConnection.findUnique({ where: { tenantId } });
+
+    if (connection) {
+      return {
+        configured: true,
+        source: 'TENANT' as OmieCredentialSource,
+        updatedAt: connection.updatedAt,
+        createdAt: connection.createdAt,
+      };
     }
 
-    const payload = {
-      call: 'UpsertCliente',
-      app_key: this.appKey,
-      app_secret: this.appSecret,
-      param: [customer],
-    };
-
-    const response = await fetchWithRetry(`${this.baseUrl}/geral/clientes/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Omie upsert customer failed: ${error}`);
+    if (this.envCredentials) {
+      return { configured: true, source: 'ENV' as OmieCredentialSource, updatedAt: null, createdAt: null };
     }
 
-    return response.json();
+    return { configured: false, source: null, updatedAt: null, createdAt: null };
   }
 
-  async createSalesOrder(tenantId: string, order: OmieSalesOrderDto): Promise<{ codigo_pedido: string }> {
-    if (!this.appKey || !this.appSecret) {
-      throw new Error('Omie integration not configured');
-    }
-
-    const payload = {
-      call: 'IncluirPedido',
-      app_key: this.appKey,
-      app_secret: this.appSecret,
-      param: [order],
-    };
-
-    const response = await fetchWithRetry(`${this.baseUrl}/produtos/pedido/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+  async upsertConnection(tenantId: string, body: UpsertOmieConnectionDto) {
+    const connection = await this.prisma.omieConnection.upsert({
+      where: { tenantId },
+      update: { appKey: body.appKey, appSecret: body.appSecret },
+      create: { tenantId, appKey: body.appKey, appSecret: body.appSecret },
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Omie create sales order failed: ${error}`);
+    return {
+      message: 'Omie credentials saved',
+      updatedAt: connection.updatedAt,
+      source: 'TENANT' as OmieCredentialSource,
+    };
+  }
+
+  async testConnection(tenantId: string, body: TestOmieConnectionDto) {
+    const credentials = await this.resolveCredentials(tenantId, body);
+    await this.performHealthCheck(tenantId, credentials);
+    return { ok: true, source: credentials.source };
+  }
+
+  async listEvents(tenantId: string, query: ListOmieEventsQueryDto) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const where: Prisma.OmieSalesEventWhereInput = { tenantId };
+    if (query.status) {
+      where.status = query.status;
     }
 
-    return response.json();
+    const [events, total] = await this.prisma.$transaction([
+      this.prisma.omieSalesEvent.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.omieSalesEvent.count({ where }),
+    ]);
+
+    return {
+      data: events,
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: total ? Math.ceil(total / pageSize) : 0,
+        status: query.status ?? null,
+      },
+    };
+  }
+
+  async upsertCustomer(
+    tenantId: string,
+    customer: OmieCustomerDto,
+    credentials?: OmieResolvedCredentials,
+  ): Promise<{ codigo_cliente_omie: number }> {
+    return this.executeOmieCall(
+      tenantId,
+      '/geral/clientes/',
+      {
+        call: 'UpsertCliente',
+        param: [customer],
+      },
+      credentials,
+    );
+  }
+
+  async createSalesOrder(
+    tenantId: string,
+    order: OmieSalesOrderDto,
+    credentials?: OmieResolvedCredentials,
+  ): Promise<{ codigo_pedido: string }> {
+    return this.executeOmieCall(
+      tenantId,
+      '/produtos/pedido/',
+      {
+        call: 'IncluirPedido',
+        param: [order],
+      },
+      credentials,
+    );
   }
 
   async createSalesEventForAppointment(appointmentId: string): Promise<void> {
@@ -117,7 +178,7 @@ export class OmieService {
       notes: appointment.notes,
     };
 
-    const event = await (this.prisma as any).omieSalesEvent.create({
+    const event = await this.prisma.omieSalesEvent.create({
       data: {
         tenantId: appointment.tenantId,
         appointmentId: appointment.id,
@@ -137,32 +198,44 @@ export class OmieService {
   }
 
   async processOmieSalesEvent(eventId: string): Promise<void> {
-    const event = (await (this.prisma as any).omieSalesEvent.findUnique({
+    const event = await this.prisma.omieSalesEvent.findUnique({
       where: { id: eventId },
       include: { appointment: { include: { customer: true, service: true } } },
-    })) as any;
+    });
 
     if (!event) {
       throw new Error(`OmieSalesEvent ${eventId} not found`);
     }
 
-    if (event.status !== 'PENDING') {
-      this.logger.warn(`Event ${eventId} already processed with status ${event.status}`);
+    if (event.status === 'SUCCESS') {
+      this.logger.warn(`Event ${eventId} already processed successfully.`);
       return;
     }
 
     try {
       const payload = event.payload as any;
+      const credentials = await this.resolveCredentials(event.tenantId);
+
+      await this.prisma.omieSalesEvent.update({
+        where: { id: eventId },
+        data: {
+          status: 'PROCESSING',
+          attemptCount: { increment: 1 },
+          lastAttemptAt: new Date(),
+          errorMessage: null,
+          lastErrorCode: null,
+        },
+      });
 
       // 1. Upsert customer in Omie
       const omieCustomer: OmieCustomerDto = {
         nome_fantasia: payload.customerName,
         telefone1_numero: payload.customerPhone,
         email: payload.customerEmail,
-        cnpj_cpf: event.appointment?.customer.cpf,
+        cnpj_cpf: event.appointment?.customer.cpf ?? undefined,
       };
 
-      const customerResult = await this.upsertCustomer(event.tenantId, omieCustomer);
+      const customerResult = await this.upsertCustomer(event.tenantId, omieCustomer, credentials);
 
       // 2. Create sales order
       const omieOrder: OmieSalesOrderDto = {
@@ -183,24 +256,26 @@ export class OmieService {
         ],
       };
 
-      const orderResult = await this.createSalesOrder(event.tenantId, omieOrder);
+      const orderResult = await this.createSalesOrder(event.tenantId, omieOrder, credentials);
 
-      await (this.prisma as any).omieSalesEvent.update({
+      await this.prisma.omieSalesEvent.update({
         where: { id: eventId },
         data: {
           status: 'SUCCESS',
           omieOrderId: orderResult.codigo_pedido,
+          lastErrorCode: null,
         },
       });
 
       this.logger.log(`Successfully processed OmieSalesEvent ${eventId}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await (this.prisma as any).omieSalesEvent.update({
+      await this.prisma.omieSalesEvent.update({
         where: { id: eventId },
         data: {
           status: 'ERROR',
           errorMessage,
+          lastErrorCode: this.extractErrorCode(error),
         },
       });
 
@@ -210,11 +285,96 @@ export class OmieService {
   }
 
   async reprocessFailedEvent(eventId: string): Promise<void> {
-    await (this.prisma as any).omieSalesEvent.update({
+    const event = await this.prisma.omieSalesEvent.update({
       where: { id: eventId },
-      data: { status: 'PENDING' },
+      data: { status: 'PENDING', errorMessage: null, lastErrorCode: null },
     });
 
-    await this.processOmieSalesEvent(eventId);
+    await this.omieQueue.enqueueProcessEvent(event.id);
+  }
+
+  private async performHealthCheck(tenantId: string, credentials: OmieResolvedCredentials) {
+    await this.executeOmieCall(
+      tenantId,
+      '/geral/clientes/',
+      {
+        call: 'ListarClientesResumido',
+        param: [
+          {
+            pagina: 1,
+            registros_por_pagina: 1,
+            apenas_importado_api: 'N',
+          },
+        ],
+      },
+      credentials,
+    );
+  }
+
+  private async resolveCredentials(
+    tenantId: string,
+    override?: TestOmieConnectionDto,
+  ): Promise<OmieResolvedCredentials> {
+    if (override && (override.appKey || override.appSecret)) {
+      if (!override.appKey || !override.appSecret) {
+        throw new BadRequestException('Both appKey and appSecret are required for override testing.');
+      }
+      return { appKey: override.appKey, appSecret: override.appSecret, source: 'PROVIDED' };
+    }
+
+    const tenantConnection = await this.prisma.omieConnection.findUnique({ where: { tenantId } });
+    if (tenantConnection) {
+      return {
+        appKey: tenantConnection.appKey,
+        appSecret: tenantConnection.appSecret,
+        source: 'TENANT',
+      };
+    }
+
+    if (this.envCredentials) {
+      return { ...this.envCredentials, source: 'ENV' };
+    }
+
+    throw new BadRequestException('Omie integration not configured for this tenant.');
+  }
+
+  private async executeOmieCall<T>(
+    tenantId: string,
+    endpoint: string,
+    payload: Record<string, unknown>,
+    credentials?: OmieResolvedCredentials,
+  ): Promise<T> {
+    const resolved = credentials ?? (await this.resolveCredentials(tenantId));
+
+    const response = await fetchWithRetry(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...payload,
+        app_key: resolved.appKey,
+        app_secret: resolved.appSecret,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const error = new Error(`Omie request to ${endpoint} failed: ${errorText}`);
+      Object.assign(error, { status: response.status });
+      throw error;
+    }
+
+    return response.json();
+  }
+
+  private extractErrorCode(error: unknown): string | null {
+    if (typeof error === 'object' && error && 'status' in error) {
+      return String((error as Record<string, unknown>).status);
+    }
+
+    if (error instanceof Error && 'code' in error && (error as Record<string, unknown>).code) {
+      return String((error as Record<string, unknown>).code);
+    }
+
+    return null;
   }
 }

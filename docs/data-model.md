@@ -16,3 +16,9 @@
 - NotificationJob: jobs de notificação
 - AuditLog: auditoria
 - BillingSubscription: assinaturas
+
+## Integração Omie
+
+- `OmieConnection`: um registro único por tenant contendo `appKey`/`appSecret` (ENV continua como fallback global).
+- `OmieSalesEvent`: guarda o payload do agendamento e agora rastreia `attemptCount`, `lastAttemptAt` e `lastErrorCode` para observabilidade/retries.
+- `OmieCustomerLink`: vínculo opcional entre `Customer` e IDs Omie para reconciliação futura.

@@ -5,6 +5,7 @@ import type { Appointment } from '@/lib/api/appointments';
 import type { Service } from '@/lib/api/services';
 import type { Location } from '@/lib/api/locations';
 import type { BillingSubscription } from '@/lib/api/billing';
+import type { OmieEvent } from '@/lib/api/omie';
 
 export type UserRole = 'ADMIN' | 'STAFF' | 'SUPER_ADMIN';
 
@@ -24,6 +25,13 @@ interface SequenceState {
   appointment: number;
 }
 
+interface OmieConnectionState {
+  configured: boolean;
+  source: 'TENANT' | 'ENV' | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export interface MockState {
   user: MockUser;
   dashboard: DashboardStats;
@@ -33,6 +41,8 @@ export interface MockState {
   locations: Location[];
   appointments: Appointment[];
   billingSubscription: BillingSubscription | null;
+  omieConnection: OmieConnectionState;
+  omieEvents: OmieEvent[];
   sequences: SequenceState;
 }
 
@@ -74,6 +84,15 @@ export async function setupMockBackend(page: Page, options?: SetupMockOptions) {
   if (options?.state?.appointments) state.appointments = options.state.appointments;
   if (options?.state?.billingSubscription !== undefined) {
     state.billingSubscription = options.state.billingSubscription;
+  }
+  if (options?.state?.omieConnection) {
+    state.omieConnection = {
+      ...state.omieConnection,
+      ...options.state.omieConnection,
+    };
+  }
+  if (options?.state?.omieEvents) {
+    state.omieEvents = options.state.omieEvents;
   }
 
   recomputeSequences(state);
@@ -172,6 +191,21 @@ export async function setupMockBackend(page: Page, options?: SetupMockOptions) {
         return;
       case normalizedPath === '/admin/billing/subscription' && request.method() === 'PUT':
         await handleUpsertSubscription(route, request, state);
+        return;
+      case normalizedPath === '/integrations/omie/connection' && request.method() === 'GET':
+        await handleGetOmieConnection(route, state);
+        return;
+      case normalizedPath === '/integrations/omie/connection' && request.method() === 'PUT':
+        await handleSaveOmieConnection(route, state);
+        return;
+      case normalizedPath === '/integrations/omie/connection/test' && request.method() === 'POST':
+        await handleTestOmieConnection(route, request, state);
+        return;
+      case normalizedPath === '/integrations/omie/events' && request.method() === 'GET':
+        await handleListOmieEvents(route, url, state);
+        return;
+      case /^\/integrations\/omie\/reprocess\/.+/.test(normalizedPath) && request.method() === 'POST':
+        await handleReprocessOmieEvent(route, normalizedPath, state);
         return;
       default:
         await fulfillJson(
@@ -316,6 +350,66 @@ function createDefaultState(role: UserRole = 'ADMIN'): MockState {
     totalLocations: locations.length,
   };
 
+  const omieEvents: OmieEvent[] = [
+    {
+      id: 'omie-evt-1',
+      tenantId,
+      appointmentId: appointments[0]?.id ?? null,
+      status: 'PENDING',
+      payload: {
+        appointmentId: appointments[0]?.id,
+        customerName: customers[0]?.name,
+        serviceId: services[0]?.id,
+        petName: pets[0]?.name,
+      },
+      errorMessage: null,
+      omieOrderId: null,
+      attemptCount: 0,
+      lastAttemptAt: null,
+      lastErrorCode: null,
+      createdAt: iso,
+      updatedAt: iso,
+    },
+    {
+      id: 'omie-evt-2',
+      tenantId,
+      appointmentId: appointments[0]?.id ?? null,
+      status: 'ERROR',
+      payload: {
+        appointmentId: appointments[0]?.id,
+        customerName: customers[1]?.name ?? customers[0]?.name,
+        serviceId: services[1]?.id,
+        petName: pets[1]?.name,
+      },
+      errorMessage: 'Erro de autenticação no Omie',
+      omieOrderId: null,
+      attemptCount: 2,
+      lastAttemptAt: iso,
+      lastErrorCode: '401',
+      createdAt: iso,
+      updatedAt: iso,
+    },
+    {
+      id: 'omie-evt-3',
+      tenantId,
+      appointmentId: appointments[0]?.id ?? null,
+      status: 'SUCCESS',
+      payload: {
+        appointmentId: appointments[0]?.id,
+        customerName: customers[0]?.name,
+        serviceId: services[0]?.id,
+        petName: pets[0]?.name,
+      },
+      errorMessage: null,
+      omieOrderId: 'ORD-123',
+      attemptCount: 1,
+      lastAttemptAt: iso,
+      lastErrorCode: null,
+      createdAt: iso,
+      updatedAt: iso,
+    },
+  ];
+
   return {
     user: {
       id: 'user-1',
@@ -331,6 +425,13 @@ function createDefaultState(role: UserRole = 'ADMIN'): MockState {
     locations,
     appointments,
     billingSubscription,
+    omieConnection: {
+      configured: false,
+      source: null,
+      createdAt: null,
+      updatedAt: null,
+    },
+    omieEvents,
     sequences: {
       customer: customers.length,
       pet: pets.length,
@@ -548,4 +649,82 @@ async function handleUpsertSubscription(route: Route, request: Request, state: M
   };
   state.billingSubscription = subscription;
   await fulfillJson(route, { data: subscription });
+}
+
+async function handleGetOmieConnection(route: Route, state: MockState) {
+  await fulfillJson(route, state.omieConnection);
+}
+
+async function handleSaveOmieConnection(route: Route, state: MockState) {
+  const timestamp = new Date().toISOString();
+  const createdAt = state.omieConnection.createdAt ?? timestamp;
+  state.omieConnection = {
+    configured: true,
+    source: 'TENANT',
+    createdAt,
+    updatedAt: timestamp,
+  };
+  await fulfillJson(route, {
+    message: 'Omie credentials saved',
+    updatedAt: timestamp,
+    source: 'TENANT',
+  });
+}
+
+async function handleTestOmieConnection(route: Route, request: Request, state: MockState) {
+  const body = parseBody<{ appKey?: string; appSecret?: string }>(request);
+  const hasOverride = Boolean(body.appKey && body.appSecret);
+  if (!hasOverride && !state.omieConnection.configured) {
+    await fulfillJson(
+      route,
+      {
+        code: 'OMIE_NOT_CONFIGURED',
+        message: 'Omie integration not configured',
+      },
+      400,
+    );
+    return;
+  }
+
+  const source = hasOverride ? 'PROVIDED' : state.omieConnection.source ?? 'TENANT';
+  await fulfillJson(route, { ok: true, source });
+}
+
+async function handleListOmieEvents(route: Route, url: URL, state: MockState) {
+  const status = url.searchParams.get('status') as OmieEvent['status'] | null;
+  const page = Math.max(1, Number(url.searchParams.get('page') ?? '1'));
+  const pageSize = Math.max(1, Number(url.searchParams.get('pageSize') ?? '10'));
+
+  const filtered = status ? state.omieEvents.filter((event) => event.status === status) : state.omieEvents;
+  const total = filtered.length;
+  const totalPages = total ? Math.ceil(total / pageSize) : 0;
+  const start = (page - 1) * pageSize;
+  const data = filtered.slice(start, start + pageSize);
+
+  await fulfillJson(route, {
+    data,
+    meta: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+      status: status ?? null,
+    },
+  });
+}
+
+async function handleReprocessOmieEvent(route: Route, path: string, state: MockState) {
+  const eventId = path.split('/')[4];
+  const event = state.omieEvents.find((evt) => evt.id === eventId);
+  if (!event) {
+    await fulfillJson(route, { code: 'OMIE_EVENT_NOT_FOUND', message: 'Evento não encontrado' }, 404);
+    return;
+  }
+
+  event.status = 'PENDING';
+  event.attemptCount += 1;
+  event.lastAttemptAt = new Date().toISOString();
+  event.errorMessage = null;
+  event.lastErrorCode = null;
+  await fulfillJson(route, { message: 'Event queued for reprocessing' });
 }

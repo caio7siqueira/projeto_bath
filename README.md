@@ -294,6 +294,11 @@ export async function createNewService(dto: CreateServiceDto) {
 - **Status recente:** 2026-01-02 → `pnpm --filter @efizion/web test` retornou 15/15 cenários verdes (Auth, Agenda, Billing, Cadastros e Navegação).
 - **Capturas:** gere imagens oficiais com `CAPTURE_DOCS=true pnpm --filter @efizion/web test -- --grep "@docs"` (os PNGs ficam em `apps/web/docs/assets`).
 
+### Integração Omie – Guia operacional (Fase 3)
+- Consulte o passo a passo completo em [docs/omie-admin-guide.md](docs/omie-admin-guide.md): inclui fluxos de credenciais, monitoramento de eventos, checklist de QA e instruções para anexar os PNGs.
+- Os comandos oficiais para atualizar as imagens continuam em `CAPTURE_DOCS=true pnpm --filter @efizion/web test:e2e -- --grep @docs`; o spec `apps/web/tests/e2e/docs-screenshots.spec.ts` grava `dashboard.png`, `agenda.png`, `billing.png`, `cadastros.png` e `omie-integracao.png`.
+- Os cenários `Integração Omie` vivem em `apps/web/tests/e2e/omie-integration.spec.ts` e cobrem salvar/testar credenciais, aplicar filtros e reenfileirar eventos com mock backend.
+
 ### Fluxos principais (diagramas textuais)
 
 ```mermaid
@@ -322,6 +327,7 @@ As imagens abaixo foram geradas com o spec `docs-screenshots` (ver comando acima
 ![Agenda administrativa](apps/web/docs/assets/agenda.png)
 ![Billing/assinatura](apps/web/docs/assets/billing.png)
 ![Cadastro de clientes](apps/web/docs/assets/cadastros.png)
+![Integração Omie](apps/web/docs/assets/omie-integracao.png)
 
 ### Onboarding para novos devs/analistas
 1. **Ferramentas:** Node 20 + pnpm 8, Playwright (`pnpm --filter @efizion/web exec playwright install --with-deps` no primeiro dia).
@@ -585,6 +591,12 @@ curl -X POST http://localhost:3000/v1/appointments/{id}/cancel \
 - Ao marcar agendamento como DONE, criamos `OmieSalesEvent` (`status=PENDING`) e enfileiramos para o worker.
 - Worker chama `POST /integrations/omie/internal/process/:eventId` para processar (upsert cliente + pedido de venda).
 - Reprocesso: `POST /integrations/omie/reprocess/:eventId` (ADMIN).
+- Configuração e teste via API (ADMIN):
+  - `GET /integrations/omie/connection` para ver status/fonte das credenciais.
+  - `PUT /integrations/omie/connection` salva `appKey/appSecret` por tenant (fallback de ENV mantido).
+  - `POST /integrations/omie/connection/test` valida credenciais (opcionalmente sobrescrevendo no payload).
+- Auditoria/admin: `GET /integrations/omie/events?status=PENDING|PROCESSING|SUCCESS|ERROR&page=1&pageSize=20` lista eventos com tentativas e erros.
+- Scheduler (NestJS `@nestjs/schedule`) roda a cada minuto para reenfileirar eventos `PENDING/ERROR` sem exceder o limite de tentativas e sem alterar o worker BullMQ existente.
 
 #### Notificações (SMS / WhatsApp via Twilio)
 - Ao criar agendamento, agendamos `NotificationJob` para T - `reminderHoursBefore` (padrão 24h) e enfileiramos.

@@ -34,6 +34,8 @@ paths:
           description: Login successful
         "401":
           description: Invalid credentials
+        "429":
+          description: Limite de tentativas excedido
       tags: *a1
   /auth/refresh:
     post:
@@ -51,6 +53,8 @@ paths:
           description: Token refreshed successfully
         "401":
           description: Invalid refresh token
+        "429":
+          description: Limite de tentativas excedido
       tags: *a1
   /auth/logout:
     post:
@@ -77,6 +81,8 @@ paths:
       responses:
         "200":
           description: OTP sent
+        "429":
+          description: Limite de solicitações de OTP excedido
       tags: &a2
         - Customer Auth
   /customer-auth/verify-otp:
@@ -93,6 +99,8 @@ paths:
       responses:
         "200":
           description: JWT issued
+        "429":
+          description: Tentativas de verificação excedidas
       tags: *a2
   /protected/ping:
     get:
@@ -876,6 +884,59 @@ paths:
         - dashboard
       security:
         - bearer: []
+  /integrations/omie/connection:
+    get:
+      operationId: OmieController_getConnection
+      summary: Exibir status da conexão Omie (ADMIN)
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: &a17
+        - integrations
+      security: &a18
+        - bearer: []
+    put:
+      operationId: OmieController_upsertConnection
+      summary: Atualizar credenciais Omie (ADMIN)
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertOmieConnectionDto"
+      responses:
+        "200":
+          description: ""
+      tags: *a17
+      security: *a18
+  /integrations/omie/connection/test:
+    post:
+      operationId: OmieController_testConnection
+      summary: Testar credenciais Omie (ADMIN)
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestOmieConnectionDto"
+      responses:
+        "201":
+          description: ""
+      tags: *a17
+      security: *a18
+  /integrations/omie/events:
+    get:
+      operationId: OmieController_listEvents
+      summary: Listar eventos Omie por tenant (ADMIN)
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a17
+      security: *a18
   /integrations/omie/reprocess/{eventId}:
     post:
       operationId: OmieController_reprocessEvent
@@ -889,10 +950,8 @@ paths:
       responses:
         "201":
           description: ""
-      tags: &a17
-        - integrations
-      security: &a18
-        - bearer: []
+      tags: *a17
+      security: *a18
   /integrations/omie/internal/process/{eventId}:
     post:
       operationId: OmieController_processEvent
@@ -1544,6 +1603,12 @@ components:
         allowNotifications:
           type: boolean
           example: false
+    UpsertOmieConnectionDto:
+      type: object
+      properties: {}
+    TestOmieConnectionDto:
+      type: object
+      properties: {}
     UpsertBillingSubscriptionDto:
       type: object
       properties: {}

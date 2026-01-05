@@ -52,4 +52,22 @@ test.describe('Documentação visual do painel admin', () => {
     await expect(page.getByRole('heading', { name: 'Clientes' })).toBeVisible();
     await capture(page, 'cadastros.png');
   });
+
+  test('Integração Omie @docs', async ({ page }) => {
+    const timestamp = new Date().toISOString();
+    await setupMockBackend(page, {
+      state: {
+        omieConnection: {
+          configured: true,
+          source: 'TENANT',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+      },
+    });
+    await loginAs(page);
+    await page.goto('/admin/settings/omie');
+    await expect(page.getByRole('heading', { name: 'Omie' })).toBeVisible();
+    await capture(page, 'omie-integracao.png');
+  });
 });

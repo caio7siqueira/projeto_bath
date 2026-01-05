@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useRole } from '@/lib/use-role';
+import { SettingsNav } from '../_components/SettingsNav';
 import {
   fetchTenantConfig,
   updateTenantConfig,
@@ -75,7 +76,8 @@ export default function TenantSettingsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
+        <SettingsNav />
         <Card>
           <p className="text-red-700">Apenas administradores podem acessar esta página.</p>
         </Card>
@@ -84,7 +86,8 @@ export default function TenantSettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
+      <SettingsNav />
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Configurações do Tenant</h1>
         <p className="text-gray-600 mt-2">
