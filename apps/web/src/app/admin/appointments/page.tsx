@@ -1,25 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from 'react';
-
-// Hook simples para detectar mobile
-function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < breakpoint);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, [breakpoint]);
-  return isMobile;
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { EmptyState, HeroSkeleton, SkeletonBlock } from '@/components/feedback/VisualStates';
 import { Breadcrumbs } from '@/components/navigation/Breadcrumbs';
 import { useAppointments, useCustomers, usePets, useLocations, useServices } from '@/lib/hooks';
-import { useAppStore } from '@/lib/store';
 import type { Appointment } from '@/lib/api/appointments';
 import type { Customer, Pet } from '@/lib/api/customers';
 import type { Location } from '@/lib/api/locations';
@@ -29,18 +16,73 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ptBrLocale from '@fullcalendar/core/locales/pt-br';
+import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
 
-
-const statusColors: Record<Appointment['status'], string> = {
-  SCHEDULED: '#2563eb', // azul
-  CANCELLED: '#ef4444', // vermelho
-  DONE: '#22c55e',
+const statusVisuals: Record<Appointment['status'], {
+  label: string;
+  blockClass: string;
+  badgeClass: string;
+  accentDot: string;
+  fcColor: string;
+}> = {
+  SCHEDULED: {
+    label: 'Agendado',
+    blockClass: 'border-blue-300/40 bg-blue-600/90 text-white shadow-lg',
+    badgeClass: 'bg-blue-50 text-blue-700',
+    accentDot: 'bg-blue-500',
+    fcColor: '#2563eb',
+  },
+  DONE: {
+    label: 'Concluído',
+    blockClass: 'border-emerald-300/50 bg-emerald-600/90 text-white shadow-lg',
+    badgeClass: 'bg-emerald-50 text-emerald-700',
+    accentDot: 'bg-emerald-500',
+    fcColor: '#10b981',
+  },
+  CANCELLED: {
+    label: 'Cancelado',
+    blockClass: 'border-slate-300/40 bg-slate-500/80 text-white shadow-lg',
+    badgeClass: 'bg-slate-200 text-slate-700',
+    accentDot: 'bg-slate-400',
+    fcColor: '#94a3b8',
+  },
 };
 
-const statusTokens: Record<Appointment['status'], { label: string; badgeClass: string }> = {
-  SCHEDULED: { label: 'Agendado', badgeClass: 'bg-blue-50 text-blue-700' },
-  DONE: { label: 'Concluído', badgeClass: 'bg-emerald-50 text-emerald-700' },
-  CANCELLED: { label: 'Cancelado', badgeClass: 'bg-rose-50 text-rose-700' },
+const clampToDayStart = (date: Date) => {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+};
+
+const addDays = (date: Date, delta: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + delta);
+  return clampToDayStart(next);
+};
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+type CalendarEventPayload = {
+  appointment: Appointment;
+  customer?: Customer;
+  pet?: Pet;
+  service?: Service;
+  location?: Location;
+};
+
+type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
+
+const formatRangeLabel = (start: Date, end: Date) => {
+  const startDay = clampToDayStart(start);
+  const endDay = clampToDayStart(addDays(end, -1));
+  const monthOptions: Intl.DateTimeFormatOptions = { month: 'short' };
+  const startMonth = startDay.toLocaleString('pt-BR', monthOptions);
+  const endMonth = endDay.toLocaleString('pt-BR', monthOptions);
+  if (startDay.getMonth() === endDay.getMonth() && startDay.getFullYear() === endDay.getFullYear()) {
+    return `${startDay.getDate()}–${endDay.getDate()} ${startMonth}`;
+  }
+  return `${startDay.getDate()} ${startMonth} – ${endDay.getDate()} ${endMonth}`;
 };
 
 
@@ -52,6 +94,8 @@ export default function AppointmentsPage() {
     fetchAppointments();
     fetchServices();
     fetchLocations();
+    fetchCustomers();
+    fetchAllPets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // HOOKS DE DADOS - sempre no topo
@@ -60,24 +104,16 @@ export default function AppointmentsPage() {
     isLoading,
     error,
     fetchAppointments,
-    cancelExistingAppointment,
-    updateExistingAppointment,
   } = useAppointments();
-  const { updateAppointmentInStore } = useAppStore();
   const { customers, fetchCustomers } = useCustomers();
-  const { pets, fetchPets } = usePets();
+  const { pets, fetchAllPets } = usePets();
   const { locations, fetchLocations } = useLocations();
   const { services, isLoading: servicesLoading, error: servicesError, fetchServices } = useServices();
-  const [actioningId, setActioningId] = useState<string | null>(null);
-  const [mobileDay, setMobileDay] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  });
-  const tapTimeout = useRef<NodeJS.Timeout | null>(null);
-  const [tapStart, setTapStart] = useState<Date | null>(null);
   const calendarRef = useRef<FullCalendar | null>(null);
-  const isMobile = useIsMobile();
+  const [calendarView, setCalendarView] = useState<CalendarViewType>('timeGridWeek');
+  const [currentRangeLabel, setCurrentRangeLabel] = useState('');
+  const [focusDay, setFocusDay] = useState(() => clampToDayStart(new Date()));
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEventPayload | null>(null);
   const sortedAppointments = useMemo(
     () =>
       [...appointments].sort(
@@ -138,26 +174,157 @@ export default function AppointmentsPage() {
       }),
     [],
   );
+  const focusDayFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('pt-BR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+      }),
+    [],
+  );
+
+  const focusDayLabel = focusDayFormatter.format(focusDay);
+
+  const digestAppointments = useMemo(() => {
+    return sortedAppointments
+      .filter((appointment) => {
+        if (!appointment.startsAt) return false;
+        const start = new Date(appointment.startsAt);
+        return isSameDay(start, focusDay);
+      })
+      .map((appointment) => {
+        const start = appointment.startsAt ? new Date(appointment.startsAt) : null;
+        const end = appointment.endsAt ? new Date(appointment.endsAt) : null;
+        return {
+          appointment,
+          customer: appointment.customerId ? customersById.get(appointment.customerId) : undefined,
+          pet: appointment.petId ? petsById.get(appointment.petId) : undefined,
+          service: appointment.serviceId ? servicesById.get(appointment.serviceId) : undefined,
+          location: appointment.locationId ? locationsById.get(appointment.locationId) : undefined,
+          startLabel: start ? timeFormatter.format(start) : '--:--',
+          endLabel: end ? timeFormatter.format(end) : '--:--',
+        };
+      });
+  }, [sortedAppointments, focusDay, customersById, petsById, servicesById, locationsById, timeFormatter]);
+
+  const selectedDetail = useMemo(() => {
+    if (!selectedEvent) return null;
+    const start = selectedEvent.appointment.startsAt ? new Date(selectedEvent.appointment.startsAt) : null;
+    const end = selectedEvent.appointment.endsAt ? new Date(selectedEvent.appointment.endsAt) : null;
+    return {
+      ...selectedEvent,
+      start,
+      end,
+      dateLabel: start ? dateFormatter.format(start) : 'Data não definida',
+      startLabel: start ? timeFormatter.format(start) : '--:--',
+      endLabel: end ? timeFormatter.format(end) : '--:--',
+      notes: selectedEvent.appointment.notes?.trim() || 'Sem observações',
+    };
+  }, [selectedEvent, dateFormatter, timeFormatter]);
 
   // Eventos reais alimentados pela store
   const events = useMemo(
     () =>
-      appointments.map((appointment) => ({
-        id: appointment.id,
-        title: 'Agendamento',
-        start: appointment.startsAt,
-        end: appointment.endsAt,
-        backgroundColor: statusColors[appointment.status],
-        borderColor: statusColors[appointment.status],
-        extendedProps: appointment,
-      })),
-    [appointments],
+      appointments.map((appointment) => {
+        const payload: CalendarEventPayload = {
+          appointment,
+          customer: appointment.customerId ? customersById.get(appointment.customerId) : undefined,
+          pet: appointment.petId ? petsById.get(appointment.petId) : undefined,
+          service: appointment.serviceId ? servicesById.get(appointment.serviceId) : undefined,
+          location: appointment.locationId ? locationsById.get(appointment.locationId) : undefined,
+        };
+        return {
+          id: appointment.id,
+          title: payload.service?.name ?? 'Agendamento',
+          start: appointment.startsAt,
+          end: appointment.endsAt,
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          textColor: '#0f172a',
+          extendedProps: payload,
+        };
+      }),
+    [appointments, customersById, petsById, servicesById, locationsById],
   );
-  const renderEventContent = () => null;
-  const handleDateSelect = () => {};
-  const handleEventClick = () => {};
-  const handleEventDrop = () => {};
-  const handleEventResize = () => {};
+
+  const renderEventContent = useCallback((arg: EventContentArg) => {
+    const payload = arg.event.extendedProps as CalendarEventPayload;
+    const appointment = payload.appointment;
+    const visuals = statusVisuals[appointment.status];
+    const serviceName = payload.service?.name ?? 'Serviço não informado';
+    const secondary = payload.pet?.name ?? payload.customer?.name ?? 'Cliente não informado';
+
+    return (
+      <div className={`flex h-full flex-col rounded-2xl border border-white/40 px-3 py-2 text-left text-xs ${visuals.blockClass}`}>
+        <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em]">
+          <span className="flex items-center gap-1 font-semibold tracking-tight">
+            <span className={`h-2 w-2 rounded-full ${visuals.accentDot}`} />
+            {visuals.label}
+          </span>
+          <span className="font-semibold tracking-tight">{arg.timeText}</span>
+        </div>
+        <p className="mt-1 text-sm font-semibold leading-tight">{serviceName}</p>
+        <p className="text-[11px] opacity-90">{secondary}</p>
+      </div>
+    );
+  }, []);
+
+  const handleEventClick = useCallback((arg: EventClickArg) => {
+    arg.jsEvent.preventDefault();
+    const payload = arg.event.extendedProps as CalendarEventPayload;
+    setSelectedEvent(payload);
+  }, []);
+
+  const closeDetails = useCallback(() => setSelectedEvent(null), []);
+
+  const handleDatesSet = useCallback((arg: DatesSetArg) => {
+    setCurrentRangeLabel(formatRangeLabel(arg.start, arg.end));
+    setCalendarView(arg.view.type as CalendarViewType);
+    const rangeStart = clampToDayStart(arg.start);
+    const rangeEnd = clampToDayStart(addDays(arg.end, -1));
+    setFocusDay((prev) => {
+      if (prev.getTime() < rangeStart.getTime() || prev.getTime() > rangeEnd.getTime()) {
+        return rangeStart;
+      }
+      return prev;
+    });
+  }, []);
+
+  const handleViewChange = useCallback((view: CalendarViewType) => {
+    setCalendarView(view);
+    const api = calendarRef.current?.getApi();
+    api?.changeView(view);
+  }, []);
+
+  const handleRangeShift = useCallback((direction: 'prev' | 'next' | 'today') => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    if (direction === 'today') {
+      api.today();
+      return;
+    }
+    if (direction === 'prev') {
+      api.prev();
+    } else {
+      api.next();
+    }
+  }, []);
+
+  const handleFocusDayShift = useCallback((delta: number) => {
+    setFocusDay((prev) => addDays(prev, delta));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedEvent) return undefined;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeDetails();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedEvent, closeDetails]);
 
   if (!mounted) {
     return (
@@ -169,7 +336,6 @@ export default function AppointmentsPage() {
   }
 
   const showEmptyAppointments = !isLoading && appointments.length === 0;
-  const hasAppointments = !isLoading && sortedAppointments.length > 0;
 
   // ÚNICO return principal do componente
   return (
@@ -238,99 +404,148 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      {!isLoading && hasAppointments && (
-        <section aria-label="Lista de agendamentos" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {sortedAppointments.map((appointment) => {
-            const customer = appointment.customerId ? customersById.get(appointment.customerId) : undefined;
-            const pet = appointment.petId ? petsById.get(appointment.petId) : undefined;
-            const service = appointment.serviceId ? servicesById.get(appointment.serviceId) : undefined;
-            const location = appointment.locationId ? locationsById.get(appointment.locationId) : undefined;
-
-            const startDate = appointment.startsAt ? new Date(appointment.startsAt) : null;
-            const endDate = appointment.endsAt ? new Date(appointment.endsAt) : null;
-            const dateLabel = startDate ? dateFormatter.format(startDate) : 'Data não definida';
-            const startTimeLabel = startDate ? timeFormatter.format(startDate) : '--:--';
-            const endTimeLabel = endDate ? timeFormatter.format(endDate) : '--:--';
-            const notes = appointment.notes?.trim() || 'Sem observações';
-            const statusMeta = statusTokens[appointment.status];
-            return (
-              <article
-                key={appointment.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-brand-300"
-                aria-label={`Agendamento ${service?.name ?? ''} em ${dateLabel}`}
-              >
-                <div className="flex items-start justify-between gap-4 text-sm text-slate-500">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-brand-500">{dateLabel}</p>
-                    <p className="mt-1 font-semibold text-slate-700">{startTimeLabel} – {endTimeLabel}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusMeta.badgeClass}`}>
-                    {statusMeta.label}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">Serviço</p>
-                  <h3 className="text-lg font-semibold text-slate-900">{service?.name ?? 'Serviço não informado'}</h3>
-                </div>
-                <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <dl className="grid grid-cols-1 gap-3 text-sm text-slate-700 sm:grid-cols-2">
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tutor</dt>
-                      <dd className="font-medium text-slate-900">{customer?.name ?? 'Não informado'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pet</dt>
-                      <dd className="font-medium text-slate-900">{pet?.name ?? 'Não informado'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Serviço</dt>
-                      <dd className="font-medium text-slate-900">{service?.name ?? 'Não informado'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">Horário</dt>
-                      <dd className="font-medium text-slate-900">{startTimeLabel} – {endTimeLabel}</dd>
-                    </div>
-                  </dl>
-                  <div className="mt-4 space-y-2 text-sm text-slate-600">
-                    <p>
-                      <span className="font-semibold text-slate-800">Local: </span>
-                      {location?.name ?? 'Não informado'}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-slate-800">Notas: </span>
-                      {notes}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-      )}
-
       {isLoading ? (
         <div className="space-y-6">
           <SkeletonBlock className="h-10 w-72" />
           <SkeletonBlock className="h-5 w-1/2" />
-          <SkeletonBlock className="h-96 w-full" />
+          <SkeletonBlock className="h-[480px] w-full" />
         </div>
       ) : (
         <>
-          {isMobile ? (
-            showEmptyAppointments ? (
-              <EmptyState
-                icon="📅"
-                variant="inline"
-                title="Nenhum agendamento por aqui"
-                description="Use o botão acima para criar o primeiro horário e acompanhar tudo pela grade."
-                action={
-                  <Link href="/admin/appointments/new" className="inline-flex justify-center">
-                    <Button>Agendar agora</Button>
+          <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="rounded-3xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-surface-divider bg-surface-muted/60 p-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('prev')} aria-label="Semana anterior">
+                    {'<'}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('today')}>
+                    Hoje
+                  </Button>
+                  <Button size="sm" variant="ghost" className="px-3" onClick={() => handleRangeShift('next')} aria-label="Próxima semana">
+                    {'>'}
+                  </Button>
+                  <div className="ml-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700">
+                    {currentRangeLabel || 'Carregando grade...'}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                    value={calendarView}
+                    onChange={(e) => handleViewChange(e.target.value as CalendarViewType)}
+                    aria-label="Mudar visualização da agenda"
+                  >
+                    <option value="dayGridMonth">Mês</option>
+                    <option value="timeGridWeek">Semana</option>
+                    <option value="timeGridDay">Dia</option>
+                  </select>
+                  <Link href="/admin/appointments/new">
+                    <Button size="sm" icon={<span aria-hidden>＋</span>}>
+                      Novo agendamento
+                    </Button>
                   </Link>
-                }
-              />
-            ) : null
-          ) : showEmptyAppointments ? (
+                </div>
+              </div>
+              <div className="px-2 py-4 md:px-4">
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                  initialView="timeGridWeek"
+                  headerToolbar={false}
+                  locales={[ptBrLocale]}
+                  locale="pt-br"
+                  nowIndicator
+                  events={events}
+                  datesSet={handleDatesSet}
+                  eventClick={handleEventClick}
+                  eventContent={renderEventContent}
+                  height="auto"
+                  expandRows
+                  slotMinTime="07:00:00"
+                  slotMaxTime="21:00:00"
+                  slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                  dayHeaderFormat={{ weekday: 'short', day: '2-digit', month: '2-digit' }}
+                  dayMaxEvents={false}
+                  allDaySlot={false}
+                  eventDisplay="block"
+                  eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                />
+              </div>
+            </div>
+
+            <aside className="space-y-4">
+              <div className="h-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-brand-500">Resumo diário</p>
+                    <p className="text-lg font-semibold text-slate-900">{focusDayLabel}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 w-9 rounded-full p-0"
+                      aria-label="Dia anterior"
+                      onClick={() => handleFocusDayShift(-1)}
+                    >
+                      {'<'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-9 w-9 rounded-full p-0"
+                      aria-label="Próximo dia"
+                      onClick={() => handleFocusDayShift(1)}
+                    >
+                      {'>'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {digestAppointments.length === 0 ? (
+                    <p className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">
+                      Nenhum agendamento para este dia. Escolha outro intervalo ou crie um novo horário.
+                    </p>
+                  ) : (
+                    digestAppointments.map(({ appointment, customer, pet, service, location, startLabel, endLabel }) => {
+                      const visuals = statusVisuals[appointment.status];
+                      return (
+                        <button
+                          key={appointment.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedEvent({ appointment, customer, pet, service, location })
+                          }
+                          className="w-full rounded-2xl border border-slate-200 p-4 text-left transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                        >
+                          <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+                            <span className="font-semibold text-slate-700">
+                              {startLabel} – {endLabel}
+                            </span>
+                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${visuals.badgeClass}`}>
+                              {visuals.label}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm font-semibold text-slate-900">
+                            {service?.name ?? 'Serviço não informado'}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {pet?.name ?? customer?.name ?? 'Cliente não informado'}
+                          </p>
+                          {location?.name && (
+                            <p className="text-xs text-slate-400">{location.name}</p>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </aside>
+          </section>
+
+          {showEmptyAppointments && (
             <EmptyState
               icon="📅"
               variant="inline"
@@ -342,68 +557,75 @@ export default function AppointmentsPage() {
                 </Link>
               }
             />
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-4 border-b border-surface-divider bg-surface-muted p-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => calendarRef.current?.getApi().prev()}>
-                    &lt;
-                  </Button>
-                  <Button size="sm" onClick={() => calendarRef.current?.getApi().today()}>
-                    Hoje
-                  </Button>
-                  <Button size="sm" onClick={() => calendarRef.current?.getApi().next()}>
-                    &gt;
-                  </Button>
-                  <select
-                    className="ml-2 rounded border px-2 py-1 text-sm"
-                    defaultValue="timeGridWeek"
-                    onChange={(e) => calendarRef.current?.getApi().changeView(e.target.value)}
-                  >
-                    <option value="dayGridMonth">Mês</option>
-                    <option value="timeGridWeek">Semana</option>
-                    <option value="timeGridDay">Dia</option>
-                  </select>
-                </div>
-                <Link href="/admin/appointments/new">
-                  <Button size="sm" icon={<span aria-hidden>＋</span>}>
-                    Novo agendamento
-                  </Button>
-                </Link>
-              </div>
-              <FullCalendar
-                ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="timeGridWeek"
-                headerToolbar={false}
-                locales={[ptBrLocale]}
-                locale="pt-br"
-                selectable
-                editable
-                selectMirror
-                select={handleDateSelect}
-                eventClick={handleEventClick}
-                eventDrop={handleEventDrop}
-                eventResize={handleEventResize}
-                events={events}
-                height="auto"
-                slotMinTime="07:00:00"
-                slotMaxTime="21:00:00"
-                nowIndicator
-                eventDisplay="block"
-                eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                dayMaxEvents={3}
-                aspectRatio={1.5}
-                eventClassNames={(arg) =>
-                  `transition-shadow focus:ring-2 focus:ring-blue-400 ${arg.event.extendedProps.status ? 'border-l-4' : ''}`
-                }
-                eventContent={renderEventContent}
-                slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                dayHeaderFormat={{ weekday: 'short', day: '2-digit', month: '2-digit' }}
-              />
-            </div>
           )}
         </>
+      )}
+      {selectedDetail && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 px-4 py-6 md:items-center">
+          <div className="absolute inset-0" aria-hidden="true" onClick={closeDetails} />
+          <div className="relative w-full max-w-2xl rounded-t-3xl bg-white p-6 shadow-2xl md:rounded-3xl">
+            <button
+              type="button"
+              onClick={closeDetails}
+              className="absolute right-4 top-4 text-2xl font-bold text-slate-400 transition hover:text-slate-600"
+              aria-label="Fechar detalhes do agendamento"
+            >
+              X
+            </button>
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-500">Agendamento</p>
+                  <h2 className="text-2xl font-semibold text-slate-900">
+                    {selectedDetail.service?.name ?? 'Serviço não informado'}
+                  </h2>
+                  <p className="text-sm text-slate-500">{selectedDetail.dateLabel}</p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusVisuals[selectedDetail.appointment.status].badgeClass}`}>
+                  {statusVisuals[selectedDetail.appointment.status].label}
+                </span>
+              </div>
+              <dl className="grid grid-cols-1 gap-4 text-sm text-slate-700 md:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Horário</dt>
+                  <dd className="text-base font-semibold text-slate-900">
+                    {selectedDetail.startLabel} – {selectedDetail.endLabel}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Local</dt>
+                  <dd className="text-base font-semibold text-slate-900">
+                    {selectedDetail.location?.name ?? 'Não informado'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Tutor</dt>
+                  <dd className="text-base font-semibold text-slate-900">
+                    {selectedDetail.customer?.name ?? 'Não informado'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Pet</dt>
+                  <dd className="text-base font-semibold text-slate-900">
+                    {selectedDetail.pet?.name ?? 'Não informado'}
+                  </dd>
+                </div>
+              </dl>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Observações</p>
+                <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">{selectedDetail.notes}</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link href={`/admin/appointments/${selectedDetail.appointment.id}`} className="inline-flex">
+                  <Button size="sm">Abrir registro</Button>
+                </Link>
+                <Button size="sm" variant="secondary" onClick={closeDetails}>
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
