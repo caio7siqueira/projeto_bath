@@ -16,7 +16,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ptBrLocale from '@fullcalendar/core/locales/pt-br';
-import type { DatesSetArg, EventClickArg, EventContentArg } from '@fullcalendar/core';
+import type { DatesSetArg, EventClickArg, EventContentArg, FormatterInput } from '@fullcalendar/core';
 
 const statusVisuals: Record<Appointment['status'], {
   label: string;
@@ -77,6 +77,34 @@ type CalendarEventClassArg = {
   event: { id: string };
 };
 
+type MediaQueryListWithLegacy = MediaQueryList & {
+  addListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+  removeListener?: (listener: (event: MediaQueryListEvent) => void) => void;
+};
+
+const compactSlotLabelFormat = {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: false,
+} satisfies FormatterInput;
+
+const desktopSlotLabelFormat = {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+} satisfies FormatterInput;
+
+const compactHeaderFormat = {
+  weekday: 'short',
+  day: '2-digit',
+} satisfies FormatterInput;
+
+const desktopHeaderFormat = {
+  weekday: 'short',
+  day: '2-digit',
+  month: '2-digit',
+} satisfies FormatterInput;
+
 const formatRangeLabel = (start: Date, end: Date) => {
   const startDay = clampToDayStart(start);
   const endDay = clampToDayStart(addDays(end, -1));
@@ -113,6 +141,7 @@ export default function AppointmentsPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const query = window.matchMedia('(max-width: 768px)');
+    const legacyQuery = query as MediaQueryListWithLegacy;
     const applyMatch = (matches: boolean) => {
       setIsCompactLayout(matches);
       const desiredView: CalendarViewType = matches ? 'timeGridDay' : 'timeGridWeek';
@@ -131,17 +160,14 @@ export default function AppointmentsPage() {
     const listener = (event: MediaQueryListEvent) => applyMatch(event.matches);
     if (typeof query.addEventListener === 'function') {
       query.addEventListener('change', listener);
-    } else {
-      // Safari < 14
-      // @ts-expect-error - addListener ainda é usado em navegadores legados
-      query.addListener(listener);
+    } else if (legacyQuery.addListener) {
+      legacyQuery.addListener(listener);
     }
     return () => {
       if (typeof query.removeEventListener === 'function') {
         query.removeEventListener('change', listener);
-      } else {
-        // @ts-expect-error - removeListener para suporte legado
-        query.removeListener(listener);
+      } else if (legacyQuery.removeListener) {
+        legacyQuery.removeListener(listener);
       }
     };
   }, []);
@@ -235,17 +261,13 @@ export default function AppointmentsPage() {
 
   const focusDayLabel = focusDayFormatter.format(focusDay);
 
-  const slotLabelFormat = useMemo(
-    () => ({
-      hour: isCompactLayout ? 'numeric' : '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }),
+  const slotLabelFormat = useMemo<FormatterInput>(
+    () => (isCompactLayout ? compactSlotLabelFormat : desktopSlotLabelFormat),
     [isCompactLayout],
   );
 
-  const headerFormat = useMemo(
-    () => (isCompactLayout ? { weekday: 'short', day: '2-digit' } : { weekday: 'short', day: '2-digit', month: '2-digit' }),
+  const headerFormat = useMemo<FormatterInput>(
+    () => (isCompactLayout ? compactHeaderFormat : desktopHeaderFormat),
     [isCompactLayout],
   );
 
