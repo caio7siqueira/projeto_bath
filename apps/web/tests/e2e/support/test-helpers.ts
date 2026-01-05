@@ -9,8 +9,10 @@ export async function loginAs(page: Page, credentials = defaultCredentials) {
   await page.goto('/login');
   await page.getByLabel('Email').fill(credentials.email);
   await page.getByLabel('Senha').fill(credentials.password);
-  await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.waitForURL('**/admin/dashboard');
+  await Promise.all([
+    page.waitForURL('**/admin/dashboard', { timeout: 15000 }),
+    page.getByRole('button', { name: 'Entrar' }).click(),
+  ]);
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 }
 
