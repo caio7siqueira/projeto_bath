@@ -1,12 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsString, MinLength, ValidateIf } from 'class-validator';
-
-enum UserRole {
-  ADMIN = 'ADMIN',
-  STAFF = 'STAFF',
-  GROOMER = 'GROOMER',
-  SUPER_ADMIN = 'SUPER_ADMIN',
-}
+import { UserRole } from '@prisma/client';
 
 export class RegisterDto {
   @ApiProperty({ example: 'admin@example.com' })

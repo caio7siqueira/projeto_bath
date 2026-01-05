@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { login as apiLogin, logout as apiLogout, refresh as apiRefresh, type LoginRequest } from './api/auth';
 import { normalizeApiError } from '@/lib/api/errors';
 
+type WebUserRole = 'ADMIN' | 'STAFF' | 'GROOMER' | 'FINANCE' | 'SUPER_ADMIN';
+
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'STAFF' | 'SUPER_ADMIN';
+  role: WebUserRole;
   tenantId: string;
 }
 
@@ -33,7 +35,7 @@ function buildUserFromToken(token: string): User {
       id: decoded.sub ?? 'demo-user',
       email: decoded.email ?? 'demo@efizion.com',
       name: decoded.name ?? 'Admin Demo',
-      role: decoded.role ?? 'ADMIN',
+      role: (decoded.role as WebUserRole) ?? 'ADMIN',
       tenantId: decoded.tenantId ?? 'demo-tenant',
     } as User;
   } catch {

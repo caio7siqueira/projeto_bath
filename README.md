@@ -641,6 +641,62 @@ Worker:
 - JWT Bearer com claims `{ tenantId, customerId, actorType: "customer" }`
 - SMS via Twilio. Em dev/CI sem credenciais, o envio é mockado.
 
+## Gestão de Usuários Internos (Admin)
+
+### Perfis suportados
+- `SUPER_ADMIN`: enxerga todos os tenants, cria usuários globais e opera auditoria.
+- `ADMIN`: gerencia usuários dentro do próprio tenant.
+- `FINANCE`: novo perfil para times financeiros; mesmo payload/validação que demais roles.
+
+> Migration: a role `FINANCE` foi adicionada ao enum `UserRole` (`prisma/migrations/20260105120000_add_finance_role`). Rode `pnpm db:deploy` após atualizar o código.
+
+### Endpoints REST (`/v1/users`)
+Todos exigem `Authorization: Bearer $TOKEN` com guardas `JwtAuthGuard` + `RolesGuard` no backend NestJS.
+
+```bash
+# Listar usuários (filtros opcionais: role, status, query)
+curl "http://localhost:3000/v1/users?page=1&pageSize=20&role=ADMIN&status=ACTIVE" \
+  -H "Authorization: Bearer $TOKEN"
+
+# Criar usuário (ADMIN/SUPER_ADMIN)
+curl -X POST http://localhost:3000/v1/users \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email":"nova.pessoa@example.com",
+    "name":"Nova Pessoa",
+    "role":"FINANCE",
+    "tenantId":"uuid-do-tenant"
+  }'
+
+# Atualizar nome/role/status
+curl -X PATCH http://localhost:3000/v1/users/{id} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"Nome Corrigido",
+    "role":"ADMIN"
+  }'
+
+# Desativar usuário (idempotente)
+curl -X POST http://localhost:3000/v1/users/{id}/deactivate \
+  -H "Authorization: Bearer $TOKEN"
+
+# Reset de senha (gera token temporário e envia email quando SMTP estiver configurado)
+curl -X POST http://localhost:3000/v1/users/{id}/reset-password \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Regras principais**
+- Todos os writes registram auditoria em `AuditLog` com `actorId`, `event` e `tenantId` (ou `null` para super admins globais).
+- `SUPER_ADMIN` pode operar fora de tenant (`tenantId` opcional no payload). `ADMIN/FINANCE` ficam restritos ao próprio tenant.
+- Reset de senha atualmente retorna sucesso e registra auditoria; o envio de email será conectado ao provider SMTP numa fase futura.
+
+### UI compartilhada
+- Frontend Next.js reutiliza `UsersManagementView` em `apps/web/src/app/{admin,super-admin}/users/page.tsx`.
+- Componentes consomem `apps/web/src/lib/api/users.ts`, que encapsula chamadas `apiFetch` com paginação, filtros e ações de reset/desativação.
+- Para testar localmente, autentique-se como `ADMIN` ou `SUPER_ADMIN` e navegue até `/admin/users` ou `/super-admin/users`.
+
 ## Migrations e testes
 
 - Local sem DB: pule migrations e avance com build/typecheck/lint.

@@ -5,8 +5,10 @@ export function useRole() {
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isAdmin = user?.role === 'ADMIN' || isSuperAdmin;
-  const isStaff = user?.role === 'STAFF';
-  const hasRole = (...roles: Array<'ADMIN' | 'STAFF' | 'SUPER_ADMIN'>) => {
+  const isManager = user?.role === 'STAFF';
+  const isAttendant = user?.role === 'GROOMER';
+  const isFinance = user?.role === 'FINANCE';
+  const hasRole = (...roles: Array<'ADMIN' | 'STAFF' | 'GROOMER' | 'FINANCE' | 'SUPER_ADMIN'>) => {
     if (!user) return false;
     if (isSuperAdmin) return true;
     return roles.includes(user.role);
@@ -14,7 +16,9 @@ export function useRole() {
 
   return {
     isAdmin,
-    isStaff,
+    isManager,
+    isAttendant,
+    isFinance,
     isSuperAdmin,
     hasRole,
     role: user?.role,

@@ -23,6 +23,7 @@ import { ServicesModule } from './modules/services/services.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RecurrenceSeriesModule } from './modules/recurrence-series/recurrence-series.module';
 import { SuperadminModule } from './modules/superadmin/superadmin.module';
+import { UsersModule } from './modules/users/users.module';
 
 const envFilePath = Array.from(
   new Set([
@@ -72,6 +73,7 @@ const envFilePath = Array.from(
     ServicesModule,
     RecurrenceSeriesModule,
     SuperadminModule,
+    UsersModule,
   ],
   controllers: [HealthController],
   providers: [

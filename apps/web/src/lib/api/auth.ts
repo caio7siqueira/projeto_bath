@@ -12,7 +12,7 @@ export interface LoginResponse {
     id: string;
     email: string;
     name: string;
-    role: 'ADMIN' | 'STAFF' | 'SUPER_ADMIN';
+    role: 'ADMIN' | 'STAFF' | 'GROOMER' | 'FINANCE' | 'SUPER_ADMIN';
     tenantId: string;
   };
 }

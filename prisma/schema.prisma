@@ -428,6 +428,7 @@ enum UserRole {
   ADMIN
   STAFF
   GROOMER
+  FINANCE
   SUPER_ADMIN
 }
 
