@@ -28,7 +28,8 @@ test.describe('Cadastros de clientes, pets e serviços', () => {
     await setupMockBackend(page);
     await loginAs(page);
 
-    await page.goto('/admin/pets/new');
+    await page.getByRole('link', { name: 'Pets' }).click();
+    await page.getByRole('button', { name: 'Novo Pet' }).first().click();
     await expect(page.getByRole('heading', { name: 'Novo Pet' })).toBeVisible();
     await page.getByLabel('Cliente').selectOption('cust-1');
     await page.getByLabel('Nome do Pet').fill('Scooby');
